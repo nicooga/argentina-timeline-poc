@@ -1,0 +1,30 @@
+:root {
+  --bg: #0f1419;
+  --surface: #1a222c;
+  --text: #e8ecf1;
+  --muted: #8b98a5;
+  --accent: #6ba3d4;
+  --period-1: #3d5a6c;
+  --period-2: #5c4d6b;
+  --event: #c9a227;
+  --border: #2a3540;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Source Sans 3", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+#root {
+  min-height: 100vh;
+}
