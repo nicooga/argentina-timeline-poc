@@ -122,24 +122,44 @@ export const timelineHistoriaArgentina: Timeline = {
             links: ["https://es.wikipedia.org/wiki/Batalla_de_Caseros"],
         },
         {
+            title: "Acuerdo de San Nicolás",
+            description: `
+                - Pacto entre las provincias impulsado por Urquiza tras la caída de Rosas.
+                - Convoca a un Congreso Constituyente para organizar el Estado nacional.
+                - Establece bases federales y delega la conducción del proceso en Urquiza.
+                - Funciona como paso político inmediato hacia la Constitución de 1853.
+            `,
+            date: utcDate(1852, 5, 31),
+            links: ["https://es.wikipedia.org/wiki/Acuerdo_de_San_Nicol%C3%A1s"],
+        },
+        {
             title: "Constitución de 1853",
             description: `
-                - Define un marco con instituciones centralizadas y un Estado nacional.A
+                - Define un marco con instituciones centralizadas y un Estado nacional.
                 - Buenos Aires queda separada, pero la unidad nacional se consolida.
             `,
             date: utcDate(1853, 5, 1),
             links: ["https://es.wikipedia.org/wiki/Constituci%C3%B3n_argentina_de_1853"],
         },
         {
-            title: "Batalla de Pavón",
+            title: "Batalla de Cepeda",
             description: `
-                - Buenos Aires dirigida por Bartolomé Mitre vs. Confederación Argentina dirigida por Justo José de Urquiza.
-                - Derrota de Rosas, pero la unidad nacional se consolida.
-                - Urquiza abandona la confrontación y deja el camino libre a Buenos Aires.
-                - Federal formalmente, unitario de facto con Buenos Aires concentrando recursos (aduana), el poder político y el liderazgo estatal.
+                - Derrota del Estado de Buenos Aires frente a la Confederación liderada por Urquiza.
+                - Obliga a Buenos Aires a negociar su reincorporación.
+                - Funciona como condición de posibilidad del Pacto de San José de Flores.
             `,
-            date: utcDate(1861, 9, 17),
-            links: ["https://es.wikipedia.org/wiki/Batalla_de_Pav%C3%B3n"]
-        }
+            date: utcDate(1859, 10, 23),
+            links: ["https://es.wikipedia.org/wiki/Batalla_de_Cepeda_(1859)"],
+        },
+        {
+            title: "Incorporación de Buenos Aires a la Constitución Nacional",
+            description: `
+                - Buenos Aires acepta integrarse a la Confederación tras el Pacto de San José de Flores.
+                - Se reforma la Constitución para permitir su incorporación.
+                - Marca la unificación formal del país bajo un mismo orden constitucional.
+            `,
+            date: utcDate(1860, 10, 1),
+            links: ["https://es.wikipedia.org/wiki/Pacto_de_San_Jos%C3%A9_de_Flores"],
+        },
     ],
 };
