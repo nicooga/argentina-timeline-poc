@@ -30,6 +30,46 @@ function periodRowCenterFromTopRem(rowIndex: number): number {
   return rowIndex * (ROW_BAR_REM + ROW_MARGIN_REM) + ROW_BAR_REM / 2;
 }
 
+/** Asigna carril por período: mismo carril si no se solapan en el tiempo (orden por inicio). */
+function assignPeriodLanes(periods: Period[]): {
+  laneByIndex: number[];
+  laneCount: number;
+} {
+  const n = periods.length;
+  if (n === 0) return { laneByIndex: [], laneCount: 0 };
+
+  const order = periods
+    .map((p, i) => ({ p, i }))
+    .sort(
+      (a, b) =>
+        a.p.start.getTime() - b.p.start.getTime() ||
+        a.p.end.getTime() - b.p.end.getTime()
+    );
+
+  const laneByIndex = new Array<number>(n);
+  const laneEndMs: number[] = [];
+
+  for (const { p, i } of order) {
+    const start = p.start.getTime();
+    const end = p.end.getTime();
+    let lane = -1;
+    for (let L = 0; L < laneEndMs.length; L++) {
+      if (laneEndMs[L] <= start) {
+        lane = L;
+        laneEndMs[L] = end;
+        break;
+      }
+    }
+    if (lane < 0) {
+      lane = laneEndMs.length;
+      laneEndMs.push(end);
+    }
+    laneByIndex[i] = lane;
+  }
+
+  return { laneByIndex, laneCount: laneEndMs.length };
+}
+
 function mergeAxisMarks(
   periods: { start: Date; end: Date }[],
   events: { date: Date }[]
@@ -81,6 +121,18 @@ export default function App() {
     [periods, events]
   );
 
+  const { laneByIndex, periodIndicesByLane } = useMemo(() => {
+    const { laneByIndex: lanes, laneCount } = assignPeriodLanes(periods);
+    const periodIndicesByLane: number[][] = Array.from(
+      { length: laneCount },
+      () => []
+    );
+    for (let i = 0; i < periods.length; i++) {
+      periodIndicesByLane[lanes[i]].push(i);
+    }
+    return { laneByIndex: lanes, periodIndicesByLane };
+  }, [periods]);
+
   const [sel, setSel] = useState<Selection>(null);
 
   return (
@@ -128,7 +180,7 @@ export default function App() {
             <div className="track-bg" />
             <div className="period-connectors" aria-hidden>
               {periods.flatMap((p, i) => {
-                const centerRem = periodRowCenterFromTopRem(i);
+                const centerRem = periodRowCenterFromTopRem(laneByIndex[i]);
                 const h = `calc(var(--timeline-axis-gap) + ${centerRem}rem)`;
                 const startLeft = pct(p.start.getTime(), min, max);
                 const endLeft = pct(p.end.getTime(), min, max);
@@ -161,29 +213,33 @@ export default function App() {
                 />
               ))}
             </div>
-            {periods.map((p, i) => {
-              const left = pct(p.start.getTime(), min, max);
-              const width = Math.max(
-                pct(p.end.getTime(), min, max) - left,
-                0.8
-              );
-              const hue = i % 2 === 0 ? "period-a" : "period-b";
-              return (
-                <div key={p.title} className="period-row">
-                  <div className="row-bar">
-                    <button
-                      type="button"
-                      className={`bar ${hue} ${sel?.kind === "period" && sel.item === p ? "active" : ""}`}
-                      style={{ left: `${left}%`, width: `${width}%` }}
-                      onClick={() => setSel({ kind: "period", item: p })}
-                      title={`${formatDate(p.start)} — ${formatDate(p.end)}`}
-                    >
-                      <span className="bar-text">{p.title}</span>
-                    </button>
-                  </div>
+            {periodIndicesByLane.map((indices, lane) => (
+              <div key={`lane-${lane}`} className="period-row">
+                <div className="row-bar">
+                  {indices.map((i) => {
+                    const p = periods[i];
+                    const left = pct(p.start.getTime(), min, max);
+                    const width = Math.max(
+                      pct(p.end.getTime(), min, max) - left,
+                      0.8
+                    );
+                    const hue = i % 2 === 0 ? "period-a" : "period-b";
+                    return (
+                      <button
+                        key={p.title}
+                        type="button"
+                        className={`bar ${hue} ${sel?.kind === "period" && sel.item === p ? "active" : ""}`}
+                        style={{ left: `${left}%`, width: `${width}%` }}
+                        onClick={() => setSel({ kind: "period", item: p })}
+                        title={`${formatDate(p.start)} — ${formatDate(p.end)}`}
+                      >
+                        <span className="bar-text">{p.title}</span>
+                      </button>
+                    );
+                  })}
                 </div>
-              );
-            })}
+              </div>
+            ))}
 
             <div className="events-row">
               <div
