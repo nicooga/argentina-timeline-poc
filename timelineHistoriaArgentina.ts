@@ -21,6 +21,18 @@ export const timelineHistoriaArgentina: Timeline = {
             `
         },
         {
+            title: "Anarquía del Año XX",
+            start: utcDate(1820, 2, 1),
+            end: utcDate(1829, 12, 8),
+            description: `
+            - Caída del poder central tras la derrota del Directorio en Cepeda.
+            - Disolución del orden nacional y autonomía de las provincias.
+            - Fragmentación política sin autoridad central estable.
+            - Conflictos entre proyectos unitarios y federales.
+            - Condición estructural que explica la posterior concentración de poder en Rosas.
+        `,
+        },
+        {
             title: "1er. mandato de Rosas",
             start: utcDate(1829, 12, 8),
             end: utcDate(1832, 12, 17),
