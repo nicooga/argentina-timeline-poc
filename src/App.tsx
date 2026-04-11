@@ -17,6 +17,13 @@ function formatDate(d: Date): string {
   });
 }
 
+function formatShortDate(d: Date): string {
+  return d.toLocaleDateString("es-AR", {
+    timeZone: "UTC",
+    year: "numeric",
+  });
+}
+
 function pct(time: number, min: number, max: number): number {
   if (max <= min) return 0;
   return ((time - min) / (max - min)) * 100;
@@ -139,11 +146,10 @@ export default function App() {
     <div className="app">
       <div className="app-header-inner">
         <header className="header">
-          <h1 className="title">Historia Argentina</h1>
-          <p className="subtitle">
-            POC de línea de tiempo — datos desde{" "}
-            <code>timelineHistoriaArgentina.ts</code>
-          </p>
+          <h1 className="title">
+            Linea de tiempo de la Historia Argentina
+            <div className="subtitle">desde {formatShortDate(new Date(min))} hasta {formatShortDate(new Date(max))}</div>
+          </h1>
         </header>
       </div>
 
@@ -266,7 +272,7 @@ export default function App() {
 
       <div className="app-lower">
         <section className="legend">
-          <h2 className="legend-title">Eventos (puntos)</h2>
+          <h2 className="legend-title">Eventos</h2>
           <ul className="event-list">
             {events.map((e) => (
               <li key={e.title + e.date.toISOString()}>
