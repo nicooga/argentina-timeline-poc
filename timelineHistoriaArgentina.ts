@@ -8,60 +8,100 @@ function utcDate(year: number, month: number, day: number): Date {
 export const timelineHistoriaArgentina: Timeline = {
     periods: [
         {
-            title: "Etapa de organización nacional",
+            title: "Revolución y crisis del orden colonial",
             start: utcDate(1810, 5, 25),
-            end: utcDate(1880, 1, 1),
+            end: utcDate(1820, 2, 1),
+            color: "#6C757D", // gris (ruptura / transición)
             description: `
-                - Abre con la Revolución de Mayo de 1810 que termina con el orden colonial
-                - Culmina con la federalización de las provincias en 1880.
-                - Caracterizada por la guerra civil entre las provincias y el Estado nacional
-                - Caudillos provinciales vs. centralismo nacional.
-                - Unitarios vs. federales.
-                - Constitución de 1853 como hito de la unidad nacional
-            `
+                - Ruptura del orden colonial con la Revolución de Mayo.
+                - Intentos fallidos de centralización (Directorio).
+                - Independencia sin construcción de un Estado nacional estable.
+                - Culmina con la caída del poder central tras Cepeda.
+            `,
         },
         {
-            title: "Anarquía del Año XX",
+            title: "Anarquía y autonomías provinciales",
             start: utcDate(1820, 2, 1),
             end: utcDate(1829, 12, 8),
+            color: "#ADB5BD", // gris claro (fragmentación)
             description: `
-            - Caída del poder central tras la derrota del Directorio en Cepeda.
-            - Disolución del orden nacional y autonomía de las provincias.
-            - Fragmentación política sin autoridad central estable.
-            - Conflictos entre proyectos unitarios y federales.
-            - Condición estructural que explica la posterior concentración de poder en Rosas.
+                - Disolución del poder central y soberanía de las provincias.
+                - Conflictos entre unitarios y federales.
+                - Pactos interprovinciales sin autoridad nacional efectiva.
+                - Fragmentación política generalizada.
+            `,
+        },
+        {
+            title: "Primer gobierno de Rosas",
+            start: utcDate(1829, 12, 8),
+            end: utcDate(1832, 12, 17),
+            color: "#F08A8A", // rojo claro (inicio del orden rosista)
+            description: `
+              - Ascenso de Rosas como garante del orden en Buenos Aires.
+              - Centralización política con límites institucionales.
+              - Estabilización parcial tras la crisis previa.
+            `,
+        },
+        {
+            title: "Inestabilidad y transición",
+            start: utcDate(1832, 12, 17),
+            end: utcDate(1835, 4, 13),
+            color: "#FFE066", // amarillo (transición / inestabilidad)
+            description: `
+                - Crisis política tras la salida de Rosas.
+                - Incapacidad de sostener el orden sin liderazgo fuerte.
+                - Reconfiguración de alianzas y poder.
+            `,
+        },
+        {
+            title: "Régimen rosista",
+            start: utcDate(1835, 4, 13),
+            end: utcDate(1852, 2, 3),
+            color: "#C1121F", // rojo intenso (hegemonía rosista)
+            description: `
+            - Concentración del poder con la suma del poder público.
+            - Hegemonía de Buenos Aires sobre el resto del territorio.
+            - Orden político basado en liderazgo personal y coerción.
+            - Ausencia de organización constitucional nacional.
+            - Finaliza con la derrota en Caseros.
         `,
         },
         {
-            title: "1er. mandato de Rosas",
-            start: utcDate(1829, 12, 8),
-            end: utcDate(1832, 12, 17),
+            title: "Organización nacional sin Buenos Aires",
+            start: utcDate(1852, 2, 3),
+            end: utcDate(1860, 10, 1),
+            color: "#1971C2", // azul (institucionalización inicial)
             description: `
-                - Gobierno de facto de Juan Manuel de Rosas.
-                - Centralización sin Estado nacional formal.
-                - Federalismo práctico, hegemonía porteña.
-                - Autoritarismo, persecución política de opositores (Mazorca).
-                - Estabilidad tras decadas de guerra civil.
-                - Aislamiento y conflicto externo: bloqueos francés e inglés y conflictos regionales
-                - Depedencia en el liderazgo personal de Rosas
-                - Culmina con la derrota en la Batalla de Caseros
+                - Caída de Rosas y apertura del proceso constitucional.
+                - Sanción de la Constitución de 1853.
+                - Formación de la Confederación Argentina.
+                - Buenos Aires permanece separada.
             `,
         },
         {
-            title: "2do. mandato de Rosas",
-            start: utcDate(1835, 4, 13),
-            end: utcDate(1852, 2, 3),
+            title: "Unificación y construcción del Estado nacional",
+            start: utcDate(1860, 10, 1),
+            end: utcDate(1880, 1, 1),
+            color: "#2B8A3E", // verde (construcción del Estado)
             description: `
-                - Inicio con la suma del poder público: concentración total del poder en Rosas.
-                - Régimen político autoritario con base en el control de Buenos Aires y la aduana.
-                - Federalismo formal, hegemonía porteña efectiva sobre las provincias.
-                - Uso sistemático de la coerción y persecución política (Mazorca).
-                - Control de relaciones exteriores en nombre de la Confederación.
-                - Conflictos internacionales: bloqueos francés y anglo-francés.
-                - Orden interno sostenido en liderazgo personal y disciplinamiento político.
-                - Culmina con la derrota en la Batalla de Caseros frente a Urquiza.
+            - Incorporación de Buenos Aires al orden constitucional.
+            - Conflictos internos por la hegemonía política.
+            - Centralización progresiva del poder nacional.
+            - Formación efectiva del Estado argentino.
+        `,
+        },
+        {
+            title: "Consolidación del Estado nacional",
+            start: utcDate(1880, 1, 1),
+            end: utcDate(1900, 1, 1),
+            color: "#495057", // gris oscuro (orden consolidado)
+            description: `
+                - Federalización de Buenos Aires.
+                - Fin de las guerras civiles.
+                - Estabilización del orden político nacional.
+                - Consolidación del modelo agroexportador.
             `,
-        }
+        },
     ],
 
     events: [
