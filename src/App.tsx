@@ -10,6 +10,7 @@ type Selection =
 
 function formatDate(d: Date): string {
   return d.toLocaleDateString("es-AR", {
+    timeZone: "UTC",
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -22,14 +23,14 @@ function pct(time: number, min: number, max: number): number {
 }
 
 function yearTicks(min: number, max: number): number[] {
-  const y0 = new Date(min).getFullYear();
-  const y1 = new Date(max).getFullYear();
+  const y0 = new Date(min).getUTCFullYear();
+  const y1 = new Date(max).getUTCFullYear();
   const step = y1 - y0 > 80 ? 20 : 10;
   const start = Math.floor(y0 / step) * step;
   const out: number[] = [];
   for (let y = start; y <= y1 + step; y += step) {
-    const t = new Date(y, 0, 1).getTime();
-    if (t >= min - 1 && t <= max + 1) out.push(t);
+    const t = Date.UTC(y, 0, 1, 12, 0, 0);
+    if (t >= min && t <= max) out.push(t);
   }
   if (out.length < 2) {
     return [min, max];
@@ -56,28 +57,44 @@ export default function App() {
 
   return (
     <div className="app">
-      <header className="header">
-        <h1 className="title">Historia Argentina</h1>
-        <p className="subtitle">
-          POC de línea de tiempo — datos desde{" "}
-          <code>timelineHistoriaArgentina.ts</code>
-        </p>
-      </header>
+      <div className="app-header-inner">
+        <header className="header">
+          <h1 className="title">Historia Argentina</h1>
+          <p className="subtitle">
+            POC de línea de tiempo — datos desde{" "}
+            <code>timelineHistoriaArgentina.ts</code>
+          </p>
+        </header>
+      </div>
 
-      <section className="chart" aria-label="Línea de tiempo">
+      <section className="chart chart-bleed" aria-label="Línea de tiempo">
         <div className="axis">
-          {ticks.map((t) => (
-            <div
-              key={t}
-              className="tick"
-              style={{ left: `${pct(t, min, max)}%` }}
-            >
-              <span className="tick-line" />
-              <span className="tick-label">
-                {new Date(t).getFullYear()}
-              </span>
-            </div>
-          ))}
+          {ticks.map((t, i) => {
+            const isFirst = i === 0;
+            const isLast = i === ticks.length - 1;
+            const p = pct(t, min, max);
+            let edgeClass = "";
+            if (isFirst && isLast) {
+              if (p <= 6) edgeClass = "tick--start";
+              else if (p >= 94) edgeClass = "tick--end";
+            } else if (isFirst) {
+              edgeClass = "tick--start";
+            } else if (isLast) {
+              edgeClass = "tick--end";
+            }
+            return (
+              <div
+                key={t}
+                className={`tick ${edgeClass}`.trim()}
+                style={{ left: `${p}%` }}
+              >
+                <span className="tick-line" />
+                <span className="tick-label">
+                  {new Date(t).getUTCFullYear()}
+                </span>
+              </div>
+            );
+          })}
         </div>
 
         <div className="track-wrap">
@@ -91,7 +108,6 @@ export default function App() {
             const hue = i % 2 === 0 ? "period-a" : "period-b";
             return (
               <div key={p.title} className="period-row">
-                <span className="row-label">{p.title}</span>
                 <div className="row-bar">
                   <button
                     type="button"
@@ -108,8 +124,11 @@ export default function App() {
           })}
 
           <div className="events-row">
-            <span className="row-label">Eventos</span>
-            <div className="row-bar events-bar">
+            <div
+              className="row-bar"
+              role="group"
+              aria-label="Eventos en la línea temporal"
+            >
               {events.map((e) => (
                 <button
                   key={e.title + e.date.toISOString()}
@@ -126,56 +145,58 @@ export default function App() {
         </div>
       </section>
 
-      <section className="legend">
-        <h2 className="legend-title">Eventos (puntos)</h2>
-        <ul className="event-list">
-          {events.map((e) => (
-            <li key={e.title + e.date.toISOString()}>
-              <button
-                type="button"
-                className="linkish"
-                onClick={() => setSel({ kind: "event", item: e })}
-              >
-                <strong>{e.title}</strong>
-                <span className="muted"> · {formatDate(e.date)}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
+      <div className="app-lower">
+        <section className="legend">
+          <h2 className="legend-title">Eventos (puntos)</h2>
+          <ul className="event-list">
+            {events.map((e) => (
+              <li key={e.title + e.date.toISOString()}>
+                <button
+                  type="button"
+                  className="linkish"
+                  onClick={() => setSel({ kind: "event", item: e })}
+                >
+                  <strong>{e.title}</strong>
+                  <span className="muted"> · {formatDate(e.date)}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
 
-      <aside className="detail" aria-live="polite">
-        {sel == null ? (
-          <p className="detail-placeholder">
-            Elegí un período en la barra o un evento en la lista o en la línea.
-          </p>
-        ) : sel.kind === "period" ? (
-          <>
-            <h2 className="detail-title">{sel.item.title}</h2>
-            <p className="detail-meta">
-              {formatDate(sel.item.start)} — {formatDate(sel.item.end)}
+        <aside className="detail" aria-live="polite">
+          {sel == null ? (
+            <p className="detail-placeholder">
+              Elegí un período en la barra o un evento en la lista o en la línea.
             </p>
-            <pre className="detail-body">{sel.item.description.trim()}</pre>
-          </>
-        ) : (
-          <>
-            <h2 className="detail-title">{sel.item.title}</h2>
-            <p className="detail-meta">{formatDate(sel.item.date)}</p>
-            <pre className="detail-body">{sel.item.description.trim()}</pre>
-            {sel.item.links?.length ? (
-              <ul className="links">
-                {sel.item.links.map((url) => (
-                  <li key={url}>
-                    <a href={url} target="_blank" rel="noreferrer">
-                      {url.replace(/^https?:\/\/(www\.)?/, "")}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </>
-        )}
-      </aside>
+          ) : sel.kind === "period" ? (
+            <>
+              <h2 className="detail-title">{sel.item.title}</h2>
+              <p className="detail-meta">
+                {formatDate(sel.item.start)} — {formatDate(sel.item.end)}
+              </p>
+              <pre className="detail-body">{sel.item.description.trim()}</pre>
+            </>
+          ) : (
+            <>
+              <h2 className="detail-title">{sel.item.title}</h2>
+              <p className="detail-meta">{formatDate(sel.item.date)}</p>
+              <pre className="detail-body">{sel.item.description.trim()}</pre>
+              {sel.item.links?.length ? (
+                <ul className="links">
+                  {sel.item.links.map((url) => (
+                    <li key={url}>
+                      <a href={url} target="_blank" rel="noreferrer">
+                        {url.replace(/^https?:\/\/(www\.)?/, "")}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </>
+          )}
+        </aside>
+      </div>
     </div>
   );
 }
