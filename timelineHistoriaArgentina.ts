@@ -2,7 +2,7 @@ import { Timeline } from "./types";
 
 /** Fecha civil gregoriana en UTC (mediodía), sin corrimiento por zona del navegador. */
 function utcDate(year: number, month: number, day: number): Date {
-  return new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+    return new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
 }
 
 export const timelineHistoriaArgentina: Timeline = {
@@ -63,6 +63,15 @@ export const timelineHistoriaArgentina: Timeline = {
             `,
             date: utcDate(1819, 5, 25),
             links: ["https://es.wikipedia.org/wiki/Constituci%C3%B3n_argentina_de_1819"],
+        },
+        {
+            title: "Crisis de 1828 y ascenso de Rosas",
+            description: `
+                - Derrota de Dorrego en Navarro frente a Lavalle.
+                - Fusilamiento del gobernador federal y ruptura del orden político.
+                - Reacción federal que culmina con la designación de Rosas en 1829.
+            `,
+            date: utcDate(1828, 12, 1),
         },
         {
             title: "Constitución de 1853",
