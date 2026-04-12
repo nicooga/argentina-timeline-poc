@@ -1,4 +1,11 @@
-import { useMemo, useState, type CSSProperties } from "react";
+import {
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import { timelineHistoriaArgentina } from "../timelineHistoriaArgentina";
 import type { Period, TimelineEvent } from "../types";
 import "./App.css";
@@ -244,6 +251,50 @@ export default function App() {
 
   const [sel, setSel] = useState<Selection>(null);
 
+  const timelineScrollRef = useRef<HTMLDivElement>(null);
+
+  const onTimelinePointerDown = useCallback(
+    (e: ReactPointerEvent<HTMLDivElement>) => {
+      if (e.button !== 0) return;
+      const el = timelineScrollRef.current;
+      if (!el) return;
+
+      const startX = e.clientX;
+      const startScrollLeft = el.scrollLeft;
+      let dragging = false;
+
+      const onMove = (ev: PointerEvent) => {
+        const dx = ev.clientX - startX;
+        if (!dragging && Math.abs(dx) > 6) {
+          dragging = true;
+          el.classList.add("timeline-scroll--dragging");
+        }
+        if (dragging) {
+          el.scrollLeft = startScrollLeft - dx;
+          ev.preventDefault();
+        }
+      };
+
+      const onUp = () => {
+        document.removeEventListener("pointermove", onMove);
+        document.removeEventListener("pointerup", onUp);
+        el.classList.remove("timeline-scroll--dragging");
+        if (dragging) {
+          const blockClick = (ce: MouseEvent) => {
+            ce.preventDefault();
+            ce.stopPropagation();
+            document.removeEventListener("click", blockClick, true);
+          };
+          document.addEventListener("click", blockClick, true);
+        }
+      };
+
+      document.addEventListener("pointermove", onMove, { passive: false });
+      document.addEventListener("pointerup", onUp);
+    },
+    []
+  );
+
   return (
     <div className="app">
       <div className="app-header-inner">
@@ -256,7 +307,11 @@ export default function App() {
       </div>
 
       <section className="chart chart-bleed" aria-label="Línea de tiempo">
-        <div className="timeline-scroll">
+        <div
+          ref={timelineScrollRef}
+          className="timeline-scroll"
+          onPointerDown={onTimelinePointerDown}
+        >
           <div className="timeline-stack">
             <div
               className="axis"

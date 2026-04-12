@@ -76,8 +76,18 @@
   overflow-x: auto;
   overflow-y: visible;
   overscroll-behavior-x: contain;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
+  cursor: grab;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.timeline-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.timeline-scroll--dragging {
+  cursor: grabbing;
+  user-select: none;
 }
 
 .timeline-stack {
