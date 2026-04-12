@@ -1,5 +1,6 @@
 import {
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -75,6 +76,28 @@ function foregroundForHex(hex: string): string {
   });
   const L = 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
   return L > 0.45 ? "#1a1d21" : "#ffffff";
+}
+
+/** Contenedor con scroll vertical bajo el foco (p. ej. listas de la leyenda). */
+function findVerticalScrollContainer(el: HTMLElement | null): HTMLElement | null {
+  for (let n: HTMLElement | null = el; n; n = n.parentElement) {
+    const st = window.getComputedStyle(n);
+    const oy = st.overflowY;
+    if (
+      (oy === "auto" || oy === "scroll" || oy === "overlay") &&
+      n.scrollHeight > n.clientHeight + 2
+    ) {
+      return n;
+    }
+  }
+  return null;
+}
+
+function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.isContentEditable) return true;
+  const tag = target.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
 }
 
 /** Debe coincidir con altura de `.row-bar` y `margin-bottom` de `.period-row` en App.css */
@@ -294,6 +317,67 @@ export default function App() {
     },
     []
   );
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (isTypingTarget(e.target)) return;
+
+      const key = e.key;
+      const ch = key.length === 1 ? key.toLowerCase() : "";
+      const scrollEl = timelineScrollRef.current;
+
+      const stepX = () =>
+        scrollEl
+          ? Math.max(48, Math.floor(scrollEl.clientWidth * 0.12))
+          : 0;
+
+      const stepYFor = (container: HTMLElement | null) => {
+        if (container) {
+          return Math.max(40, Math.floor(container.clientHeight * 0.18));
+        }
+        return Math.max(48, Math.floor(window.innerHeight * 0.12));
+      };
+
+      const goLeft = ch === "a" || ch === "h" || key === "ArrowLeft";
+      const goRight = ch === "d" || ch === "l" || key === "ArrowRight";
+      const goUp =
+        ch === "w" || ch === "k" || key === "ArrowUp";
+      const goDown =
+        ch === "s" || ch === "j" || key === "ArrowDown";
+
+      if (goLeft) {
+        if (!scrollEl) return;
+        scrollEl.scrollLeft -= stepX();
+        e.preventDefault();
+        return;
+      }
+      if (goRight) {
+        if (!scrollEl) return;
+        scrollEl.scrollLeft += stepX();
+        e.preventDefault();
+        return;
+      }
+      if (goUp || goDown) {
+        const dir = goUp ? -1 : 1;
+        const inner =
+          e.target instanceof HTMLElement
+            ? findVerticalScrollContainer(e.target)
+            : null;
+        const step = stepYFor(inner);
+        if (inner) {
+          inner.scrollTop += dir * step;
+        } else {
+          window.scrollBy({ top: dir * step, left: 0, behavior: "auto" });
+        }
+        e.preventDefault();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   return (
     <div className="app">
