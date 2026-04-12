@@ -24,6 +24,23 @@ function formatShortDate(d: Date): string {
   });
 }
 
+/** Línea superior del tick del eje (año). */
+function formatAxisYear(d: Date): string {
+  return d.toLocaleDateString("es-AR", {
+    timeZone: "UTC",
+    year: "numeric",
+  });
+}
+
+/** Línea inferior: mes abreviado + día (ahorra ancho vs. una sola línea larga). */
+function formatAxisMonthDay(d: Date): string {
+  return d.toLocaleDateString("es-AR", {
+    timeZone: "UTC",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 function pct(time: number, min: number, max: number): number {
   if (max <= min) return 0;
   return ((time - min) / (max - min)) * 100;
@@ -101,25 +118,42 @@ function assignPeriodLanes(periods: Period[]): {
   return { laneByIndex, laneCount: laneEndMs.length };
 }
 
+type AxisMark = { t: number; year: string; monthDay: string };
+
 function mergeAxisMarks(
   periods: { start: Date; end: Date }[],
   events: { date: Date }[]
-): { t: number; label: string }[] {
-  const raw: { t: number; label: string }[] = [];
+): AxisMark[] {
+  const raw: AxisMark[] = [];
   for (const p of periods) {
-    raw.push({ t: p.start.getTime(), label: formatShortDate(p.start) });
-    raw.push({ t: p.end.getTime(), label: formatShortDate(p.end) });
+    raw.push({
+      t: p.start.getTime(),
+      year: formatAxisYear(p.start),
+      monthDay: formatAxisMonthDay(p.start),
+    });
+    raw.push({
+      t: p.end.getTime(),
+      year: formatAxisYear(p.end),
+      monthDay: formatAxisMonthDay(p.end),
+    });
   }
   for (const e of events) {
-    raw.push({ t: e.date.getTime(), label: formatShortDate(e.date) });
+    raw.push({
+      t: e.date.getTime(),
+      year: formatAxisYear(e.date),
+      monthDay: formatAxisMonthDay(e.date),
+    });
   }
   raw.sort((a, b) => a.t - b.t);
-  const out: { t: number; label: string }[] = [];
+  const out: AxisMark[] = [];
   for (const item of raw) {
     const prev = out[out.length - 1];
     if (prev && prev.t === item.t) {
-      if (prev.label !== item.label) {
-        prev.label = `${prev.label} · ${item.label}`;
+      if (prev.year !== item.year) {
+        prev.year = `${prev.year} · ${item.year}`;
+      }
+      if (prev.monthDay !== item.monthDay) {
+        prev.monthDay = `${prev.monthDay} · ${item.monthDay}`;
       }
     } else {
       out.push({ ...item });
@@ -136,10 +170,10 @@ const AXIS_LABEL_MIN_GAP_PCT = 3.1;
  * (lane 0 pegada al trazo, lane 1 más abajo, etc.).
  */
 function assignAxisMarkLanes(
-  marks: { t: number; label: string }[],
+  marks: AxisMark[],
   min: number,
   max: number
-): { mark: { t: number; label: string }; p: number; lane: number }[] {
+): { mark: AxisMark; p: number; lane: number }[] {
   const sorted = [...marks].sort(
     (a, b) => pct(a.t, min, max) - pct(b.t, min, max)
   );
@@ -256,7 +290,10 @@ export default function App() {
                     }
                   >
                     <span className="tick-line" />
-                    <span className="tick-label">{mark.label}</span>
+                    <span className="tick-label">
+                      <span className="tick-label-year">{mark.year}</span>
+                      <span className="tick-label-monthday">{mark.monthDay}</span>
+                    </span>
                   </div>
                 );
               })}

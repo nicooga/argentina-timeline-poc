@@ -88,10 +88,9 @@
 
 .axis {
   position: relative;
-  /* Altura base + filas extra cuando las etiquetas del eje se apilan (--axis-max-lane desde App.tsx) */
-  min-height: calc(
-    2.75rem + var(--axis-max-lane, 0) * 1.12em
-  );
+  /* Altura base + filas extra: cada tick es año + mes/día (2 líneas); --axis-max-lane desde App.tsx */
+  --axis-lane-step: 2.42em;
+  min-height: calc(3.35rem + var(--axis-max-lane, 0) * var(--axis-lane-step));
   margin-bottom: var(--timeline-axis-gap);
   border-bottom: none;
 }
@@ -138,14 +137,31 @@
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  /* Borde inferior del texto por encima del trazo; más carril = más arriba (filas de años) */
+  /* Borde inferior del bloque por encima del trazo; más carril = más arriba (evita solape entre ticks cercanos) */
   bottom: calc(
-    var(--tick-line-h, 12px) + 4px + var(--tick-lane, 0) * 1.08em
+    var(--tick-line-h, 12px) + 4px + var(--tick-lane, 0) * var(--axis-lane-step, 2.42em)
   );
   margin-top: 0;
-  font-size: 0.65rem;
-  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.08em;
+  line-height: 1.12;
   text-align: center;
+}
+
+.tick-label-year {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.tick-label-monthday {
+  font-size: 0.62rem;
+  font-weight: 400;
+  color: var(--muted);
+  white-space: nowrap;
 }
 
 .tick--axis-mark.tick--start .tick-line {
@@ -157,6 +173,7 @@
   left: 0;
   transform: none;
   text-align: left;
+  align-items: flex-start;
 }
 
 .tick--axis-mark.tick--end .tick-line {
@@ -170,6 +187,7 @@
   right: 0;
   transform: none;
   text-align: right;
+  align-items: flex-end;
 }
 
 /* First/last at 0%/100% with -50% would clip labels past the chart edge */
