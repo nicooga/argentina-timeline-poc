@@ -285,10 +285,11 @@ export default function App() {
       const startX = e.clientX;
       const startScrollLeft = el.scrollLeft;
       let dragging = false;
+      const dragThreshold = e.pointerType === "touch" ? 14 : 6;
 
       const onMove = (ev: PointerEvent) => {
         const dx = ev.clientX - startX;
-        if (!dragging && Math.abs(dx) > 6) {
+        if (!dragging && Math.abs(dx) > dragThreshold) {
           dragging = true;
           el.classList.add("timeline-scroll--dragging");
         }

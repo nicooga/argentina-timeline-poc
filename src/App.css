@@ -190,6 +190,9 @@
   cursor: grab;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  /* Scroll horizontal con inercia en iOS; pan permite gesto nativo */
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
 }
 
 .timeline-scroll::-webkit-scrollbar {
@@ -397,10 +400,22 @@
   margin-bottom: 0.1rem;
 }
 
+/* Los puntos de evento usan área táctil 44px; la fila debe acomodarlos */
+.events-row .row-bar {
+  min-height: max(2.25rem, var(--touch-target-min));
+  height: auto;
+}
+
 .row-bar {
   position: relative;
   z-index: 2;
   height: 2.25rem;
+}
+
+@media (pointer: coarse) {
+  .row-bar {
+    height: 2.75rem;
+  }
 }
 
 .bar {
@@ -408,6 +423,7 @@
   top: 50%;
   transform: translateY(-50%);
   height: 1.65rem;
+  min-height: 36px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -421,8 +437,24 @@
   color: var(--text);
 }
 
+@media (pointer: coarse) {
+  .bar {
+    min-height: var(--touch-target-min);
+    height: auto;
+    max-height: calc(100% - 2px);
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
+    display: flex;
+    align-items: center;
+  }
+}
+
 .bar:hover {
   filter: brightness(1.08);
+}
+
+.bar:active {
+  filter: brightness(0.95);
 }
 
 /* .bar.active: el anillo usa el color del período (inline en App.tsx) */
@@ -436,27 +468,48 @@
   display: block;
 }
 
+/* Área táctil amplia; el círculo visible es ::after (14px) */
 .event-dot {
   position: absolute;
   top: 50%;
   transform: translate(-50%, -50%);
+  box-sizing: border-box;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.event-dot::after {
+  content: "";
+  display: block;
   width: 14px;
   height: 14px;
   border-radius: 50%;
   background: var(--event);
   border: 2px solid var(--bg);
-  cursor: pointer;
-  padding: 0;
+  box-sizing: border-box;
   transition:
     transform 0.15s,
     box-shadow 0.15s;
+  pointer-events: none;
 }
 
-.event-dot:hover {
-  transform: translate(-50%, -50%) scale(1.15);
+.event-dot:hover::after,
+.event-dot:active::after {
+  transform: scale(1.15);
 }
 
-.event-dot.active {
+.event-dot.active::after {
   box-shadow: 0 0 0 3px var(--accent);
 }
 
@@ -477,10 +530,18 @@
   max-height: min(40vh, 22rem);
   overflow-y: auto;
   padding-right: 0.35rem;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .period-list li {
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+@media (pointer: coarse) {
+  .period-list li {
+    margin-bottom: 0.65rem;
+  }
 }
 
 .period-link {
@@ -489,6 +550,8 @@
   gap: 0.5rem;
   text-align: left;
   width: 100%;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
 }
 
 .period-swatch {
@@ -507,10 +570,18 @@
   max-height: min(50vh, 28rem);
   overflow-y: auto;
   padding-right: 0.35rem;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .event-list li {
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+@media (pointer: coarse) {
+  .event-list li {
+    margin-bottom: 0.65rem;
+  }
 }
 
 .linkish {
@@ -520,11 +591,33 @@
   font: inherit;
   text-align: left;
   cursor: pointer;
-  padding: 0.2rem 0;
+  padding: 0.45rem 0;
+  min-height: var(--touch-target-min);
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border-radius: 6px;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .linkish:hover {
   color: var(--accent);
+}
+
+.linkish:active {
+  color: color-mix(in srgb, var(--accent) 85%, var(--text));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .linkish {
+    min-height: 0;
+    padding: 0.2rem 0;
+  }
+
+  .period-link {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
 }
 
 .muted {
@@ -574,4 +667,19 @@
 .links a {
   color: var(--accent);
   word-break: break-all;
+  display: inline-block;
+  padding: 0.35rem 0;
+  margin: -0.35rem 0;
+  border-radius: 4px;
+  min-height: var(--touch-target-min);
+  line-height: 1.4;
+  box-sizing: border-box;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .links a {
+    min-height: 0;
+    padding: 0;
+    margin: 0;
+  }
 }
