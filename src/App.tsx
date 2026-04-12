@@ -208,6 +208,19 @@ function clamp(n: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, n));
 }
 
+function touchPinchDistance(touches: TouchList): number {
+  const a = touches[0];
+  const b = touches[1];
+  return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+}
+
+/** Posición X del punto medio del pellizco respecto al borde izquierdo visible del contenedor. */
+function touchPinchMidViewportX(scrollEl: HTMLElement, touches: TouchList): number {
+  const r = scrollEl.getBoundingClientRect();
+  const mx = (touches[0].clientX + touches[1].clientX) / 2;
+  return mx - r.left;
+}
+
 /** Lapso aproximado representado por `ms`, para la leyenda tipo mapa (es-AR). */
 function formatApproxTimeSpan(ms: number): string {
   if (!Number.isFinite(ms) || ms <= 0) return "—";
@@ -319,6 +332,15 @@ export default function App() {
 
   const timelineScrollRef = useRef<HTMLDivElement>(null);
   const timelineStackRef = useRef<HTMLDivElement>(null);
+  /** Lectura síncrona del zoom en listeners nativos (pellizco). */
+  const timelineZoomRef = useRef(timelineZoom);
+  timelineZoomRef.current = timelineZoom;
+  /** Cancela el arrastre horizontal si empieza un pellizco con dos dedos. */
+  const cancelTimelineDragRef = useRef<(() => void) | null>(null);
+  const pinchStateRef = useRef<{
+    startDist: number;
+    startZoom: number;
+  } | null>(null);
   const pendingZoomAnchorRef = useRef<{
     frac: number;
     viewportX: number;
@@ -394,6 +416,71 @@ export default function App() {
     return () => scrollEl.removeEventListener("wheel", handler);
   }, []);
 
+  useEffect(() => {
+    const scrollEl = timelineScrollRef.current;
+    if (!scrollEl) return;
+
+    const MIN_PINCH_SPAN = 28;
+
+    const onTouchStart = (e: TouchEvent) => {
+      /* Solo al pasar a exactamente dos dedos: evita reiniciar si entra un tercer dedo. */
+      if (e.touches.length !== 2) return;
+      cancelTimelineDragRef.current?.();
+      const d = Math.max(MIN_PINCH_SPAN, touchPinchDistance(e.touches));
+      pinchStateRef.current = {
+        startDist: d,
+        startZoom: timelineZoomRef.current,
+      };
+      scrollEl.classList.add("timeline-scroll--pinching");
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      const p = pinchStateRef.current;
+      if (!p || e.touches.length < 2) return;
+      e.preventDefault();
+      const dist = Math.max(MIN_PINCH_SPAN, touchPinchDistance(e.touches));
+      const ratio = dist / p.startDist;
+      const z1 = clamp(
+        p.startZoom * ratio,
+        TIMELINE_ZOOM_MIN,
+        TIMELINE_ZOOM_MAX
+      );
+      const viewportX = touchPinchMidViewportX(scrollEl, e.touches);
+      const frac =
+        (viewportX + scrollEl.scrollLeft) / Math.max(1, scrollEl.scrollWidth);
+      pendingZoomAnchorRef.current = { frac, viewportX };
+      setTimelineZoom(z1);
+    };
+
+    const endPinch = (e: TouchEvent) => {
+      if (e.touches.length < 2) {
+        pinchStateRef.current = null;
+        scrollEl.classList.remove("timeline-scroll--pinching");
+      }
+    };
+
+    scrollEl.addEventListener("touchstart", onTouchStart, {
+      capture: true,
+      passive: true,
+    });
+    scrollEl.addEventListener("touchmove", onTouchMove, {
+      capture: true,
+      passive: false,
+    });
+    scrollEl.addEventListener("touchend", endPinch, { capture: true, passive: true });
+    scrollEl.addEventListener("touchcancel", endPinch, {
+      capture: true,
+      passive: true,
+    });
+
+    return () => {
+      scrollEl.removeEventListener("touchstart", onTouchStart, true);
+      scrollEl.removeEventListener("touchmove", onTouchMove, true);
+      scrollEl.removeEventListener("touchend", endPinch, true);
+      scrollEl.removeEventListener("touchcancel", endPinch, true);
+    };
+  }, []);
+
   const onTimelinePointerDown = useCallback(
     (e: ReactPointerEvent<HTMLDivElement>) => {
       if (e.button !== 0) return;
@@ -417,9 +504,10 @@ export default function App() {
         }
       };
 
-      const onUp = () => {
+      const cleanupDrag = () => {
+        cancelTimelineDragRef.current = null;
         document.removeEventListener("pointermove", onMove);
-        document.removeEventListener("pointerup", onUp);
+        document.removeEventListener("pointerup", cleanupDrag);
         el.classList.remove("timeline-scroll--dragging");
         if (dragging) {
           const blockClick = (ce: MouseEvent) => {
@@ -431,8 +519,9 @@ export default function App() {
         }
       };
 
+      cancelTimelineDragRef.current = cleanupDrag;
       document.addEventListener("pointermove", onMove, { passive: false });
-      document.addEventListener("pointerup", onUp);
+      document.addEventListener("pointerup", cleanupDrag);
     },
     []
   );
@@ -565,12 +654,22 @@ export default function App() {
                     <kbd className="kbd">rueda</kbd>
                   </span>
                 </li>
+                <li className="keyboard-cheatsheet-row keyboard-cheatsheet-row--touch">
+                  <span className="keyboard-cheatsheet-label">
+                    Misma escala en pantalla táctil (pellizcar en la línea de
+                    tiempo)
+                  </span>
+                  <span className="keyboard-cheatsheet-keys keyboard-cheatsheet-keys--text">
+                    dos dedos · abrir / cerrar
+                  </span>
+                </li>
               </ul>
               <p className="keyboard-cheatsheet-note">
                 Los atajos de flechas y letras no aplican con Ctrl, Alt ni Meta
                 (salvo Ctrl + rueda en la línea de tiempo; en macOS también
                 funciona Cmd + rueda); se ignoran si estás escribiendo en un
-                campo de texto.
+                campo de texto. En móvil o tablet podés deslizar con un dedo y
+                pellizcar con dos para el zoom del eje.
               </p>
             </section>
           </div>

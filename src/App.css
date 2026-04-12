@@ -109,6 +109,13 @@
   gap: 0.28rem;
 }
 
+.keyboard-cheatsheet-keys--text {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: 0.01em;
+}
+
 .keyboard-cheatsheet-or,
 .keyboard-cheatsheet-slash {
   font-size: 0.72rem;
@@ -203,6 +210,11 @@
 .timeline-scroll--dragging {
   cursor: grabbing;
   user-select: none;
+}
+
+/* Pellizco: el gesto lo maneja JS (touchmove preventDefault); sin esto iOS puede seguir haciendo pan/zoom nativo */
+.timeline-scroll.timeline-scroll--pinching {
+  touch-action: none;
 }
 
 .timeline-stack {
