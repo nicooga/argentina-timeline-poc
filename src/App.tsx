@@ -5,6 +5,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ChangeEvent,
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from "react";
@@ -208,6 +209,29 @@ function clamp(n: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, n));
 }
 
+/** Slider 0…1 ↔ zoom (escala log para que el control se sienta natural). */
+function zoomFromSliderT(t: number): number {
+  const tt = clamp(t, 0, 1);
+  const lo = Math.log(TIMELINE_ZOOM_MIN);
+  const hi = Math.log(TIMELINE_ZOOM_MAX);
+  return Math.exp(lo + tt * (hi - lo));
+}
+
+function sliderTFromZoom(z: number): number {
+  const lo = Math.log(TIMELINE_ZOOM_MIN);
+  const hi = Math.log(TIMELINE_ZOOM_MAX);
+  const lz = Math.log(clamp(z, TIMELINE_ZOOM_MIN, TIMELINE_ZOOM_MAX));
+  return clamp((lz - lo) / (hi - lo), 0, 1);
+}
+
+function formatZoomFactorUi(z: number): string {
+  const c = clamp(z, TIMELINE_ZOOM_MIN, TIMELINE_ZOOM_MAX);
+  if (c >= 10) return `×${Math.round(c)}`;
+  const r = Math.round(c * 10) / 10;
+  const s = Number.isInteger(r) ? String(r) : String(r).replace(".", ",");
+  return `×${s}`;
+}
+
 function touchPinchDistance(touches: TouchList): number {
   const a = touches[0];
   const b = touches[1];
@@ -379,6 +403,47 @@ export default function App() {
       Math.max(0, sw - scrollEl.clientWidth)
     );
   }, [timelineZoom]);
+
+  const setTimelineZoomCentered = useCallback((next: number) => {
+    const z1 = clamp(next, TIMELINE_ZOOM_MIN, TIMELINE_ZOOM_MAX);
+    const scrollEl = timelineScrollRef.current;
+    if (scrollEl) {
+      const viewportX = scrollEl.clientWidth / 2;
+      const frac =
+        (viewportX + scrollEl.scrollLeft) / Math.max(1, scrollEl.scrollWidth);
+      pendingZoomAnchorRef.current = { frac, viewportX };
+    }
+    setTimelineZoom(z1);
+  }, []);
+
+  const onZoomSliderChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const t = Number(e.target.value) / 1000;
+      setTimelineZoomCentered(zoomFromSliderT(t));
+    },
+    [setTimelineZoomCentered]
+  );
+
+  const onZoomNudge = useCallback(
+    (direction: 1 | -1) => {
+      setTimelineZoom((z0) => {
+        const t0 = sliderTFromZoom(z0);
+        const z1 = zoomFromSliderT(clamp(t0 + 0.045 * direction, 0, 1));
+        const scrollEl = timelineScrollRef.current;
+        if (scrollEl) {
+          const viewportX = scrollEl.clientWidth / 2;
+          const frac =
+            (viewportX + scrollEl.scrollLeft) /
+            Math.max(1, scrollEl.scrollWidth);
+          pendingZoomAnchorRef.current = { frac, viewportX };
+        }
+        return z1;
+      });
+    },
+    []
+  );
+
+  const zoomSliderValue = Math.round(sliderTFromZoom(timelineZoom) * 1000);
 
   const onTimelineWheelRef = useRef<(e: WheelEvent) => void>(() => {});
   onTimelineWheelRef.current = (e: WheelEvent) => {
@@ -830,21 +895,67 @@ export default function App() {
           </div>
         </div>
 
-        <div className="timeline-scale-overlay" aria-hidden>
-          <span className="timeline-scale-caption">Escala del eje</span>
-          <div className="timeline-scale-rail-wrap">
-            <div
-              className="timeline-scale-rail"
-              style={{ width: SCALE_BAR_PX }}
-            />
-            <div className="timeline-scale-ticks" style={{ width: SCALE_BAR_PX }}>
-              <span />
-              <span />
-              <span />
-              <span />
+        <div className="chart-bleed-overlays">
+          <div
+            className="timeline-zoom-panel"
+            role="group"
+            aria-labelledby="timeline-zoom-heading"
+          >
+            <span className="timeline-zoom-heading" id="timeline-zoom-heading">
+              Magnificación
+            </span>
+            <div className="timeline-zoom-row">
+              <button
+                type="button"
+                className="timeline-zoom-btn"
+                onClick={() => onZoomNudge(-1)}
+                aria-label="Reducir magnificación del eje"
+              >
+                −
+              </button>
+              <input
+                className="timeline-zoom-slider"
+                type="range"
+                min={0}
+                max={1000}
+                step={1}
+                value={zoomSliderValue}
+                onChange={onZoomSliderChange}
+                aria-valuemin={0}
+                aria-valuemax={1000}
+                aria-valuenow={zoomSliderValue}
+                aria-label="Magnificación de la línea de tiempo"
+              />
+              <button
+                type="button"
+                className="timeline-zoom-btn"
+                onClick={() => onZoomNudge(1)}
+                aria-label="Aumentar magnificación del eje"
+              >
+                +
+              </button>
             </div>
+            <span className="timeline-zoom-readout" aria-live="polite">
+              {formatZoomFactorUi(timelineZoom)}
+            </span>
           </div>
-          <div className="timeline-scale-label">{scaleBarLabel}</div>
+
+          <div className="timeline-scale-overlay" aria-hidden>
+            <span className="timeline-scale-caption">Escala del eje</span>
+            <div className="timeline-scale-rail-wrap">
+              <div
+                className="timeline-scale-rail"
+                style={{ width: SCALE_BAR_PX }}
+              />
+              <div className="timeline-scale-ticks" style={{ width: SCALE_BAR_PX }}>
+                <span />
+                <span />
+                <span />
+                <span />
+              </div>
+            </div>
+            <div className="timeline-scale-label">{scaleBarLabel}</div>
+          </div>
         </div>
       </section>
 
