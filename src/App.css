@@ -5,8 +5,10 @@
 }
 
 .app--viewer {
-  min-height: 100vh;
-  min-height: 100dvh;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
   padding: 0;
   display: flex;
   flex-direction: column;
@@ -122,6 +124,90 @@
   overflow: hidden;
 }
 
+/*
+ * Con selección: la fila del timeline mide solo lo que pide el contenido (p. ej. modo compacto
+ * tras elegir un evento). Si fuera 1fr + height:100%, el chart se estira a media pantalla y
+ * queda un vacío enorme debajo del eje. Abajo va todo el espacio restante (listas + detalle).
+ */
+.viewer-shell--has-selection .viewer-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0;
+}
+
+.viewer-shell--has-selection .viewer-chart-wrap,
+.viewer-shell--has-selection .viewer-chart-wrap--pinned {
+  min-height: 0;
+  height: auto;
+  align-self: stretch;
+}
+
+.viewer-shell--has-selection .viewer-chart-wrap--pinned {
+  position: relative;
+  top: auto;
+}
+
+/* Sin estirar el bloque chart: el wrap ya mide al contenido del timeline */
+.viewer-shell--has-selection .chart--viewer.chart-bleed {
+  flex: 0 1 auto;
+}
+
+.viewer-shell--has-selection .chart--viewer .timeline-scroll {
+  flex: 0 1 auto;
+  min-height: 0;
+}
+
+/*
+ * Controles absolutos respecto al section: con poco alto (compacto + selección) el flex
+ * del overlay (zoom | toggle 100% | escala) se envuelve mal y parece “flotar” mal.
+ * En selección los pasamos a flujo normal debajo del timeline.
+ */
+.viewer-shell--has-selection .chart-bleed-overlays {
+  position: relative;
+  left: 0;
+  right: 0;
+  bottom: auto;
+  flex-shrink: 0;
+  margin-top: 0.35rem;
+  width: 100%;
+  max-width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  column-gap: 0.75rem;
+  row-gap: 0.45rem;
+  align-items: end;
+  justify-items: stretch;
+}
+
+.viewer-shell--has-selection .timeline-zoom-panel {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: start;
+  order: unset;
+  max-width: min(20rem, 100%);
+}
+
+.viewer-shell--has-selection .timeline-touch-toggle-wrap {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  flex: unset;
+  width: 100%;
+  order: unset;
+}
+
+.viewer-shell--has-selection .timeline-scale-overlay {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  order: unset;
+}
+
+.viewer-shell--has-selection .chart.chart-bleed.chart--viewer {
+  padding-bottom: 0.9rem;
+}
+
 .viewer-chart-wrap {
   flex: 0 1 auto;
   max-height: min(56dvh, 34rem);
@@ -143,6 +229,11 @@
 .viewer-shell--sel-compact .viewer-chart-wrap,
 .viewer-shell--sel-compact .viewer-chart-wrap--pinned {
   max-height: min(34dvh, 19rem);
+}
+
+.viewer-shell--has-selection.viewer-shell--sel-compact .viewer-chart-wrap,
+.viewer-shell--has-selection.viewer-shell--sel-compact .viewer-chart-wrap--pinned {
+  max-height: min(44dvh, 26rem);
 }
 
 .viewer-shell--sel-touch .viewer-chart-wrap,
@@ -356,6 +447,18 @@
   }
 }
 
+/* Con selección el chart es bajo: si aún no entra el stack, scroll vertical solo acá (no el body) */
+.viewer-shell--has-selection .chart--viewer .timeline-scroll {
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.viewer-shell--has-selection .chart--viewer .timeline-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
 .timeline-scroll::-webkit-scrollbar {
   display: none;
 }
@@ -384,9 +487,10 @@
 
 /* Coincide con ROW_BAR_REM_COMPACT / ROW_MARGIN_REM_COMPACT en App.tsx */
 .timeline-stack--compact {
-  --timeline-event-label-room: clamp(1.85rem, 12vmin, 5.5rem);
+  /* Mínimo ~1.85rem recortaba por completo las .event-label-diag (-70°); hace falta altura real */
+  --timeline-event-label-room: clamp(4.75rem, 20vmin, 10rem);
   --timeline-axis-gap: 0.5rem;
-  padding-bottom: 0.35rem;
+  padding-bottom: 0.5rem;
 }
 
 .timeline-stack--compact .axis {
