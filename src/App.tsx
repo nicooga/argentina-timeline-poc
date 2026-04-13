@@ -10,13 +10,11 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { timelineHistoriaArgentina } from "../timelineHistoriaArgentina";
-import type { Period, TimelineEvent } from "../types";
+import type { Period, Selection } from "../types";
+import { WelcomeScreen } from "./WelcomeScreen";
+import { ViewerLower } from "./ViewerLower";
+import { KeyboardHelpModal } from "./KeyboardHelpModal";
 import "./App.css";
-
-type Selection =
-  | { kind: "period"; item: Period }
-  | { kind: "event"; item: TimelineEvent }
-  | null;
 
 function formatDate(d: Date): string {
   return d.toLocaleDateString("es-AR", {
@@ -115,9 +113,17 @@ function isTypingTarget(target: EventTarget | null): boolean {
 /** Debe coincidir con altura de `.row-bar` y `margin-bottom` de `.period-row` en App.css */
 const ROW_BAR_REM = 2.25;
 const ROW_MARGIN_REM = 0.1;
+/** Modo compacto (lista + detalle): mismo patrón que `.timeline-stack--compact` en App.css */
+const ROW_BAR_REM_COMPACT = 1.22;
+const ROW_MARGIN_REM_COMPACT = 0.06;
 
-function periodRowCenterFromTopRem(rowIndex: number): number {
-  return rowIndex * (ROW_BAR_REM + ROW_MARGIN_REM) + ROW_BAR_REM / 2;
+function periodRowCenterFromTopRem(
+  rowIndex: number,
+  compact: boolean
+): number {
+  const bar = compact ? ROW_BAR_REM_COMPACT : ROW_BAR_REM;
+  const margin = compact ? ROW_MARGIN_REM_COMPACT : ROW_MARGIN_REM;
+  return rowIndex * (bar + margin) + bar / 2;
 }
 
 /** Asigna carril por período: mismo carril si no se solapan en el tiempo (orden por inicio). */
@@ -360,7 +366,11 @@ export default function App() {
     return { laneByIndex: lanes, periodIndicesByLane };
   }, [periods]);
 
+  const [appPhase, setAppPhase] = useState<"welcome" | "viewer">("welcome");
   const [sel, setSel] = useState<Selection>(null);
+  const [timelineExpandedForTouch, setTimelineExpandedForTouch] =
+    useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [timelineZoom, setTimelineZoom] = useState(1);
   const [stackWidthPx, setStackWidthPx] = useState<number | null>(null);
 
@@ -379,6 +389,19 @@ export default function App() {
     frac: number;
     viewportX: number;
   } | null>(null);
+
+  useEffect(() => {
+    if (sel === null) setTimelineExpandedForTouch(false);
+  }, [sel]);
+
+  const timelineCompact = sel !== null && !timelineExpandedForTouch;
+
+  const viewerShellClass =
+    sel === null
+      ? ""
+      : timelineCompact
+        ? "viewer-shell--sel-compact"
+        : "viewer-shell--sel-touch";
 
   const rangeMs = max - min;
 
@@ -604,8 +627,23 @@ export default function App() {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (isTypingTarget(e.target)) return;
+
+      if (helpOpen) {
+        if (e.key === "Escape" || e.key === "?") {
+          e.preventDefault();
+          setHelpOpen(false);
+        }
+        return;
+      }
+
+      if (e.key === "?" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setHelpOpen(true);
+        return;
+      }
+
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
 
       const key = e.key;
       const ch = key.length === 1 ? key.toLowerCase() : "";
@@ -660,98 +698,63 @@ export default function App() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [helpOpen]);
+
+  if (appPhase === "welcome") {
+    return <WelcomeScreen onEnter={() => setAppPhase("viewer")} />;
+  }
 
   return (
-    <div className="app">
-      <div className="app-header-inner">
-        <header className="header">
-          <div className="header-main">
-            <h1 className="title">
-              Linea de tiempo de la Historia Argentina
-              <div className="subtitle">
-                desde {formatShortDate(new Date(min))} hasta{" "}
-                {formatShortDate(new Date(max))}
+    <div className="app app--viewer">
+      <div
+        className={`viewer-shell ${viewerShellClass} ${sel != null ? "viewer-shell--has-selection" : ""}`.trim()}
+      >
+        <div className="viewer-header-wrap">
+          <div className="viewer-header-inner">
+            <header className="viewer-toolbar" aria-label="Barra del visor">
+              <div className="viewer-toolbar-text">
+                <h1 className="viewer-toolbar-title">
+                  Historia Argentina · línea de tiempo
+                </h1>
+                <p className="viewer-toolbar-range muted">
+                  {formatShortDate(new Date(min))} —{" "}
+                  {formatShortDate(new Date(max))}
+                </p>
               </div>
-            </h1>
-            <section
-              className="keyboard-cheatsheet"
-              aria-labelledby="keyboard-cheatsheet-heading"
-            >
-              <h2
-                id="keyboard-cheatsheet-heading"
-                className="keyboard-cheatsheet-title"
-              >
-                Atajos de teclado
-              </h2>
-              <ul className="keyboard-cheatsheet-list">
-                <li className="keyboard-cheatsheet-row">
-                  <span className="keyboard-cheatsheet-label">
-                    Desplazar la línea de tiempo (horizontal)
-                  </span>
-                  <span className="keyboard-cheatsheet-keys">
-                    <kbd className="kbd">←</kbd>
-                    <kbd className="kbd">→</kbd>
-                    <span className="keyboard-cheatsheet-or">o</span>
-                    <kbd className="kbd">A</kbd>
-                    <span className="keyboard-cheatsheet-slash">/</span>
-                    <kbd className="kbd">D</kbd>
-                    <span className="keyboard-cheatsheet-or">o</span>
-                    <kbd className="kbd">H</kbd>
-                    <span className="keyboard-cheatsheet-slash">/</span>
-                    <kbd className="kbd">L</kbd>
-                  </span>
-                </li>
-                <li className="keyboard-cheatsheet-row">
-                  <span className="keyboard-cheatsheet-label">
-                    Desplazar listas o la página (vertical)
-                  </span>
-                  <span className="keyboard-cheatsheet-keys">
-                    <kbd className="kbd">↑</kbd>
-                    <kbd className="kbd">↓</kbd>
-                    <span className="keyboard-cheatsheet-or">o</span>
-                    <kbd className="kbd">W</kbd>
-                    <span className="keyboard-cheatsheet-slash">/</span>
-                    <kbd className="kbd">S</kbd>
-                    <span className="keyboard-cheatsheet-or">o</span>
-                    <kbd className="kbd">K</kbd>
-                    <span className="keyboard-cheatsheet-slash">/</span>
-                    <kbd className="kbd">J</kbd>
-                  </span>
-                </li>
-                <li className="keyboard-cheatsheet-row">
-                  <span className="keyboard-cheatsheet-label">
-                    Ampliar o reducir la escala del eje (sobre la línea de tiempo)
-                  </span>
-                  <span className="keyboard-cheatsheet-keys">
-                    <kbd className="kbd">Ctrl</kbd>
-                    <span className="keyboard-cheatsheet-slash">+</span>
-                    <kbd className="kbd">rueda</kbd>
-                  </span>
-                </li>
-                <li className="keyboard-cheatsheet-row keyboard-cheatsheet-row--touch">
-                  <span className="keyboard-cheatsheet-label">
-                    Misma escala en pantalla táctil (pellizcar en la línea de
-                    tiempo)
-                  </span>
-                  <span className="keyboard-cheatsheet-keys keyboard-cheatsheet-keys--text">
-                    dos dedos · abrir / cerrar
-                  </span>
-                </li>
-              </ul>
-              <p className="keyboard-cheatsheet-note">
-                Los atajos de flechas y letras no aplican con Ctrl, Alt ni Meta
-                (salvo Ctrl + rueda en la línea de tiempo; en macOS también
-                funciona Cmd + rueda); se ignoran si estás escribiendo en un
-                campo de texto. En móvil o tablet podés deslizar con un dedo y
-                pellizcar con dos para el zoom del eje.
-              </p>
-            </section>
+              <div className="viewer-toolbar-actions">
+                <button
+                  type="button"
+                  className="viewer-help-btn"
+                  onClick={() => setHelpOpen(true)}
+                  aria-label="Atajos de teclado. Atajo: signo de interrogación"
+                  title="Atajos (?)"
+                >
+                  ?
+                </button>
+                <button
+                  type="button"
+                  className="viewer-inicio-btn"
+                  onClick={() => {
+                    setAppPhase("welcome");
+                    setSel(null);
+                    setHelpOpen(false);
+                  }}
+                >
+                  Inicio
+                </button>
+              </div>
+            </header>
           </div>
-        </header>
-      </div>
+        </div>
 
-      <section className="chart chart-bleed" aria-label="Línea de tiempo">
+        <div className="viewer-main">
+        <div
+          className={`viewer-chart-wrap ${sel != null ? "viewer-chart-wrap--pinned" : ""}`.trim()}
+        >
+      <section
+        className="chart chart-bleed chart--viewer"
+        aria-label="Línea de tiempo"
+      >
         <div
           ref={timelineScrollRef}
           className="timeline-scroll"
@@ -759,7 +762,11 @@ export default function App() {
         >
           <div
             ref={timelineStackRef}
-            className="timeline-stack"
+            className={
+              timelineCompact
+                ? "timeline-stack timeline-stack--compact"
+                : "timeline-stack"
+            }
             style={
               {
                 "--timeline-zoom": String(timelineZoom),
@@ -811,7 +818,10 @@ export default function App() {
               <div className="track-bg" />
               <div className="period-connectors" aria-hidden>
                 {periods.flatMap((p, i) => {
-                  const centerRem = periodRowCenterFromTopRem(laneByIndex[i]);
+                  const centerRem = periodRowCenterFromTopRem(
+                    laneByIndex[i],
+                    timelineCompact
+                  );
                   const h = `calc(var(--timeline-axis-gap) + ${centerRem}rem)`;
                   const startLeft = pctOnTrack(p.start.getTime(), min, max);
                   const endLeft = pctOnTrack(p.end.getTime(), min, max);
@@ -959,6 +969,43 @@ export default function App() {
             </span>
           </div>
 
+          {sel != null ? (
+            <div className="timeline-touch-toggle-wrap">
+              <button
+                type="button"
+                className="timeline-touch-toggle"
+                aria-pressed={timelineExpandedForTouch}
+                onClick={() =>
+                  setTimelineExpandedForTouch((prev) => !prev)
+                }
+                aria-label={
+                  timelineExpandedForTouch
+                    ? "Priorizar lectura: línea temporal compacta junto al detalle"
+                    : "Ampliar franjas de períodos para facilitar el toque en la línea"
+                }
+              >
+                <span className="timeline-touch-toggle-icon" aria-hidden>
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  >
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+                  </svg>
+                </span>
+                <span className="timeline-touch-toggle-text">
+                  {timelineExpandedForTouch
+                    ? "Priorizar lectura"
+                    : "Franjas táctiles"}
+                </span>
+              </button>
+            </div>
+          ) : null}
+
           <div className="timeline-scale-overlay" aria-hidden>
             <span className="timeline-scale-caption">Escala del eje</span>
             <div className="timeline-scale-rail-wrap">
@@ -977,91 +1024,18 @@ export default function App() {
           </div>
         </div>
       </section>
+        </div>
 
-      <div className="app-lower">
-        <section className="legend">
-          <h2 className="legend-title">Períodos</h2>
-          <ul className="period-list">
-            {periods.map((p) => (
-              <li key={p.title}>
-                <button
-                  type="button"
-                  className="linkish period-link"
-                  onClick={() => setSel({ kind: "period", item: p })}
-                >
-                  <span
-                    className="period-swatch"
-                    style={{ backgroundColor: p.color }}
-                    aria-hidden
-                  />
-                  <span>
-                    <strong>{p.title}</strong>
-                    <span className="muted">
-                      {" "}
-                      · {formatDate(p.start)} — {formatDate(p.end)}
-                    </span>
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-          <h2 className="legend-title legend-title--second">Eventos</h2>
-          <ul className="event-list">
-            {events.map((e) => (
-              <li key={e.title + e.date.toISOString()}>
-                <button
-                  type="button"
-                  className="linkish"
-                  onClick={() => setSel({ kind: "event", item: e })}
-                >
-                  <strong>{e.title}</strong>
-                  <span className="muted"> · {formatDate(e.date)}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <ViewerLower
+          periods={periods}
+          events={events}
+          sel={sel}
+          onSelectPeriod={(p) => setSel({ kind: "period", item: p })}
+          onSelectEvent={(e) => setSel({ kind: "event", item: e })}
+        />
+        </div>
 
-        <aside
-          className="detail"
-          aria-live="polite"
-          style={
-            sel?.kind === "period"
-              ? { boxShadow: `inset 4px 0 0 0 ${sel.item.color}` }
-              : undefined
-          }
-        >
-          {sel == null ? (
-            <p className="detail-placeholder">
-              Elegí un período en la barra o un evento en la lista o en la línea.
-            </p>
-          ) : sel.kind === "period" ? (
-            <>
-              <h2 className="detail-title">{sel.item.title}</h2>
-              <p className="detail-meta">
-                {formatDate(sel.item.start)} — {formatDate(sel.item.end)}
-              </p>
-              <pre className="detail-body">{sel.item.description.trim()}</pre>
-            </>
-          ) : (
-            <>
-              <h2 className="detail-title">{sel.item.title}</h2>
-              <p className="detail-meta">{formatDate(sel.item.date)}</p>
-              <pre className="detail-body">{sel.item.description.trim()}</pre>
-              {sel.item.links?.length ? (
-                <ul className="links">
-                  {sel.item.links.map((url) => (
-                    <li key={url}>
-                      <a href={url} target="_blank" rel="noreferrer">
-                        {url.replace(/^https?:\/\/(www\.)?/, "")}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </>
-          )}
-        </aside>
+        <KeyboardHelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
       </div>
     </div>
   );

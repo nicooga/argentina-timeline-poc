@@ -20,3 +20,8 @@ export interface Timeline {
     events: TimelineEvent[];
     periods: Period[];
 }
+
+export type Selection =
+    | { kind: "period"; item: Period }
+    | { kind: "event"; item: TimelineEvent }
+    | null;
