@@ -141,6 +141,15 @@
   min-height: 0;
   height: auto;
   align-self: stretch;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.viewer-shell--has-selection .viewer-chart-wrap::-webkit-scrollbar,
+.viewer-shell--has-selection .viewer-chart-wrap--pinned::-webkit-scrollbar {
+  width: 6px;
 }
 
 .viewer-shell--has-selection .viewer-chart-wrap--pinned {
@@ -155,7 +164,7 @@
 
 .viewer-shell--has-selection .chart--viewer .timeline-scroll {
   flex: 0 1 auto;
-  min-height: 0;
+  min-height: min-content;
 }
 
 /*
@@ -228,17 +237,22 @@
 
 .viewer-shell--sel-compact .viewer-chart-wrap,
 .viewer-shell--sel-compact .viewer-chart-wrap--pinned {
-  max-height: min(34dvh, 19rem);
+  max-height: min(42dvh, 24rem);
 }
 
 .viewer-shell--has-selection.viewer-shell--sel-compact .viewer-chart-wrap,
 .viewer-shell--has-selection.viewer-shell--sel-compact .viewer-chart-wrap--pinned {
-  max-height: min(44dvh, 26rem);
+  max-height: min(62dvh, 36rem);
 }
 
 .viewer-shell--sel-touch .viewer-chart-wrap,
 .viewer-shell--sel-touch .viewer-chart-wrap--pinned {
   max-height: min(52dvh, 30rem);
+}
+
+.viewer-shell--has-selection.viewer-shell--sel-touch .viewer-chart-wrap,
+.viewer-shell--has-selection.viewer-shell--sel-touch .viewer-chart-wrap--pinned {
+  max-height: min(66dvh, 38rem);
 }
 
 .chart--viewer.chart-bleed {
@@ -435,9 +449,8 @@
 
 .timeline-scroll {
   overflow-x: auto;
-  /* Con overflow-x distinto de visible, "visible" en Y se trata como auto y aparece barra
-     vertical si las etiquetas rotas sobresalen. clip/hidden evitan ese scroll; el hueco bajo la
-     pista lo define --timeline-event-label-room en .timeline-stack */
+  /* overflow-y clip: las etiquetas de eventos viven en padding-bottom de la fila; el hueco lo
+     define --timeline-event-label-room (función de --event-label-max-lane) en .timeline-stack */
   overflow-y: hidden;
   overscroll-behavior-x: contain;
   cursor: grab;
@@ -452,11 +465,18 @@
   .timeline-scroll {
     overflow-y: clip;
   }
+
+  .viewer-shell--has-selection .chart--viewer .timeline-scroll {
+    overflow-y: visible;
+  }
 }
 
-/* Con selección el chart es bajo: si aún no entra el stack, scroll vertical solo acá (no el body) */
+/*
+ * Sin scroll vertical interno en el timeline: si el chart tiene tope de alto, el scroll es del
+ * .viewer-chart-wrap (bloque chart entero), así siempre se ven eje + períodos + eventos juntos.
+ */
 .viewer-shell--has-selection .chart--viewer .timeline-scroll {
-  overflow-y: auto;
+  overflow-y: visible;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -482,22 +502,66 @@
 
 .timeline-stack {
   --timeline-axis-gap: 0.85rem;
-  /* Hueco bajo la fila de eventos: las etiquetas son position:absolute y no estiran el flujo;
-     sin esto cortan o fuerzan scroll vertical en .timeline-scroll. Ajustar si cambia el ángulo o max-width */
-  /* Títulos largos + rotación -70°: subir techo si aún recortan (o bajar --event-label-max-ch) */
-  --timeline-event-label-room: clamp(7.25rem, 44vmin, 18.5rem);
+  /* Centro vertical de la bola (mitad de la franja táctil de la fila de eventos) */
+  --events-dot-half: calc(max(2.25rem, var(--touch-target-min, 44px)) / 2);
+  /* Carril vertical (swimming lane): ≥ altura de línea de .event-label-h para no solapar texto */
+  --event-label-lane-nudge: 0.96rem;
+  --events-row-pad-bottom: calc(
+    0.42rem + var(--event-label-max-lane, 0) * var(--event-label-lane-nudge)
+  );
+  /* Trazo punteado: termina en el centro vertical de la bola */
+  --event-connector-bottom-inset: calc(
+    var(--events-row-pad-bottom) + var(--events-dot-half)
+  );
+  /* Padding inferior de la fila de eventos (desbordes por carriles verticales) */
+  --timeline-event-label-room: var(--events-row-pad-bottom);
   /* Más ancho que el viewport: los ticks se separan y se recorre con scroll horizontal */
   min-width: calc(max(100%, min(4200px, 240vw)) * var(--timeline-zoom, 1));
   /* Aire extra bajo la pista (leyenda fija abajo del chart) */
   padding-bottom: 0.85rem;
 }
 
+@media (pointer: coarse) {
+  .timeline-stack:not(.timeline-stack--compact) {
+    --events-dot-half: calc(max(2.75rem, var(--touch-target-min, 44px)) / 2);
+    --event-label-lane-nudge: 1.02rem;
+    --events-row-pad-bottom: calc(
+      0.42rem + var(--event-label-max-lane, 0) * var(--event-label-lane-nudge)
+    );
+    --event-connector-bottom-inset: calc(
+      var(--events-row-pad-bottom) + var(--events-dot-half)
+    );
+    --timeline-event-label-room: var(--events-row-pad-bottom);
+  }
+}
+
 /* ROW_BAR_REM_COMPACT / ROW_MARGIN_REM_COMPACT en App.tsx (solo filas de período; la fila de eventos sigue abajo) */
 .timeline-stack--compact {
-  /* Mínimo ~1.85rem recortaba por completo las .event-label-diag (-70°); hace falta altura real */
-  --timeline-event-label-room: clamp(4.75rem, 20vmin, 10rem);
+  --events-dot-half: calc(1.22rem / 2);
+  --event-label-lane-nudge: 0.84rem;
+  --events-row-pad-bottom: calc(
+    0.32rem + var(--event-label-max-lane, 0) * var(--event-label-lane-nudge)
+  );
+  --event-connector-bottom-inset: calc(
+    var(--events-row-pad-bottom) + var(--events-dot-half)
+  );
+  --timeline-event-label-room: var(--events-row-pad-bottom);
   --timeline-axis-gap: 0.5rem;
   padding-bottom: 0.5rem;
+}
+
+@media (pointer: coarse) {
+  .timeline-stack--compact {
+    --events-dot-half: calc(1.32rem / 2);
+    --event-label-lane-nudge: 0.9rem;
+    --events-row-pad-bottom: calc(
+      0.32rem + var(--event-label-max-lane, 0) * var(--event-label-lane-nudge)
+    );
+    --event-connector-bottom-inset: calc(
+      var(--events-row-pad-bottom) + var(--events-dot-half)
+    );
+    --timeline-event-label-room: var(--events-row-pad-bottom);
+  }
 }
 
 .timeline-stack--compact .axis {
@@ -536,16 +600,6 @@
   }
 }
 
-.timeline-stack--compact .events-row .event-marker {
-  top: calc(1.22rem / 2);
-}
-
-@media (pointer: coarse) {
-  .timeline-stack--compact .events-row .event-marker {
-    top: calc(1.32rem / 2);
-  }
-}
-
 .timeline-stack--compact .bar {
   min-height: 2px;
   height: 0.58rem;
@@ -564,9 +618,8 @@
   font-size: 0.56rem;
 }
 
-.timeline-stack--compact .event-label-diag {
-  font-size: 0.52rem;
-  --event-label-max-ch: min(7rem, 36vw);
+.timeline-stack--compact .event-label-h {
+  font-size: 0.6rem;
 }
 
 /* Controles inferiores: magnificación (izq.) + escala tipo mapa (der.) */
@@ -946,6 +999,7 @@
 
 .track-wrap {
   position: relative;
+  overflow: visible;
 }
 
 .period-connectors,
@@ -954,19 +1008,18 @@
   left: 0;
   right: 0;
   pointer-events: none;
-  z-index: 1;
 }
 
 .period-connectors {
   inset: 0;
+  z-index: 1;
 }
 
-/* Termina el trazo en el borde inferior del contenido de la fila (encima del padding reservado
-   para etiquetas rotadas). El punto está en esa franja; antes sumábamos media altura y el trazo
-   quedaba corto ~1.25rem por encima del punto y del título. */
+/* Línea desde el eje hasta el centro vertical de la bola (no sigue bajo la fila). */
 .event-connectors {
   top: calc(-1 * var(--timeline-axis-gap));
-  bottom: var(--timeline-event-label-room, 7.25rem);
+  bottom: var(--event-connector-bottom-inset, 1.5rem);
+  z-index: 0;
 }
 
 .event-connector,
@@ -979,7 +1032,10 @@
 
 .event-connector {
   top: 0;
-  bottom: 0;
+  /* Alarga el trazo hacia bolitas en carriles inferiores (misma unidad que .event-marker top). */
+  bottom: calc(
+    -1 * var(--event-conn-lane, 0) * var(--event-label-lane-nudge, 0.96rem)
+  );
   opacity: 0.55;
 }
 
@@ -1007,18 +1063,33 @@
   margin-bottom: 0.1rem;
 }
 
-/* Los puntos de evento usan área táctil 44px; la fila debe acomodarlos + etiquetas en diagonal */
+/* Puntos táctiles + etiquetas al costado; carriles = filas lógicas (ver --event-label-lane en TS) */
 .events-row .row-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(max(2.25rem, var(--touch-target-min)), auto);
   min-height: max(2.25rem, var(--touch-target-min));
   height: auto;
   padding-bottom: var(--timeline-event-label-room);
   overflow: visible;
 }
 
+@media (pointer: coarse) {
+  .events-row .row-bar {
+    min-height: max(2.75rem, var(--touch-target-min));
+  }
+}
+
 .row-bar {
   position: relative;
   z-index: 2;
   height: 2.25rem;
+}
+
+/* Marcadores absolutos respecto al ancho de la pista; la fila de grid reserva alto táctil + padding */
+.events-row .row-bar > * {
+  grid-column: 1;
+  grid-row: 1;
 }
 
 @media (pointer: coarse) {
@@ -1084,11 +1155,14 @@
   height: 0;
   transform: translateX(-50%);
   pointer-events: none;
+  z-index: 2;
 }
 
 .events-row .event-marker {
-  /* Alineado con .events-row .row-bar min-height (max(2.25rem, --touch-target-min)) */
-  top: calc(max(2.25rem, var(--touch-target-min, 44px)) / 2);
+  top: calc(
+    var(--events-dot-half) +
+      var(--event-label-lane, 0) * var(--event-label-lane-nudge, 0.96rem)
+  );
 }
 
 /* Área táctil amplia; el círculo visible es ::after (14px) */
@@ -1142,38 +1216,52 @@
 }
 
 /*
- * Etiqueta: pivote en el borde derecho (última letra junto al punto), texto
- * hacia la izquierda; inclinación (~-70°) para separarse de vecinos. Si cambiás el ángulo o
- * --event-label-max-ch o --timeline-event-label-room en .timeline-stack.
+ * Etiqueta al costado de la bola; el carril vertical (--event-label-lane) vive en .event-marker (top).
  */
-.event-label-diag {
-  --event-label-tilt: -70deg;
-  /* Ancho máximo del bloque de texto antes de ellipsis: menos ancho ⇒ menos “alcance” al rotar */
-  --event-label-max-ch: min(8.75rem, 42vw);
-
+.event-label-h {
   position: absolute;
-  right: 0;
-  top: 10px;
   z-index: 1;
-  width: max-content;
-  max-width: var(--event-label-max-ch);
-  padding: 0 1px;
-  font-size: 0.58rem;
+  top: 50%;
+  max-width: min(12rem, 40vw);
+  padding: 0;
+  font-size: 0.68rem;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.22;
   letter-spacing: 0.01em;
   color: var(--muted);
-  text-align: right;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  transform-origin: right center;
-  transform: rotate(var(--event-label-tilt));
+  pointer-events: none;
   text-shadow:
     0 0 8px var(--surface),
     0 0 4px var(--surface),
     0 1px 0 var(--surface);
-  pointer-events: none;
+}
+
+.event-label--start {
+  left: 0.6rem;
+  transform: translateY(-50%);
+  text-align: left;
+}
+
+.event-label--center {
+  left: 0;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.event-label--end {
+  left: auto;
+  right: 0.6rem;
+  transform: translateY(-50%);
+  text-align: right;
+}
+
+@media (pointer: coarse) {
+  .event-label-h {
+    font-size: 0.74rem;
+  }
 }
 
 .legend-title {

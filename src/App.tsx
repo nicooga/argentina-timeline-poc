@@ -10,7 +10,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { timelineHistoriaArgentina } from "../timelineHistoriaArgentina";
-import type { Period, Selection } from "../types";
+import type { Period, Selection, TimelineEvent } from "../types";
 import { WelcomeScreen } from "./WelcomeScreen";
 import { ViewerLower } from "./ViewerLower";
 import { KeyboardHelpModal } from "./KeyboardHelpModal";
@@ -319,6 +319,196 @@ function assignAxisMarkLanes(
   });
 }
 
+type EventLabelAnchor = "start" | "center" | "end";
+
+type EventLabelPlacement = {
+  lane: number;
+  anchor: EventLabelAnchor;
+  /** Ancho máximo del texto (px), acotado al espacio disponible en la pista. */
+  maxWidthPx: number;
+};
+
+let eventLabelMeasureCtx: CanvasRenderingContext2D | null = null;
+
+function measureEventTitleWidthsPx(
+  titles: string[],
+  compact: boolean,
+  pointerCoarse: boolean
+): number[] {
+  const fontPx = compact ? 10 : pointerCoarse ? 12.5 : 12;
+  const font = `600 ${fontPx}px "Source Sans 3",system-ui,sans-serif`;
+  const pad = 10;
+  if (typeof document === "undefined") {
+    return titles.map((t) => Math.min(t.length * fontPx * 0.52 + pad, 280));
+  }
+  if (!eventLabelMeasureCtx) {
+    const c = document.createElement("canvas");
+    eventLabelMeasureCtx = c.getContext("2d");
+  }
+  const ctx = eventLabelMeasureCtx;
+  if (!ctx) {
+    return titles.map((t) => Math.min(t.length * fontPx * 0.52 + pad, 280));
+  }
+  ctx.font = font;
+  return titles.map((t) => Math.min(ctx.measureText(t).width + pad, 320));
+}
+
+function labelIntervalsOverlap(
+  a: readonly [number, number],
+  b: readonly [number, number],
+  gapPct: number
+): boolean {
+  return a[0] < b[1] + gapPct && a[1] > b[0] - gapPct;
+}
+
+/** Coincide con `.event-label--start` / coarse: mitad táctil + margen hasta el texto. */
+function eventLabelEdgePx(pointerCoarse: boolean): number {
+  const touch = 44;
+  return touch / 2 + (pointerCoarse ? 8 : 6);
+}
+
+/**
+ * Reparte etiquetas de eventos en carriles verticales (swimming lanes), como los ticks del eje.
+ * Los intervalos de colisión siguen el anclaje real (texto a la derecha/izquierda/centro del punto)
+ * en % del ancho del stack (misma convención que pctOnTrack).
+ */
+function assignEventLabelLanes(
+  eventsSorted: TimelineEvent[],
+  min: number,
+  max: number,
+  stackWidthPx: number | null,
+  compact: boolean,
+  pointerCoarse: boolean
+): { placements: EventLabelPlacement[]; maxLane: number } {
+  const n = eventsSorted.length;
+  if (n === 0) {
+    return { placements: [], maxLane: 0 };
+  }
+
+  const stackPx =
+    stackWidthPx != null && stackWidthPx > 0 ? stackWidthPx : 520;
+  const edgePx = eventLabelEdgePx(pointerCoarse);
+  const edgePct = (edgePx / stackPx) * 100;
+
+  const widthsPx = measureEventTitleWidthsPx(
+    eventsSorted.map((e) => e.title),
+    compact,
+    pointerCoarse
+  );
+
+  const items = eventsSorted.map((event, i) => ({
+    event,
+    i,
+    p: pctOnTrack(event.date.getTime(), min, max),
+    baseWidthPx: widthsPx[i]!,
+  }));
+  items.sort((a, b) => a.p - b.p || a.i - b.i);
+
+  /** Hueco horizontal mínimo entre cajas de etiqueta (como AXIS_LABEL_MIN_GAP_PCT arriba). */
+  const gapPct = 0.62;
+  const lanes: [number, number][][] = [];
+  const temp: {
+    i: number;
+    lane: number;
+    anchor: EventLabelAnchor;
+    maxWidthPx: number;
+  }[] = [];
+
+  for (let s = 0; s < items.length; s++) {
+    const { i, p, baseWidthPx } = items[s]!;
+    const isFirst = s === 0;
+    const isLast = s === n - 1;
+
+    let anchor: EventLabelAnchor;
+    if (n === 1) {
+      if (p <= 6) anchor = "start";
+      else if (p >= 94) anchor = "end";
+      else anchor = "center";
+    } else if (isFirst) {
+      anchor = "start";
+    } else if (isLast) {
+      anchor = "end";
+    } else {
+      /* Empujar el texto hacia el interior del gráfico (más aire al borde). */
+      anchor = p < 50 ? "start" : "end";
+    }
+
+    const rawSpanPct = (baseWidthPx / stackPx) * 100 + 0.22;
+
+    let widthPct = Math.min(rawSpanPct, 56);
+    if (anchor === "start") {
+      widthPct = Math.min(
+        widthPct,
+        Math.max(0.85, 100 - p - edgePct - 0.25)
+      );
+    } else if (anchor === "end") {
+      widthPct = Math.min(widthPct, Math.max(0.85, p - edgePct - 0.25));
+    } else {
+      widthPct = Math.min(
+        widthPct,
+        Math.max(0.85, 2 * Math.min(p, 100 - p) - edgePct * 2 - 0.35)
+      );
+    }
+
+    let left: number;
+    let right: number;
+    if (anchor === "start") {
+      left = p + edgePct;
+      right = p + edgePct + widthPct;
+    } else if (anchor === "end") {
+      right = p - edgePct;
+      left = p - edgePct - widthPct;
+    } else {
+      left = p - widthPct / 2;
+      right = p + widthPct / 2;
+    }
+
+    const interval: [number, number] = [left, right];
+
+    let lane = 0;
+    for (;; lane++) {
+      if (lane >= lanes.length) {
+        lanes.push([]);
+      }
+      const occupied = lanes[lane]!;
+      const clash = occupied.some((iv) =>
+        labelIntervalsOverlap(interval, iv, gapPct)
+      );
+      if (!clash) {
+        occupied.push(interval);
+        const maxWidthPx = Math.min(
+          baseWidthPx,
+          Math.max(48, (widthPct / 100) * stackPx)
+        );
+        temp.push({
+          i,
+          lane,
+          anchor,
+          maxWidthPx,
+        });
+        break;
+      }
+    }
+  }
+
+  const placements: EventLabelPlacement[] = eventsSorted.map(() => ({
+    lane: 0,
+    anchor: "center",
+    maxWidthPx: 160,
+  }));
+  let maxLane = 0;
+  for (const t of temp) {
+    placements[t.i] = {
+      lane: t.lane,
+      anchor: t.anchor,
+      maxWidthPx: t.maxWidthPx,
+    };
+    maxLane = Math.max(maxLane, t.lane);
+  }
+
+  return { placements, maxLane };
+}
+
 export default function App() {
   const { periods, events } = timelineHistoriaArgentina;
 
@@ -373,6 +563,11 @@ export default function App() {
   const [helpOpen, setHelpOpen] = useState(false);
   const [timelineZoom, setTimelineZoom] = useState(1);
   const [stackWidthPx, setStackWidthPx] = useState<number | null>(null);
+  const [pointerCoarse, setPointerCoarse] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(pointer: coarse)").matches
+  );
 
   const timelineScrollRef = useRef<HTMLDivElement>(null);
   const timelineStackRef = useRef<HTMLDivElement>(null);
@@ -394,7 +589,30 @@ export default function App() {
     if (sel === null) setTimelineExpandedForTouch(false);
   }, [sel]);
 
+  useEffect(() => {
+    const mq = window.matchMedia("(pointer: coarse)");
+    const sync = () => setPointerCoarse(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
   const timelineCompact = sel !== null && !timelineExpandedForTouch;
+
+  const { eventLabelPlacements, eventLabelMaxLane } = useMemo(
+    () => {
+      const { placements, maxLane } = assignEventLabelLanes(
+        eventsSorted,
+        min,
+        max,
+        stackWidthPx,
+        timelineCompact,
+        pointerCoarse
+      );
+      return { eventLabelPlacements: placements, eventLabelMaxLane: maxLane };
+    },
+    [eventsSorted, min, max, stackWidthPx, timelineCompact, pointerCoarse]
+  );
 
   const viewerShellClass =
     sel === null
@@ -770,6 +988,7 @@ export default function App() {
             style={
               {
                 "--timeline-zoom": String(timelineZoom),
+                "--event-label-max-lane": eventLabelMaxLane,
               } as CSSProperties
             }
           >
@@ -848,13 +1067,21 @@ export default function App() {
                 })}
               </div>
               <div className="event-connectors" aria-hidden>
-                {eventsSorted.map((ev) => (
-                  <div
-                    key={`conn-${ev.title + ev.date.toISOString()}`}
-                    className="event-connector"
-                    style={{ left: `${pctOnTrack(ev.date.getTime(), min, max)}%` }}
-                  />
-                ))}
+                {eventsSorted.map((ev, connIdx) => {
+                  const lane = eventLabelPlacements[connIdx]!.lane;
+                  return (
+                    <div
+                      key={`conn-${ev.title + ev.date.toISOString()}`}
+                      className="event-connector"
+                      style={
+                        {
+                          left: `${pctOnTrack(ev.date.getTime(), min, max)}%`,
+                          "--event-conn-lane": lane,
+                        } as CSSProperties
+                      }
+                    />
+                  );
+                })}
               </div>
               {periodIndicesByLane.map((indices, lane) => (
                 <div key={`lane-${lane}`} className="period-row">
@@ -898,26 +1125,41 @@ export default function App() {
                   role="group"
                   aria-label="Eventos en la línea temporal"
                 >
-                  {eventsSorted.map((e) => (
-                    <div
-                      key={e.title + e.date.toISOString()}
-                      className="event-marker"
-                      style={{
-                        left: `${pctOnTrack(e.date.getTime(), min, max)}%`,
-                      }}
-                    >
-                      <button
-                        type="button"
-                        className={`event-dot ${sel?.kind === "event" && sel.item === e ? "active" : ""}`}
-                        onClick={() => setSel({ kind: "event", item: e })}
-                        title={e.title}
-                        aria-label={e.title}
-                      />
-                      <span className="event-label-diag" aria-hidden="true">
-                        {e.title}
-                      </span>
-                    </div>
-                  ))}
+                  {eventsSorted.map((e, eventIdx) => {
+                    const p = pctOnTrack(e.date.getTime(), min, max);
+                    const pl = eventLabelPlacements[eventIdx]!;
+                    return (
+                      <div
+                        key={e.title + e.date.toISOString()}
+                        className="event-marker"
+                        style={
+                          {
+                            left: `${p}%`,
+                            "--event-label-lane": pl.lane,
+                          } as CSSProperties
+                        }
+                      >
+                        <button
+                          type="button"
+                          className={`event-dot ${sel?.kind === "event" && sel.item === e ? "active" : ""}`}
+                          onClick={() => setSel({ kind: "event", item: e })}
+                          title={e.title}
+                          aria-label={e.title}
+                        />
+                        <span
+                          className={`event-label-h event-label--${pl.anchor}`}
+                          aria-hidden="true"
+                          style={
+                            {
+                              maxWidth: `${Math.round(pl.maxWidthPx)}px`,
+                            } as CSSProperties
+                          }
+                        >
+                          {e.title}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
