@@ -571,6 +571,8 @@ export default function App() {
 
   const timelineScrollRef = useRef<HTMLDivElement>(null);
   const timelineStackRef = useRef<HTMLDivElement>(null);
+  const timelineSelectedPeriodBarRef = useRef<HTMLButtonElement | null>(null);
+  const timelineSelectedEventDotRef = useRef<HTMLButtonElement | null>(null);
   /** Lectura síncrona del zoom en listeners nativos (pellizco). */
   const timelineZoomRef = useRef(timelineZoom);
   timelineZoomRef.current = timelineZoom;
@@ -613,6 +615,23 @@ export default function App() {
     },
     [eventsSorted, min, max, stackWidthPx, timelineCompact, pointerCoarse]
   );
+
+  useLayoutEffect(() => {
+    if (sel == null) return;
+    const el =
+      sel.kind === "period"
+        ? timelineSelectedPeriodBarRef.current
+        : timelineSelectedEventDotRef.current;
+    if (!el) return;
+    const smoothScroll =
+      typeof window !== "undefined" &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({
+      behavior: smoothScroll ? "smooth" : "auto",
+      block: "nearest",
+      inline: "center",
+    });
+  }, [sel, timelineZoom, timelineCompact]);
 
   const viewerShellClass =
     sel === null
@@ -1099,6 +1118,15 @@ export default function App() {
                           key={p.title}
                           type="button"
                           className={`bar ${isActive ? "active" : ""}`}
+                          ref={(el) => {
+                            if (isActive) {
+                              timelineSelectedPeriodBarRef.current = el;
+                            } else if (
+                              timelineSelectedPeriodBarRef.current === el
+                            ) {
+                              timelineSelectedPeriodBarRef.current = null;
+                            }
+                          }}
                           style={{
                             left: `${left}%`,
                             width: `${width}%`,
@@ -1128,10 +1156,12 @@ export default function App() {
                   {eventsSorted.map((e, eventIdx) => {
                     const p = pctOnTrack(e.date.getTime(), min, max);
                     const pl = eventLabelPlacements[eventIdx]!;
+                    const isEventActive =
+                      sel?.kind === "event" && sel.item === e;
                     return (
                       <div
                         key={e.title + e.date.toISOString()}
-                        className="event-marker"
+                        className={`event-marker ${isEventActive ? "event-marker--selected" : ""}`}
                         style={
                           {
                             left: `${p}%`,
@@ -1141,7 +1171,16 @@ export default function App() {
                       >
                         <button
                           type="button"
-                          className={`event-dot ${sel?.kind === "event" && sel.item === e ? "active" : ""}`}
+                          className={`event-dot ${isEventActive ? "active" : ""}`}
+                          ref={(el) => {
+                            if (isEventActive) {
+                              timelineSelectedEventDotRef.current = el;
+                            } else if (
+                              timelineSelectedEventDotRef.current === el
+                            ) {
+                              timelineSelectedEventDotRef.current = null;
+                            }
+                          }}
                           onClick={() => setSel({ kind: "event", item: e })}
                           title={e.title}
                           aria-label={e.title}

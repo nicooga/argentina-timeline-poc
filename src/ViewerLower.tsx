@@ -1,3 +1,8 @@
+import {
+  useLayoutEffect,
+  useRef,
+  type CSSProperties,
+} from "react";
 import type { Period, TimelineEvent, Selection } from "../types";
 import "./ViewerLower.css";
 
@@ -25,6 +30,26 @@ export function ViewerLower({
   onSelectPeriod,
   onSelectEvent,
 }: ViewerLowerProps) {
+  const periodListSelectedRef = useRef<HTMLButtonElement | null>(null);
+  const eventListSelectedRef = useRef<HTMLButtonElement | null>(null);
+
+  useLayoutEffect(() => {
+    if (sel == null) return;
+    const smoothScroll =
+      typeof window !== "undefined" &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const opts: ScrollIntoViewOptions = {
+      behavior: smoothScroll ? "smooth" : "auto",
+      block: "center",
+      inline: "nearest",
+    };
+    if (sel.kind === "period") {
+      periodListSelectedRef.current?.scrollIntoView(opts);
+    } else {
+      eventListSelectedRef.current?.scrollIntoView(opts);
+    }
+  }, [sel]);
+
   return (
     <div className="viewer-lower">
       <div className="viewer-lower-col viewer-lower-col--list">
@@ -32,11 +57,26 @@ export function ViewerLower({
           <h2 className="legend-title">Períodos</h2>
           <div className="viewer-lower-scroll-block">
             <ul className="period-list">
-              {periods.map((p) => (
+              {periods.map((p) => {
+                const periodSelected = sel?.kind === "period" && sel.item === p;
+                return (
                 <li key={p.title}>
                   <button
                     type="button"
-                    className="linkish period-link"
+                    className={`linkish period-link${periodSelected ? " linkish--selected" : ""}`}
+                    aria-current={periodSelected ? "true" : undefined}
+                    style={
+                      periodSelected
+                        ? ({ "--sel-accent": p.color } as CSSProperties)
+                        : undefined
+                    }
+                    ref={(el) => {
+                      if (periodSelected) {
+                        periodListSelectedRef.current = el;
+                      } else if (periodListSelectedRef.current === el) {
+                        periodListSelectedRef.current = null;
+                      }
+                    }}
                     onClick={() => onSelectPeriod(p)}
                   >
                     <span
@@ -53,24 +93,36 @@ export function ViewerLower({
                     </span>
                   </button>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           </div>
           <h2 className="legend-title legend-title--second">Eventos</h2>
           <div className="viewer-lower-scroll-block">
             <ul className="event-list">
-              {events.map((e) => (
+              {events.map((e) => {
+                const eventSelected = sel?.kind === "event" && sel.item === e;
+                return (
                 <li key={e.title + e.date.toISOString()}>
                   <button
                     type="button"
-                    className="linkish"
+                    className={`linkish${eventSelected ? " linkish--selected" : ""}`}
+                    aria-current={eventSelected ? "true" : undefined}
+                    ref={(el) => {
+                      if (eventSelected) {
+                        eventListSelectedRef.current = el;
+                      } else if (eventListSelectedRef.current === el) {
+                        eventListSelectedRef.current = null;
+                      }
+                    }}
                     onClick={() => onSelectEvent(e)}
                   >
                     <strong>{e.title}</strong>
                     <span className="muted"> · {formatDate(e.date)}</span>
                   </button>
                 </li>
-              ))}
+              );
+              })}
             </ul>
           </div>
         </section>

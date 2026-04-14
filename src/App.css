@@ -1275,7 +1275,12 @@
   filter: brightness(0.95);
 }
 
-/* .bar.active: el anillo usa el color del período (inline en App.tsx) */
+/* .bar.active: anillo de color del período (inline en App.tsx) + relieve */
+.bar.active {
+  z-index: 4;
+  transform: translateY(-50%) scale(1.06);
+  filter: brightness(1.1);
+}
 
 .bar-text {
   font-size: 0.72rem;
@@ -1294,6 +1299,10 @@
   transform: translateX(-50%);
   pointer-events: none;
   z-index: 2;
+}
+
+.event-marker--selected {
+  z-index: 5;
 }
 
 .events-row .event-marker {
@@ -1350,7 +1359,20 @@
 }
 
 .event-dot.active::after {
-  box-shadow: 0 0 0 3px var(--accent);
+  transform: scale(1.35);
+  box-shadow:
+    0 0 0 3px var(--accent),
+    0 0 14px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.event-dot.active:hover::after,
+.event-dot.active:active::after {
+  transform: scale(1.45);
+}
+
+.event-marker--selected .event-label-h {
+  color: var(--accent);
+  font-weight: 700;
 }
 
 /*
