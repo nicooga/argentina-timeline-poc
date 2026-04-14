@@ -33,7 +33,74 @@
 .viewer-header-inner {
   max-width: 72rem;
   margin: 0 auto;
-  padding: 0.2rem 0.875rem;
+  padding: 0.15rem 0.875rem;
+}
+
+.viewer-header-wrap--collapsed {
+  height: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-bottom: none;
+  background: transparent;
+}
+
+.viewer-header-icon-svg {
+  display: block;
+}
+
+/* Misma caja que ? / Inicio en la barra; solo flota cuando la barra está oculta. */
+.viewer-header-peek-toggle {
+  font: inherit;
+  line-height: 1;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition:
+    border-color 0.12s ease,
+    background-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.viewer-header-peek-toggle--embedded {
+  box-shadow: none;
+}
+
+.viewer-header-peek-toggle--floating {
+  position: fixed;
+  z-index: 30;
+  top: max(0.35rem, env(safe-area-inset-top, 0px));
+  right: calc((100vw - min(72rem, 100vw)) / 2 + 0.875rem);
+  box-shadow: 0 1px 3px color-mix(in srgb, #000 32%, transparent);
+  transition:
+    border-color 0.12s ease,
+    background-color 0.12s ease,
+    color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.viewer-header-peek-toggle:hover {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+
+.viewer-header-peek-toggle:active {
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+}
+
+.viewer-header-peek-toggle--bar-hidden {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--border) 70%, transparent),
+    0 2px 10px color-mix(in srgb, #000 45%, transparent);
 }
 
 .viewer-toolbar {
@@ -139,6 +206,11 @@
   .viewer-inicio-btn {
     padding: 0.2rem 0.55rem;
     font-size: 0.78rem;
+  }
+
+  .viewer-header-peek-toggle {
+    width: 1.7rem;
+    height: 1.7rem;
   }
 }
 

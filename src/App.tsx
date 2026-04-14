@@ -561,6 +561,7 @@ export default function App() {
   const [timelineExpandedForTouch, setTimelineExpandedForTouch] =
     useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [viewerHeaderCollapsed, setViewerHeaderCollapsed] = useState(false);
   const [timelineZoom, setTimelineZoom] = useState(1);
   const [stackWidthPx, setStackWidthPx] = useState<number | null>(null);
   const [pointerCoarse, setPointerCoarse] = useState(
@@ -946,43 +947,106 @@ export default function App() {
       <div
         className={`viewer-shell ${viewerShellClass} ${sel != null ? "viewer-shell--has-selection" : ""}`.trim()}
       >
-        <div className="viewer-header-wrap">
-          <div className="viewer-header-inner">
-            <header className="viewer-toolbar" aria-label="Barra del visor">
-              <div className="viewer-toolbar-text">
-                <h1 className="viewer-toolbar-title">
-                  Historia Argentina · línea de tiempo
-                </h1>
-                <p className="viewer-toolbar-range muted">
-                  {formatShortDate(new Date(min))} —{" "}
-                  {formatShortDate(new Date(max))}
-                </p>
-              </div>
-              <div className="viewer-toolbar-actions">
-                <button
-                  type="button"
-                  className="viewer-help-btn"
-                  onClick={() => setHelpOpen(true)}
-                  aria-label="Atajos de teclado. Atajo: signo de interrogación"
-                  title="Atajos (?)"
-                >
-                  ?
-                </button>
-                <button
-                  type="button"
-                  className="viewer-inicio-btn"
-                  onClick={() => {
-                    setAppPhase("welcome");
-                    setSel(null);
-                    setHelpOpen(false);
-                  }}
-                >
-                  Inicio
-                </button>
-              </div>
-            </header>
-          </div>
+        <div
+          className={`viewer-header-wrap${viewerHeaderCollapsed ? " viewer-header-wrap--collapsed" : ""}`.trim()}
+        >
+          {!viewerHeaderCollapsed && (
+            <div className="viewer-header-inner">
+              <header
+                id="viewer-toolbar-main"
+                className="viewer-toolbar"
+                aria-label="Barra del visor"
+              >
+                <div className="viewer-toolbar-text">
+                  <h1 className="viewer-toolbar-title">
+                    Historia Argentina · línea de tiempo
+                  </h1>
+                  <p className="viewer-toolbar-range muted">
+                    {formatShortDate(new Date(min))} —{" "}
+                    {formatShortDate(new Date(max))}
+                  </p>
+                </div>
+                <div className="viewer-toolbar-actions">
+                  <button
+                    type="button"
+                    className="viewer-help-btn"
+                    onClick={() => setHelpOpen(true)}
+                    aria-label="Atajos de teclado. Atajo: signo de interrogación"
+                    title="Atajos (?)"
+                  >
+                    ?
+                  </button>
+                  <button
+                    type="button"
+                    className="viewer-inicio-btn"
+                    onClick={() => {
+                      setAppPhase("welcome");
+                      setSel(null);
+                      setHelpOpen(false);
+                      setViewerHeaderCollapsed(false);
+                    }}
+                  >
+                    Inicio
+                  </button>
+                  <button
+                    type="button"
+                    className="viewer-header-peek-toggle viewer-header-peek-toggle--embedded"
+                    onClick={() => setViewerHeaderCollapsed((c) => !c)}
+                    aria-expanded={true}
+                    aria-controls="viewer-toolbar-main"
+                    aria-label="Ocultar barra del visor"
+                    title="Ocultar encabezado"
+                  >
+                    <svg
+                      className="viewer-header-icon-svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M7 14l5-5 5 5"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </header>
+            </div>
+          )}
         </div>
+
+        {viewerHeaderCollapsed && (
+          <button
+            type="button"
+            className="viewer-header-peek-toggle viewer-header-peek-toggle--floating viewer-header-peek-toggle--bar-hidden"
+            onClick={() => setViewerHeaderCollapsed((c) => !c)}
+            aria-expanded={false}
+            aria-label="Mostrar barra del visor"
+            title="Mostrar encabezado"
+          >
+            <svg
+              className="viewer-header-icon-svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M7 10l5 5 5-5"
+              />
+            </svg>
+          </button>
+        )}
 
         <div className="viewer-main">
         <div
