@@ -1170,42 +1170,52 @@ export default function App() {
           <div
             className="timeline-zoom-panel"
             role="group"
-            aria-labelledby="timeline-zoom-heading"
+            aria-label="Magnificación del eje temporal"
           >
-            <span className="timeline-zoom-heading" id="timeline-zoom-heading">
-              Magnificación
+            <span className="timeline-zoom-icon" aria-hidden>
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
             </span>
-            <div className="timeline-zoom-row">
-              <button
-                type="button"
-                className="timeline-zoom-btn"
-                onClick={() => onZoomNudge(-1)}
-                aria-label="Reducir magnificación del eje"
-              >
-                −
-              </button>
-              <input
-                className="timeline-zoom-slider"
-                type="range"
-                min={0}
-                max={1000}
-                step={1}
-                value={zoomSliderValue}
-                onChange={onZoomSliderChange}
-                aria-valuemin={0}
-                aria-valuemax={1000}
-                aria-valuenow={zoomSliderValue}
-                aria-label="Magnificación de la línea de tiempo"
-              />
-              <button
-                type="button"
-                className="timeline-zoom-btn"
-                onClick={() => onZoomNudge(1)}
-                aria-label="Aumentar magnificación del eje"
-              >
-                +
-              </button>
-            </div>
+            <button
+              type="button"
+              className="timeline-zoom-btn"
+              onClick={() => onZoomNudge(-1)}
+              aria-label="Reducir magnificación del eje"
+            >
+              −
+            </button>
+            <input
+              className="timeline-zoom-slider"
+              type="range"
+              min={0}
+              max={1000}
+              step={1}
+              value={zoomSliderValue}
+              onChange={onZoomSliderChange}
+              aria-valuemin={0}
+              aria-valuemax={1000}
+              aria-valuenow={zoomSliderValue}
+              aria-label="Magnificación de la línea de tiempo"
+            />
+            <button
+              type="button"
+              className="timeline-zoom-btn"
+              onClick={() => onZoomNudge(1)}
+              aria-label="Aumentar magnificación del eje"
+            >
+              +
+            </button>
             <span className="timeline-zoom-readout" aria-live="polite">
               {formatZoomFactorUi(timelineZoom)}
             </span>
@@ -1249,7 +1259,10 @@ export default function App() {
           ) : null}
 
           <div className="timeline-scale-overlay" aria-hidden>
-            <span className="timeline-scale-caption">Escala del eje</span>
+            <div className="timeline-scale-topline">
+              <span className="timeline-scale-caption">Escala del eje</span>
+              <div className="timeline-scale-label">{scaleBarLabel}</div>
+            </div>
             <div className="timeline-scale-rail-wrap">
               <div
                 className="timeline-scale-rail"
@@ -1262,7 +1275,6 @@ export default function App() {
                 <span />
               </div>
             </div>
-            <div className="timeline-scale-label">{scaleBarLabel}</div>
           </div>
         </div>
       </section>
