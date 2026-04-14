@@ -77,6 +77,30 @@ function firstPeriodContainingDate(
   return null;
 }
 
+/** Último evento en orden cronológico con fecha estrictamente anterior a `tMs`. */
+function lastEventBeforeSorted(
+  eventsSorted: TimelineEvent[],
+  tMs: number
+): TimelineEvent | null {
+  let last: TimelineEvent | null = null;
+  for (const e of eventsSorted) {
+    if (e.date.getTime() < tMs) last = e;
+    else break;
+  }
+  return last;
+}
+
+/** Primer evento en orden cronológico con fecha >= `tMs`. */
+function firstEventFromSorted(
+  eventsSorted: TimelineEvent[],
+  tMs: number
+): TimelineEvent | null {
+  for (const e of eventsSorted) {
+    if (e.date.getTime() >= tMs) return e;
+  }
+  return null;
+}
+
 function foregroundForHex(hex: string): string {
   const raw = hex.trim().replace(/^#/, "");
   if (raw.length !== 3 && raw.length !== 6) return "var(--text)";
@@ -588,20 +612,40 @@ export default function App() {
     return firstPeriodContainingDate(periods, sel.item.date);
   }, [sel, periods]);
 
-  const selectedEventChronoIndex = useMemo(() => {
-    if (sel?.kind !== "event") return -1;
-    return eventsSorted.indexOf(sel.item);
+  const eventStepAvailability = useMemo(() => {
+    if (sel == null) return { canPrev: false, canNext: false };
+    if (sel.kind === "event") {
+      const idx = eventsSorted.indexOf(sel.item);
+      return {
+        canPrev: idx > 0,
+        canNext: idx >= 0 && idx < eventsSorted.length - 1,
+      };
+    }
+    const t0 = sel.item.start.getTime();
+    return {
+      canPrev: lastEventBeforeSorted(eventsSorted, t0) != null,
+      canNext: firstEventFromSorted(eventsSorted, t0) != null,
+    };
   }, [sel, eventsSorted]);
 
   const stepEvent = useCallback(
     (delta: -1 | 1) => {
       setSel((cur) => {
-        if (cur?.kind !== "event") return cur;
-        const idx = eventsSorted.indexOf(cur.item);
-        if (idx < 0) return cur;
-        const nextIdx = idx + delta;
-        if (nextIdx < 0 || nextIdx >= eventsSorted.length) return cur;
-        return { kind: "event", item: eventsSorted[nextIdx]! };
+        if (cur == null) return cur;
+        if (cur.kind === "event") {
+          const idx = eventsSorted.indexOf(cur.item);
+          if (idx < 0) return cur;
+          const nextIdx = idx + delta;
+          if (nextIdx < 0 || nextIdx >= eventsSorted.length) return cur;
+          return { kind: "event", item: eventsSorted[nextIdx]! };
+        }
+        const t0 = cur.item.start.getTime();
+        if (delta === -1) {
+          const e = lastEventBeforeSorted(eventsSorted, t0);
+          return e != null ? { kind: "event", item: e } : cur;
+        }
+        const e = firstEventFromSorted(eventsSorted, t0);
+        return e != null ? { kind: "event", item: e } : cur;
       });
     },
     [eventsSorted]
@@ -1307,58 +1351,86 @@ export default function App() {
         </div>
 
         <div className="chart-bleed-overlays">
-          <div
-            className="timeline-zoom-panel"
-            role="group"
-            aria-label="Magnificación del eje temporal"
-          >
-            <span className="timeline-zoom-icon" aria-hidden>
-              <svg
-                width="15"
-                height="15"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+          <div className="timeline-controls-left">
+            {sel != null ? (
+              <div
+                className="timeline-event-nav"
+                role="group"
+                aria-label="Navegación entre eventos"
               >
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.3-4.3" />
-              </svg>
-            </span>
-            <button
-              type="button"
-              className="timeline-zoom-btn"
-              onClick={() => onZoomNudge(-1)}
-              aria-label="Reducir magnificación del eje"
+                <button
+                  type="button"
+                  className="timeline-event-nav-btn"
+                  disabled={!eventStepAvailability.canPrev}
+                  onClick={() => stepEvent(-1)}
+                  aria-label="Ir al evento anterior"
+                >
+                  Anterior
+                </button>
+                <button
+                  type="button"
+                  className="timeline-event-nav-btn"
+                  disabled={!eventStepAvailability.canNext}
+                  onClick={() => stepEvent(1)}
+                  aria-label="Ir al evento siguiente"
+                >
+                  Siguiente
+                </button>
+              </div>
+            ) : null}
+            <div
+              className="timeline-zoom-panel"
+              role="group"
+              aria-label="Magnificación del eje temporal"
             >
-              −
-            </button>
-            <input
-              className="timeline-zoom-slider"
-              type="range"
-              min={0}
-              max={1000}
-              step={1}
-              value={zoomSliderValue}
-              onChange={onZoomSliderChange}
-              aria-valuemin={0}
-              aria-valuemax={1000}
-              aria-valuenow={zoomSliderValue}
-              aria-label="Magnificación de la línea de tiempo"
-            />
-            <button
-              type="button"
-              className="timeline-zoom-btn"
-              onClick={() => onZoomNudge(1)}
-              aria-label="Aumentar magnificación del eje"
-            >
-              +
-            </button>
-            <span className="timeline-zoom-readout" aria-live="polite">
-              {formatZoomFactorUi(timelineZoom)}
-            </span>
+              <span className="timeline-zoom-icon" aria-hidden>
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+              </span>
+              <button
+                type="button"
+                className="timeline-zoom-btn"
+                onClick={() => onZoomNudge(-1)}
+                aria-label="Reducir magnificación del eje"
+              >
+                −
+              </button>
+              <input
+                className="timeline-zoom-slider"
+                type="range"
+                min={0}
+                max={1000}
+                step={1}
+                value={zoomSliderValue}
+                onChange={onZoomSliderChange}
+                aria-valuemin={0}
+                aria-valuemax={1000}
+                aria-valuenow={zoomSliderValue}
+                aria-label="Magnificación de la línea de tiempo"
+              />
+              <button
+                type="button"
+                className="timeline-zoom-btn"
+                onClick={() => onZoomNudge(1)}
+                aria-label="Aumentar magnificación del eje"
+              >
+                +
+              </button>
+              <span className="timeline-zoom-readout" aria-live="polite">
+                {formatZoomFactorUi(timelineZoom)}
+              </span>
+            </div>
           </div>
 
           {sel != null ? (
@@ -1429,10 +1501,8 @@ export default function App() {
             sel?.kind === "event"
               ? {
                   onStep: stepEvent,
-                  canPrev: selectedEventChronoIndex > 0,
-                  canNext:
-                    selectedEventChronoIndex >= 0 &&
-                    selectedEventChronoIndex < eventsSorted.length - 1,
+                  canPrev: eventStepAvailability.canPrev,
+                  canNext: eventStepAvailability.canNext,
                 }
               : null
           }

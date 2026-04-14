@@ -1639,13 +1639,21 @@
   font-size: 0.9rem;
 }
 
-.detail-body {
+.detail-items {
   margin: 0;
-  white-space: pre-wrap;
+  padding-left: 1.25rem;
   font-family: inherit;
   font-size: 0.9rem;
   line-height: 1.55;
   color: var(--text);
+}
+
+.detail-items li {
+  margin: 0 0 0.45em;
+}
+
+.detail-items li:last-child {
+  margin-bottom: 0;
 }
 
 .links {

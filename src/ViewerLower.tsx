@@ -163,7 +163,11 @@ export function ViewerLower({
               <p className="detail-meta">
                 {formatDate(sel.item.start)} — {formatDate(sel.item.end)}
               </p>
-              <pre className="detail-body">{sel.item.description.trim()}</pre>
+              <ul className="detail-items">
+                {sel.item.items.map((text, i) => (
+                  <li key={i}>{text}</li>
+                ))}
+              </ul>
             </>
           ) : (
             <>
@@ -195,7 +199,11 @@ export function ViewerLower({
               ) : null}
               <h2 className="detail-title">{sel.item.title}</h2>
               <p className="detail-meta">{formatDate(sel.item.date)}</p>
-              <pre className="detail-body">{sel.item.description.trim()}</pre>
+              <ul className="detail-items">
+                {sel.item.items.map((text, i) => (
+                  <li key={i}>{text}</li>
+                ))}
+              </ul>
               {sel.item.links?.length ? (
                 <ul className="links">
                   {sel.item.links.map((url) => (
