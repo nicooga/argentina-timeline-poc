@@ -140,7 +140,8 @@
 
 /* Compactos: la caja dibujada es pequeña; hover/active con velo suave (no “pastilla” grande). */
 .viewer-help-btn,
-.viewer-inicio-btn {
+.viewer-inicio-btn,
+.viewer-github-link {
   position: relative;
   flex-shrink: 0;
   border: 1px solid var(--border);
@@ -176,6 +177,35 @@
   background: color-mix(in srgb, var(--accent) 16%, var(--surface));
 }
 
+.viewer-github-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border-radius: 6px;
+  color: var(--text);
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.viewer-github-icon {
+  display: block;
+  flex-shrink: 0;
+  opacity: 0.92;
+}
+
+.viewer-github-link:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+
+.viewer-github-link:active {
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+}
+
 .viewer-inicio-btn {
   font: inherit;
   font-size: 0.75rem;
@@ -201,6 +231,11 @@
     width: 1.7rem;
     height: 1.7rem;
     font-size: 0.78rem;
+  }
+
+  .viewer-github-link {
+    width: 1.7rem;
+    height: 1.7rem;
   }
 
   .viewer-inicio-btn {
