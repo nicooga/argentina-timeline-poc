@@ -401,10 +401,10 @@ function labelIntervalsOverlap(
   return a[0] < b[1] + gapPct && a[1] > b[0] - gapPct;
 }
 
-/** Coincide con el gap visual punto–texto (`.event-hit`) + mitad táctil. */
+/** Coincide con el gap visual punto–texto: mitad del disco (14px) + gap del flex (2–3px). */
 function eventLabelEdgePx(pointerCoarse: boolean): number {
-  const touch = 44;
-  return touch / 2 + (pointerCoarse ? 8 : 6);
+  const dotHalfPx = 7;
+  return dotHalfPx + (pointerCoarse ? 3 : 2);
 }
 
 /**

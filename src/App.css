@@ -669,6 +669,8 @@
 
 .timeline-stack {
   --timeline-axis-gap: 0.85rem;
+  /* Solo el disco en el flex; el toque mínimo lo cumple .event-hit (punto + título). */
+  --event-dot-layout-size: 14px;
   /* Centro vertical de la bola (mitad de la franja táctil de la fila de eventos) */
   --events-dot-half: calc(max(2.25rem, var(--touch-target-min, 44px)) / 2);
   /* Carril vertical (swimming lane): ≥ altura de línea de .event-label-h para no solapar texto */
@@ -1518,8 +1520,8 @@
 }
 
 /*
- * Un solo control: punto + título. Transform alinea el disco con la fecha
- * (ancla en x=0 del marcador) y ::before amplía feedback táctil.
+ * Un solo control táctil: punto + título (toda la caja del botón).
+ * El disco no reserva 44px en el flex; min-height táctil va en .event-hit (puntero grueso).
  */
 .event-marker .event-hit {
   position: absolute;
@@ -1527,7 +1529,7 @@
   top: 50%;
   display: inline-flex;
   align-items: center;
-  gap: 0.38rem;
+  gap: 2px;
   width: max-content;
   max-width: none;
   margin: 0;
@@ -1548,8 +1550,8 @@
 .event-hit::before {
   content: "";
   position: absolute;
-  inset: -7px -9px -7px -9px;
-  border-radius: 12px;
+  inset: 0;
+  border-radius: inherit;
   background: transparent;
   z-index: -1;
   transition: background-color 0.12s ease;
@@ -1574,13 +1576,13 @@
 
 .event-hit--start {
   flex-direction: row;
-  transform: translate(calc(var(--touch-target-min, 44px) / -2), -50%);
+  transform: translate(calc(var(--event-dot-layout-size, 14px) / -2), -50%);
 }
 
 .event-hit--end {
   flex-direction: row-reverse;
   transform: translate(
-    calc(var(--touch-target-min, 44px) / 2 - 100%),
+    calc(var(--event-dot-layout-size, 14px) / 2 - 100%),
     -50%
   );
 }
@@ -1592,13 +1594,14 @@
 
 @media (pointer: coarse) {
   .event-marker .event-hit {
-    gap: 0.42rem;
-    padding: 0.16rem 0;
+    gap: 3px;
+    min-height: var(--touch-target-min, 44px);
+    padding: 0.18rem 0;
   }
 
   .event-hit::before {
-    inset: -10px -12px -11px -12px;
-    border-radius: 14px;
+    inset: -6px -8px;
+    border-radius: 12px;
   }
 
   .event-hit:hover::before {
@@ -1610,16 +1613,11 @@
   }
 }
 
-.event-hit .event-dot {
-  flex-shrink: 0;
-}
-
 .event-dot {
   box-sizing: border-box;
-  width: var(--touch-target-min);
-  height: var(--touch-target-min);
-  min-width: var(--touch-target-min);
-  min-height: var(--touch-target-min);
+  flex: 0 0 var(--event-dot-layout-size, 14px);
+  width: var(--event-dot-layout-size, 14px);
+  height: var(--event-dot-layout-size, 14px);
   padding: 0;
   border: none;
   border-radius: 50%;
@@ -1633,8 +1631,8 @@
 .event-dot::after {
   content: "";
   display: block;
-  width: 14px;
-  height: 14px;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   background: var(--event);
   border: 2px solid var(--bg);
