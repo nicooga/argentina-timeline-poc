@@ -302,7 +302,7 @@
 
 /*
  * Controles absolutos respecto al section: con poco alto (compacto + selección) el flex
- * del overlay (zoom | toggle 100% | escala) se envuelve mal y parece “flotar” mal.
+ * del overlay (zoom | escala) se envuelve mal y parece “flotar” mal.
  * En selección los pasamos a flujo normal debajo del timeline.
  */
 .viewer-shell--has-selection .chart-bleed-overlays {
@@ -315,7 +315,7 @@
   width: 100%;
   max-width: 100%;
   display: grid;
-  grid-template-columns: minmax(0, max-content) minmax(0, 1fr) minmax(0, max-content);
+  grid-template-columns: minmax(0, 1fr) minmax(0, max-content);
   grid-template-rows: auto;
   column-gap: 0.4rem;
   row-gap: 0;
@@ -331,47 +331,11 @@
   max-width: min(24rem, 100%);
 }
 
-.viewer-shell--has-selection .timeline-touch-toggle-wrap {
-  grid-column: 2;
-  grid-row: 1;
-  flex: unset;
-  width: auto;
-  max-width: 100%;
-  justify-self: center;
-  order: unset;
-}
-
 .viewer-shell--has-selection .timeline-scale-overlay {
-  grid-column: 3;
+  grid-column: 2;
   grid-row: 1;
   justify-self: end;
   order: unset;
-}
-
-/* Pantallas angostas: el botón central vuelve a fila propia para no aplastar zoom/escala */
-@media (max-width: 28rem) {
-  .viewer-shell--has-selection .chart-bleed-overlays {
-    grid-template-columns: minmax(0, 1fr) minmax(0, max-content);
-    grid-template-rows: auto auto;
-    row-gap: 0.32rem;
-    column-gap: 0.35rem;
-  }
-
-  .viewer-shell--has-selection .timeline-controls-left {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .viewer-shell--has-selection .timeline-scale-overlay {
-    grid-column: 2;
-    grid-row: 1;
-  }
-
-  .viewer-shell--has-selection .timeline-touch-toggle-wrap {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    width: 100%;
-  }
 }
 
 .viewer-shell--has-selection .chart.chart-bleed.chart--viewer {
@@ -410,16 +374,6 @@
 .viewer-shell--has-selection.viewer-shell--sel-compact .viewer-chart-wrap,
 .viewer-shell--has-selection.viewer-shell--sel-compact .viewer-chart-wrap--pinned {
   max-height: min(62dvh, 36rem);
-}
-
-.viewer-shell--sel-touch .viewer-chart-wrap,
-.viewer-shell--sel-touch .viewer-chart-wrap--pinned {
-  max-height: min(52dvh, 30rem);
-}
-
-.viewer-shell--has-selection.viewer-shell--sel-touch .viewer-chart-wrap,
-.viewer-shell--has-selection.viewer-shell--sel-touch .viewer-chart-wrap--pinned {
-  max-height: min(66dvh, 38rem);
 }
 
 .chart--viewer.chart-bleed {
@@ -1018,72 +972,6 @@
   text-shadow:
     0 0 6px var(--surface),
     0 0 3px var(--surface);
-}
-
-.timeline-touch-toggle-wrap {
-  flex: 1 1 10rem;
-  min-width: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  order: 2;
-}
-
-.timeline-touch-toggle {
-  position: relative;
-  z-index: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.32rem;
-  padding: 0.16rem 0.42rem;
-  border-radius: 8px;
-  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  color: var(--text);
-  font: inherit;
-  font-size: 0.7rem;
-  font-weight: 600;
-  cursor: pointer;
-  overflow: visible;
-  isolation: isolate;
-  text-shadow:
-    0 0 6px var(--surface),
-    0 0 3px var(--surface);
-}
-
-.timeline-touch-toggle::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  left: 50%;
-  top: 50%;
-  translate: -50% -50%;
-  width: max(100%, var(--touch-target-min, 44px));
-  height: max(100%, var(--touch-target-min, 44px));
-  min-width: var(--touch-target-min, 44px);
-  min-height: var(--touch-target-min, 44px);
-  border-radius: 11px;
-  background: transparent;
-}
-
-.timeline-touch-toggle[aria-pressed="true"] {
-  border-color: color-mix(in srgb, var(--accent) 70%, var(--border));
-  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
-}
-
-.timeline-touch-toggle-icon {
-  display: flex;
-  color: var(--accent);
-}
-
-.timeline-touch-toggle-text {
-  white-space: nowrap;
-}
-
-@media (max-width: 28rem) {
-  .timeline-touch-toggle-text {
-    font-size: 0.68rem;
-  }
 }
 
 /* Escala tipo “barra de escala” de mapa (solo lectura visual) */

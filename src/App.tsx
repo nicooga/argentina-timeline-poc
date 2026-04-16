@@ -599,8 +599,6 @@ export default function App() {
 
   const [appPhase, setAppPhase] = useState<"welcome" | "viewer">("welcome");
   const [sel, setSel] = useState<Selection>(null);
-  const [timelineExpandedForTouch, setTimelineExpandedForTouch] =
-    useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [viewerHeaderCollapsed, setViewerHeaderCollapsed] = useState(false);
   const [timelineZoom, setTimelineZoom] = useState(1);
@@ -675,18 +673,12 @@ export default function App() {
   } | null>(null);
 
   useEffect(() => {
-    if (sel === null) setTimelineExpandedForTouch(false);
-  }, [sel]);
-
-  useEffect(() => {
     const mq = window.matchMedia("(pointer: coarse)");
     const sync = () => setPointerCoarse(mq.matches);
     sync();
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
   }, []);
-
-  const timelineCompact = sel !== null && !timelineExpandedForTouch;
 
   const { eventLabelPlacements, eventLabelMaxLane } = useMemo(
     () => {
@@ -695,12 +687,12 @@ export default function App() {
         min,
         max,
         stackWidthPx,
-        timelineCompact,
+        true,
         pointerCoarse
       );
       return { eventLabelPlacements: placements, eventLabelMaxLane: maxLane };
     },
-    [eventsSorted, min, max, stackWidthPx, timelineCompact, pointerCoarse]
+    [eventsSorted, min, max, stackWidthPx, pointerCoarse]
   );
 
   useLayoutEffect(() => {
@@ -718,14 +710,9 @@ export default function App() {
       block: "nearest",
       inline: "center",
     });
-  }, [sel, timelineZoom, timelineCompact]);
+  }, [sel, timelineZoom]);
 
-  const viewerShellClass =
-    sel === null
-      ? ""
-      : timelineCompact
-        ? "viewer-shell--sel-compact"
-        : "viewer-shell--sel-touch";
+  const viewerShellClass = sel === null ? "" : "viewer-shell--sel-compact";
 
   const rangeMs = max - min;
 
@@ -1170,11 +1157,7 @@ export default function App() {
         >
           <div
             ref={timelineStackRef}
-            className={
-              timelineCompact
-                ? "timeline-stack timeline-stack--compact"
-                : "timeline-stack"
-            }
+            className="timeline-stack timeline-stack--compact"
             style={
               {
                 "--timeline-zoom": String(timelineZoom),
@@ -1229,7 +1212,7 @@ export default function App() {
                 {periods.flatMap((p, i) => {
                   const centerRem = periodRowCenterFromTopRem(
                     laneByIndex[i],
-                    timelineCompact
+                    true
                   );
                   const h = `calc(var(--timeline-axis-gap) + ${centerRem}rem)`;
                   const startLeft = pctOnTrack(p.start.getTime(), min, max);
@@ -1460,43 +1443,6 @@ export default function App() {
               </span>
             </div>
           </div>
-
-          {sel != null ? (
-            <div className="timeline-touch-toggle-wrap">
-              <button
-                type="button"
-                className="timeline-touch-toggle"
-                aria-pressed={timelineExpandedForTouch}
-                onClick={() =>
-                  setTimelineExpandedForTouch((prev) => !prev)
-                }
-                aria-label={
-                  timelineExpandedForTouch
-                    ? "Priorizar lectura: línea temporal compacta junto al detalle"
-                    : "Ampliar franjas de períodos para facilitar el toque en la línea"
-                }
-              >
-                <span className="timeline-touch-toggle-icon" aria-hidden>
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  >
-                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
-                  </svg>
-                </span>
-                <span className="timeline-touch-toggle-text">
-                  {timelineExpandedForTouch
-                    ? "Priorizar lectura"
-                    : "Franjas táctiles"}
-                </span>
-              </button>
-            </div>
-          ) : null}
 
           <div className="timeline-scale-overlay" aria-hidden>
             <div className="timeline-scale-topline">
