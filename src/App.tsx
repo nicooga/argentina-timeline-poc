@@ -818,14 +818,16 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (appPhase !== "viewer") return;
     const scrollEl = timelineScrollRef.current;
     if (!scrollEl) return;
     const handler = (ev: WheelEvent) => onTimelineWheelRef.current(ev);
     scrollEl.addEventListener("wheel", handler, { passive: false });
     return () => scrollEl.removeEventListener("wheel", handler);
-  }, []);
+  }, [appPhase]);
 
   useEffect(() => {
+    if (appPhase !== "viewer") return;
     const scrollEl = timelineScrollRef.current;
     if (!scrollEl) return;
 
@@ -888,7 +890,7 @@ export default function App() {
       scrollEl.removeEventListener("touchend", endPinch, true);
       scrollEl.removeEventListener("touchcancel", endPinch, true);
     };
-  }, []);
+  }, [appPhase]);
 
   const onTimelinePointerDown = useCallback(
     (e: ReactPointerEvent<HTMLDivElement>) => {
