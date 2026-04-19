@@ -423,6 +423,10 @@
 .chart--viewer.chart-bleed .timeline-scroll {
   flex: 0 0 auto;
   min-height: 0;
+  /* Capa base explícita: dentro del stack hay z-index hasta 6 (.events-stack); el chrome
+   * debe quedar siempre encima del bloque scrolleable (evita solape visual en el borde). */
+  position: relative;
+  z-index: 0;
   overflow-y: hidden;
   overflow-y: clip;
 }
@@ -815,7 +819,8 @@
 
 /* Contenedor del panel colapsable (zoom + escala + nav. eventos) */
 .timeline-chrome {
-  z-index: 4;
+  /* Por encima del timeline scrolleable (p. ej. .events-stack z-index 6) */
+  z-index: 12;
 }
 
 .viewer-shell:not(.viewer-shell--has-selection) .timeline-chrome {
