@@ -167,15 +167,17 @@ function isTypingTarget(target: EventTarget | null): boolean {
 /** Debe coincidir con altura de `.row-bar` y `margin-bottom` de `.period-row` en App.css */
 const ROW_BAR_REM = 2.25;
 const ROW_MARGIN_REM = 0.1;
-/** Modo compacto: altura de fila de período = `.timeline-stack--compact .period-row .row-bar`; margen entre filas de período = `.timeline-stack--compact .period-row` */
-const ROW_BAR_REM_COMPACT = 0.62;
+/** Fallback si no hay `--period-compact-row-h` (debe ser coherente con App.css) */
+const ROW_BAR_REM_COMPACT = 1.06;
 const ROW_MARGIN_REM_COMPACT = 0;
 
 function periodRowCenterFromTopRem(
   rowIndex: number,
-  compact: boolean
+  compact: boolean,
+  /** Alto de carril compacto en rem (sincronizado con `--period-compact-row-h`). */
+  compactLaneHeightRem: number = ROW_BAR_REM_COMPACT
 ): number {
-  const bar = compact ? ROW_BAR_REM_COMPACT : ROW_BAR_REM;
+  const bar = compact ? compactLaneHeightRem : ROW_BAR_REM;
   const margin = compact ? ROW_MARGIN_REM_COMPACT : ROW_MARGIN_REM;
   return rowIndex * (bar + margin) + bar / 2;
 }
@@ -651,11 +653,42 @@ export default function App() {
   const [timelineChromeExpanded, setTimelineChromeExpanded] = useState(false);
   const [timelineZoom, setTimelineZoom] = useState(1);
   const [stackWidthPx, setStackWidthPx] = useState<number | null>(null);
+  const [layoutProbe, setLayoutProbe] = useState(() => ({
+    vminPx:
+      typeof window !== "undefined"
+        ? Math.min(window.innerWidth, window.innerHeight)
+        : 480,
+    rootPx: 16,
+  }));
   const [pointerCoarse, setPointerCoarse] = useState(
     () =>
       typeof window !== "undefined" &&
       window.matchMedia("(pointer: coarse)").matches
   );
+
+  useEffect(() => {
+    const sync = () => {
+      const rootPx =
+        parseFloat(getComputedStyle(document.documentElement).fontSize) ||
+        16;
+      setLayoutProbe({
+        vminPx: Math.min(window.innerWidth, window.innerHeight),
+        rootPx,
+      });
+    };
+    sync();
+    window.addEventListener("resize", sync);
+    return () => window.removeEventListener("resize", sync);
+  }, []);
+
+  /** Carril de período compacto: crece con vmin y con pointer coarse (click táctil). */
+  const compactPeriodRowRem = useMemo(() => {
+    const { vminPx, rootPx } = layoutProbe;
+    const mid = (1.4 * (vminPx / 100)) / rootPx + 0.78;
+    const lo = pointerCoarse ? 1.04 : 0.94;
+    const hi = pointerCoarse ? 1.52 : 1.4;
+    return Math.min(hi, Math.max(lo, mid));
+  }, [layoutProbe, pointerCoarse]);
 
   const activePeriodForTimeline = useMemo((): Period | null => {
     if (sel == null) return null;
@@ -1267,6 +1300,7 @@ export default function App() {
               {
                 "--timeline-zoom": String(timelineZoom),
                 "--event-label-max-lane": eventLabelMaxLane,
+                "--period-compact-row-h": `${compactPeriodRowRem}rem`,
               } as CSSProperties
             }
           >
@@ -1317,7 +1351,8 @@ export default function App() {
                 {periods.flatMap((p, i) => {
                   const centerRem = periodRowCenterFromTopRem(
                     laneByIndex[i],
-                    true
+                    true,
+                    compactPeriodRowRem
                   );
                   const h = `calc(var(--timeline-axis-gap) + ${centerRem}rem)`;
                   const startLeft = pctOnTrack(p.start.getTime(), min, max);

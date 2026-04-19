@@ -695,7 +695,7 @@
   }
 }
 
-/* ROW_BAR_REM_COMPACT / ROW_MARGIN_REM_COMPACT en App.tsx (solo filas de período; la fila de eventos sigue abajo) */
+/* Alto carril período: `--period-compact-row-h` + `compactPeriodRowRem` / `ROW_BAR_REM_COMPACT` en App.tsx (solo períodos; eventos abajo) */
 .timeline-stack--compact {
   --events-dot-half: calc(1.22rem / 2);
   --event-dot-visible-r: 0.35rem;
@@ -750,7 +750,8 @@
 }
 
 .timeline-stack--compact .period-row .row-bar {
-  height: 0.62rem;
+  /* Alto sincronizado con `compactPeriodRowRem` en App.tsx (`--period-compact-row-h`) */
+  height: var(--period-compact-row-h, 1.06rem);
 }
 
 .timeline-stack--compact .events-row .row-bar {
@@ -764,22 +765,21 @@
   }
 }
 
-.timeline-stack--compact .bar {
-  min-height: 2px;
-  height: 0.58rem;
+.timeline-stack--compact .period-row .bar {
+  min-height: max(2px, calc(var(--period-compact-row-h, 1.06rem) - 0.1rem));
+  height: calc(var(--period-compact-row-h, 1.06rem) - 0.06rem);
   max-height: calc(100% - 1px);
-  padding: 0 0.2rem;
+  padding: 0 clamp(0.2rem, 0.55vmin, 0.42rem);
 }
 
 @media (pointer: coarse) {
-  .timeline-stack--compact .bar {
-    min-height: 2px;
-    height: 0.62rem;
+  .timeline-stack--compact .period-row .bar {
+    min-height: max(2px, calc(var(--period-compact-row-h, 1.06rem) - 0.08rem));
   }
 }
 
-.timeline-stack--compact .bar-text {
-  font-size: 0.56rem;
+.timeline-stack--compact .period-row .bar-text {
+  font-size: clamp(0.56rem, calc(var(--period-compact-row-h, 1.06rem) * 0.56), 0.7rem);
 }
 
 .timeline-stack--compact .event-label-h {
