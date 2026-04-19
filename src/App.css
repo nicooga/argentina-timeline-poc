@@ -1270,6 +1270,25 @@
   white-space: nowrap;
 }
 
+.tick--selected .tick-label-year {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.tick--selected .tick-label-monthday {
+  color: color-mix(in srgb, var(--accent) 75%, var(--muted));
+  font-weight: 500;
+}
+
+.tick--selected .tick-label::after {
+  opacity: 0.62;
+  border-left-color: var(--accent);
+}
+
+.tick--selected.tick--end .tick-label::after {
+  border-right-color: var(--accent);
+}
+
 .tick--axis-mark.tick--start .tick-line {
   left: 0;
   transform: none;
@@ -1363,6 +1382,13 @@
       var(--event-conn-lane, 0) * var(--event-label-lane-nudge, 0.96rem)
   );
   opacity: 0.28;
+}
+
+.event-connector--selected {
+  opacity: 0.7;
+  border-left-width: 1.5px;
+  border-left-color: var(--accent);
+  transition: opacity 0.15s, border-color 0.15s;
 }
 
 .period-connector {

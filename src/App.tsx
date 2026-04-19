@@ -1324,10 +1324,13 @@ export default function App() {
                 } else if (isLast) {
                   edgeClass = "tick--end";
                 }
+                const isTickSelected =
+                    sel?.kind === "event" &&
+                    sel.item.date.getTime() === mark.t;
                 return (
                   <div
                     key={`${mark.t}-${i}`}
-                    className={`tick tick--axis-mark ${edgeClass}`.trim()}
+                    className={`tick tick--axis-mark ${edgeClass}${isTickSelected ? " tick--selected" : ""}`.trim()}
                     style={
                       {
                         left: `${p}%`,
@@ -1382,10 +1385,12 @@ export default function App() {
               <div className="event-connectors" aria-hidden>
                 {eventsSorted.map((ev, connIdx) => {
                   const lane = eventLabelPlacements[connIdx]!.lane;
+                  const isConnActive =
+                    sel?.kind === "event" && sel.item === ev;
                   return (
                     <div
                       key={`conn-${ev.title + ev.date.toISOString()}`}
-                      className="event-connector"
+                      className={`event-connector${isConnActive ? " event-connector--selected" : ""}`}
                       style={
                         {
                           left: `${pctOnTrack(ev.date.getTime(), min, max)}%`,
