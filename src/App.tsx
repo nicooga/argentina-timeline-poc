@@ -10,6 +10,11 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { timelineHistoriaArgentina } from "../timelineHistoriaArgentina";
+import {
+  EVENT_LANE_ORDER,
+  LANE_UI,
+  semanticConnectorLaneSpanCount,
+} from "../eventLanes";
 import type { Period, Selection, TimelineEvent } from "../types";
 import { WelcomeScreen } from "./WelcomeScreen";
 import { ViewerLower } from "./ViewerLower";
@@ -614,18 +619,18 @@ function labelIntervalsOverlap(
 }
 
 /** Fuentes/subpíxeles: el canvas suele medir un poco menos que el texto renderizado. */
-const EVENT_LABEL_MEASURE_SAFETY = 1.08;
+const EVENT_LABEL_MEASURE_SAFETY = 1.12;
 
 /**
  * Si dos marcas caen casi en la misma columna (% de pista), alternar ancla despliega el texto
  * a lados opuestos del punto y reduce solapes horizontales antes de subir de carril.
  */
-const EVENT_LABEL_TIGHT_PCT = 0.55;
+const EVENT_LABEL_TIGHT_PCT = 1.05;
 
 /** Desde el centro del punto al inicio del texto (estado inactivo; coincide con gap base en App.css). */
 function eventLabelEdgePx(pointerCoarse: boolean): number {
   const dotHalfPx = 7;
-  const flexGapPx = pointerCoarse ? 4.5 : 5; /* ~0.28rem / 0.3rem @16px root */
+  const flexGapPx = pointerCoarse ? 5.5 : 6;
   return dotHalfPx + flexGapPx;
 }
 
@@ -667,7 +672,7 @@ function assignEventLabelLanes(
   items.sort((a, b) => a.p - b.p || a.i - b.i);
 
   /** Hueco horizontal mínimo entre cajas (% pista), acotado inferiormente en px. */
-  const gapPct = Math.max(0.62, (12 / stackPx) * 100);
+  const gapPct = Math.max(1.35, (22 / stackPx) * 100);
 
   const anchorByS: EventLabelAnchor[] = new Array(n);
   if (n === 1) {
@@ -710,9 +715,9 @@ function assignEventLabelLanes(
     const { i, p, baseWidthPx } = items[s]!;
     const anchor = anchorByS[s]!;
 
-    const rawSpanPct = (baseWidthPx / stackPx) * 100 + 0.22;
+    const rawSpanPct = (baseWidthPx / stackPx) * 100 + 0.38;
 
-    let widthPct = Math.min(rawSpanPct, 56);
+    let widthPct = Math.min(rawSpanPct, 44);
     if (anchor === "start") {
       widthPct = Math.min(
         widthPct,
@@ -966,6 +971,19 @@ export default function App() {
     setTimelineChromeExpanded(!tablet);
   }, []);
 
+  /** Sin esto, a veces `html:has(.app--viewer)` no aplica a tiempo; `viewer-phase` fija el layout al viewport sin scroll del documento. */
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    if (appPhase === "viewer") {
+      root.classList.add("viewer-phase");
+    } else {
+      root.classList.remove("viewer-phase");
+    }
+    return () => {
+      root.classList.remove("viewer-phase");
+    };
+  }, [appPhase]);
+
   const { eventLabelPlacements, eventLabelMaxLane } = useMemo(
     () => {
       const { placements, maxLane } = assignEventLabelLanes(
@@ -980,6 +998,14 @@ export default function App() {
     },
     [eventsSorted, min, max, stackWidthPx, pointerCoarse]
   );
+
+  const laneColorCssVars = useMemo((): CSSProperties => {
+    const o: Record<string, string> = {};
+    for (const id of EVENT_LANE_ORDER) {
+      o[`--lane-${id}`] = LANE_UI[id].color;
+    }
+    return o as CSSProperties;
+  }, []);
 
   useLayoutEffect(() => {
     if (sel == null) return;
@@ -1499,6 +1525,9 @@ export default function App() {
                 "--timeline-zoom": String(timelineZoom),
                 "--event-label-max-lane": eventLabelMaxLane,
                 "--period-compact-row-h": `${compactPeriodRowRem}rem`,
+                "--period-row-count": periodIndicesByLane.length,
+                "--events-semantic-lane-count": EVENT_LANE_ORDER.length,
+                ...laneColorCssVars,
               } as CSSProperties
             }
           >
@@ -1638,25 +1667,6 @@ export default function App() {
                   ];
                 })}
               </div>
-              <div className="event-connectors" aria-hidden>
-                {eventsSorted.map((ev, connIdx) => {
-                  const lane = eventLabelPlacements[connIdx]!.lane;
-                  const isConnActive =
-                    sel?.kind === "event" && sel.item === ev;
-                  return (
-                    <div
-                      key={`conn-${ev.title + ev.date.toISOString()}`}
-                      className={`event-connector${isConnActive ? " event-connector--selected" : ""}`}
-                      style={
-                        {
-                          left: `${pctOnTrack(ev.date.getTime(), min, max)}%`,
-                          "--event-conn-lane": lane,
-                        } as CSSProperties
-                      }
-                    />
-                  );
-                })}
-              </div>
               {periodIndicesByLane.map((indices, lane) => (
                 <div key={`lane-${lane}`} className="period-row">
                   <div className="row-bar">
@@ -1699,61 +1709,152 @@ export default function App() {
                 </div>
               ))}
 
-              <div className="events-row">
-                <div
-                  className="row-bar"
-                  role="group"
-                  aria-label="Eventos en la línea temporal"
-                >
-                  {eventsSorted.map((e, eventIdx) => {
-                    const p = pctOnTrack(e.date.getTime(), min, max);
-                    const pl = eventLabelPlacements[eventIdx]!;
-                    const isEventActive =
-                      sel?.kind === "event" && sel.item === e;
-                    return (
+              <div className="events-stack">
+                {EVENT_LANE_ORDER.map((laneId) => {
+                  const eventsHere = eventsSorted.filter((e) =>
+                    e.lanes.includes(laneId)
+                  );
+                  return (
+                    <div
+                      key={laneId}
+                      className="events-lane events-lane--semantic"
+                      data-lane={laneId}
+                    >
+                      <div className="events-lane__caption">
+                        <span className="events-lane__name">
+                          {LANE_UI[laneId].label}
+                        </span>
+                      </div>
                       <div
-                        key={e.title + e.date.toISOString()}
-                        className={`event-marker ${isEventActive ? "event-marker--selected" : ""}`}
-                        style={
-                          {
-                            left: `${p}%`,
-                            "--event-label-lane": pl.lane,
-                          } as CSSProperties
+                        className="events-lane__row events-lane__row--dots row-bar"
+                        role={laneId === EVENT_LANE_ORDER[0] ? "group" : undefined}
+                        aria-label={
+                          laneId === EVENT_LANE_ORDER[0]
+                            ? `Eventos en la línea temporal, carril ${LANE_UI[laneId].label}`
+                            : `Carril ${LANE_UI[laneId].label}, eventos`
                         }
                       >
-                        <button
-                          type="button"
-                          className={`event-hit event-hit--${pl.anchor}`}
-                          ref={(el) => {
-                            if (isEventActive) {
-                              timelineSelectedEventDotRef.current = el;
-                            } else if (
-                              timelineSelectedEventDotRef.current === el
-                            ) {
-                              timelineSelectedEventDotRef.current = null;
-                            }
-                          }}
-                          onClick={() => setSel({ kind: "event", item: e })}
-                          title={e.title}
-                        >
-                          <span
-                            className={`event-dot ${isEventActive ? "active" : ""}`}
-                            aria-hidden="true"
-                          />
-                          <span
-                            className="event-label-h"
+                        {eventsHere.map((ev) => {
+                          const isEventActive =
+                            sel?.kind === "event" && sel.item === ev;
+                          const p = pctOnTrack(ev.date.getTime(), min, max);
+                          return (
+                            <div
+                              key={`${laneId}-${ev.title}-${ev.date.toISOString()}`}
+                              className={`event-marker event-marker--lane-dot ${isEventActive ? "event-marker--selected" : ""}`}
+                              style={
+                                {
+                                  left: `${p}%`,
+                                  "--event-dot-fill": LANE_UI[laneId].color,
+                                } as CSSProperties
+                              }
+                            >
+                              <button
+                                type="button"
+                                className="event-hit event-hit--lane-dot"
+                                tabIndex={-1}
+                                aria-hidden={true}
+                                onClick={() =>
+                                  setSel({ kind: "event", item: ev })
+                                }
+                                title={ev.title}
+                              >
+                                <span
+                                  className={`event-lane-tick${isEventActive ? " event-lane-tick--active" : ""}`}
+                                  aria-hidden="true"
+                                />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+                <div
+                  className="events-titles-lane"
+                  role="region"
+                  aria-label="Títulos de eventos por fecha"
+                >
+                  <div
+                    className="events-titles-lane__row row-bar"
+                    role="group"
+                    aria-label="Seleccionar evento por título"
+                  >
+                    <div className="events-titles-lane__connectors" aria-hidden>
+                      {eventsSorted.map((e, eventIdx) => {
+                        const pl = eventLabelPlacements[eventIdx]!;
+                        const isConnActive =
+                          sel?.kind === "event" && sel.item === e;
+                        return (
+                          <div
+                            key={`conn-title-${e.title}-${e.date.toISOString()}`}
+                            className={`event-connector${isConnActive ? " event-connector--selected" : ""}`}
                             style={
                               {
-                                maxWidth: `${Math.round(pl.maxWidthPx)}px`,
+                                left: `${pctOnTrack(e.date.getTime(), min, max)}%`,
+                                "--event-conn-lane": pl.lane,
+                                "--event-connector-lane-span-count":
+                                  semanticConnectorLaneSpanCount(e.lanes),
+                                "--event-connector-stroke": isConnActive
+                                  ? "var(--accent)"
+                                  : "var(--muted)",
                               } as CSSProperties
                             }
+                          />
+                        );
+                      })}
+                    </div>
+                    {eventsSorted.map((e, eventIdx) => {
+                      const pl = eventLabelPlacements[eventIdx]!;
+                      const isEventActive =
+                        sel?.kind === "event" && sel.item === e;
+                      const p = pctOnTrack(e.date.getTime(), min, max);
+                      return (
+                        <div
+                          key={`title-${e.title}-${e.date.toISOString()}`}
+                          className={`event-marker ${isEventActive ? "event-marker--selected" : ""}`}
+                          style={
+                            {
+                              left: `${p}%`,
+                              "--event-label-lane": pl.lane,
+                            } as CSSProperties
+                          }
+                        >
+                          <button
+                            type="button"
+                            className={`event-hit event-hit--${pl.anchor}`}
+                            ref={(el) => {
+                              if (isEventActive) {
+                                timelineSelectedEventDotRef.current = el;
+                              } else if (
+                                timelineSelectedEventDotRef.current === el
+                              ) {
+                                timelineSelectedEventDotRef.current = null;
+                              }
+                            }}
+                            onClick={() => setSel({ kind: "event", item: e })}
+                            title={e.title}
                           >
-                            {e.title}
-                          </span>
-                        </button>
-                      </div>
-                    );
-                  })}
+                            <span
+                              className={`event-dot event-dot--titles ${isEventActive ? "active" : ""}`}
+                              aria-hidden="true"
+                            />
+                            <span
+                              className="event-label-h"
+                              style={
+                                {
+                                  maxWidth: `${Math.round(pl.maxWidthPx)}px`,
+                                } as CSSProperties
+                              }
+                            >
+                              {e.title}
+                            </span>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </div>

@@ -5,7 +5,9 @@ import {
   useState,
   type CSSProperties,
 } from "react";
+import { lanesInDisplayOrder, LANE_UI } from "../eventLanes";
 import type { Period, TimelineEvent, Selection } from "../types";
+import { LaneGlyph } from "./LaneGlyph";
 import "./ViewerLower.css";
 
 function formatDate(d: Date): string {
@@ -235,6 +237,25 @@ export function ViewerLower({
           ) : (
             <>
               <h2 className="detail-title">{sel.item.title}</h2>
+              <div
+                className="detail-lane-icons"
+                aria-label="Carriles del evento"
+              >
+                {lanesInDisplayOrder(sel.item.lanes).map((lane) => (
+                  <span
+                    key={lane}
+                    className="detail-lane-icon-wrap"
+                    title={LANE_UI[lane].label}
+                  >
+                    <LaneGlyph
+                      lane={lane}
+                      size={20}
+                      className="detail-lane-icon"
+                      style={{ color: LANE_UI[lane].color }}
+                    />
+                  </span>
+                ))}
+              </div>
               <p className="detail-meta">{formatDate(sel.item.date)}</p>
               <ul className="detail-items">
                 {sel.item.items.map((text, i) => (

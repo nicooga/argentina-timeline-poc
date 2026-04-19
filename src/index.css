@@ -42,12 +42,21 @@ html {
   }
 }
 
-/* Visor: altura fija al viewport para que el scroll sea solo dentro de cada panel */
-html:has(.app--viewer),
-body:has(.app--viewer) {
+/*
+ * Visor: altura fija al viewport, sin scroll del documento; el visor inferior hace scroll en listas/detalle.
+ * `html.viewer-phase` lo pone App (useLayoutEffect): más fiable que :has() en la primera pintura.
+ */
+html.viewer-phase,
+html.viewer-phase body {
   height: 100dvh;
   max-height: 100dvh;
+  /*
+   * `body` define min-height: 100vh más abajo. En muchos navegadores 100vh > 100dvh (barra de URL
+   * móvil, etc.), así que ese mínimo ganaba sobre height:100dvh y dejaba unos px de scroll global.
+   */
+  min-height: 100dvh;
   overflow: hidden;
+  overscroll-behavior-y: none;
 }
 
 body {
@@ -66,9 +75,10 @@ body {
   min-height: 100dvh;
 }
 
-#root:has(.app--viewer) {
+html.viewer-phase #root {
   height: 100dvh;
   max-height: 100dvh;
+  min-height: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;

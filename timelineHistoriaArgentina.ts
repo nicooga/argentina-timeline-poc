@@ -153,6 +153,7 @@ export const timelineHistoriaArgentina: Timeline = {
     events: [
         {
             title: "Revolución de Mayo",
+            lanes: ["politico"],
             items: [
                 "Habilitado por la invasión napoleónica a España en 1808 que crea vacío de poder.",
                 "Remoción del virrey realista Cisneros.",
@@ -164,12 +165,14 @@ export const timelineHistoriaArgentina: Timeline = {
         },
         {
             title: "Declaración de Independencia",
+            lanes: ["politico", "diplomatico"],
             items: ["La Argentina se declara independiente del Reino de España."],
             date: utcDate(1816, 7, 9),
             links: ["https://es.wikipedia.org/wiki/Declaraci%C3%B3n_de_independencia_de_la_Argentina"],
         },
         {
             title: "Constitución fallida de 1819",
+            lanes: ["politico"],
             items: [
                 "Constitución de 1819 fallida por la oposición de las provincias.",
                 "Deriva en la 'anarquía del 20'.",
@@ -179,6 +182,7 @@ export const timelineHistoriaArgentina: Timeline = {
         },
         {
             title: "Crisis de 1828 y ascenso de Rosas",
+            lanes: ["politico", "militar"],
             items: [
                 "Derrota de Dorrego en Navarro frente a Lavalle.",
                 "Fusilamiento del gobernador federal y ruptura del orden político.",
@@ -188,6 +192,7 @@ export const timelineHistoriaArgentina: Timeline = {
         },
         {
             title: "Fin del primer mandato de Rosas",
+            lanes: ["politico"],
             items: [
                 "Finaliza el gobierno de Rosas al vencer su mandato como gobernador de Buenos Aires.",
                 "Rechaza continuar al no obtener la suma del poder público (facultades extraordinarias).",
@@ -198,6 +203,7 @@ export const timelineHistoriaArgentina: Timeline = {
         },
         {
             title: "Vuelta de Obligado",
+            lanes: ["militar", "diplomatico", "politico"],
             items: [
                 "Enfrentamiento contra la flota anglo-francesa en el río Paraná.",
                 "Defensa de la soberanía sobre los ríos interiores.",
@@ -208,6 +214,7 @@ export const timelineHistoriaArgentina: Timeline = {
         },
         {
             title: "Tratados que ponen fin a los bloqueos anglo-franceses",
+            lanes: ["diplomatico", "politico", "economico"],
             items: [
                 "Acuerdos con Francia e Inglaterra que reconocen la soberanía argentina sobre los ríos.",
                 "Fin de la intervención directa de potencias extranjeras.",
@@ -219,6 +226,7 @@ export const timelineHistoriaArgentina: Timeline = {
 
         {
             title: "Batalla de Caseros",
+            lanes: ["militar", "politico"],
             items: [
                 "Derrota de Rosas frente a las fuerzas de Urquiza.",
                 "Fin del régimen rosista basado en la concentración del poder en Buenos Aires.",
@@ -230,6 +238,7 @@ export const timelineHistoriaArgentina: Timeline = {
         },
         {
             title: "Acuerdo de San Nicolás",
+            lanes: ["politico"],
             items: [
                 "Pacto entre las provincias impulsado por Urquiza tras la caída de Rosas.",
                 "Convoca a un Congreso Constituyente para organizar el Estado nacional.",
@@ -241,6 +250,7 @@ export const timelineHistoriaArgentina: Timeline = {
         },
         {
             title: "Constitución de 1853",
+            lanes: ["politico"],
             items: [
                 "Define un marco con instituciones centralizadas y un Estado nacional.",
                 "Buenos Aires queda separada, pero la unidad nacional se consolida.",
@@ -250,6 +260,7 @@ export const timelineHistoriaArgentina: Timeline = {
         },
         {
             title: "Batalla de Cepeda",
+            lanes: ["militar", "politico"],
             items: [
                 "Derrota del Estado de Buenos Aires frente a la Confederación liderada por Urquiza.",
                 "Obliga a Buenos Aires a negociar su reincorporación.",
@@ -260,6 +271,7 @@ export const timelineHistoriaArgentina: Timeline = {
         },
         {
             title: "Incorporación de Buenos Aires a la Constitución Nacional",
+            lanes: ["politico"],
             items: [
                 "Buenos Aires acepta integrarse a la Confederación tras el Pacto de San José de Flores.",
                 "Se reforma la Constitución para permitir su incorporación.",
@@ -270,6 +282,7 @@ export const timelineHistoriaArgentina: Timeline = {
         },
         {
             title: "Guerra del Paraguay",
+            lanes: ["militar", "politico", "diplomatico"],
             items: [
                 "Conflicto regional que consolida el rol militar del Estado argentino.",
                 "Fortalece al ejército nacional.",
@@ -280,6 +293,7 @@ export const timelineHistoriaArgentina: Timeline = {
         },
         {
             title: "Zanja de Alsina",
+            lanes: ["militar", "politico"],
             items: [
                 "Sistema defensivo para contener el avance indígena en la frontera sur.",
                 "Primer intento sistemático de control territorial estatal.",
@@ -290,6 +304,7 @@ export const timelineHistoriaArgentina: Timeline = {
         },
         {
             title: "Campaña del Desierto",
+            lanes: ["militar", "politico", "economico", "social"],
             items: [
                 "Campaña militar liderada por Roca para ocupar territorios indígenas.",
                 "Incorporación efectiva de la Patagonia al Estado nacional.",
@@ -300,6 +315,7 @@ export const timelineHistoriaArgentina: Timeline = {
         },
         {
             title: "Federalización de Buenos Aires",
+            lanes: ["politico"],
             items: [
                 "Buenos Aires se convierte en capital federal.",
                 "Resolución del conflicto entre Nación y provincia.",
@@ -310,6 +326,7 @@ export const timelineHistoriaArgentina: Timeline = {
         },
         {
             title: "Conquista del Chaco",
+            lanes: ["militar", "politico", "economico", "social"],
             items: [
                 "Avance militar sobre territorios del norte (Gran Chaco).",
                 "Completa el control territorial interno del Estado.",
@@ -320,6 +337,7 @@ export const timelineHistoriaArgentina: Timeline = {
         },
         {
             title: "Ley Sáenz Peña",
+            lanes: ["politico", "social"],
             items: [
                 "Establece el voto secreto, obligatorio y universal (masculino).",
                 "Reduce el fraude electoral.",
@@ -330,6 +348,7 @@ export const timelineHistoriaArgentina: Timeline = {
         },
         {
             title: "Elección de Yrigoyen",
+            lanes: ["politico", "social"],
             items: [
                 "Primera elección presidencial bajo la Ley Sáenz Peña.",
                 "Triunfo de la Unión Cívica Radical.",
@@ -340,6 +359,7 @@ export const timelineHistoriaArgentina: Timeline = {
         },
         {
             title: "Batalla de Cepeda (1820)",
+            lanes: ["militar", "politico"],
             items: [
                 "Derrota del Directorio frente a las fuerzas federales.",
                 "Caída del poder central.",
@@ -349,6 +369,7 @@ export const timelineHistoriaArgentina: Timeline = {
         },
         {
             title: "Presidencia de Rivadavia",
+            lanes: ["politico"],
             items: [
                 "Intento de reconstrucción del poder central.",
                 "Proyecto unitario y centralista.",
@@ -358,6 +379,7 @@ export const timelineHistoriaArgentina: Timeline = {
         },
         {
             title: "Batalla de Pavón",
+            lanes: ["militar", "politico"],
             items: [
                 "Enfrentamiento entre Buenos Aires y la Confederación.",
                 "Retiro de Urquiza permite la victoria política porteña.",
@@ -367,6 +389,7 @@ export const timelineHistoriaArgentina: Timeline = {
         },
         {
             title: "Presidencia de Mitre",
+            lanes: ["politico"],
             items: [
                 "Inicio del Estado nacional bajo hegemonía porteña.",
                 "Unificación institucional efectiva.",
@@ -375,6 +398,7 @@ export const timelineHistoriaArgentina: Timeline = {
         },
         {
             title: "Ley de Inmigración y Colonización",
+            lanes: ["social", "economico", "politico"],
             items: [
                 "Fomento estatal a la inmigración europea.",
                 "Base demográfica del modelo agroexportador.",

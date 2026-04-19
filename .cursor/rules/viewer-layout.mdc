@@ -1,0 +1,24 @@
+---
+description: >-
+  Visor timeline: viewport sin scroll global; overflow Chromium; body 100vh vs dvh; no 100vw en
+  chart--viewer. Leer docs/VIEWER_LAYOUT.md antes de cambiar layout/overflow.
+alwaysApply: true
+---
+
+# Visor (modo línea de tiempo)
+
+Antes de cambiar **layout, overflow o alturas** del visor: leé **`docs/VIEWER_LAYOUT.md`** (tabla de capas, **“Trampas comunes”** y checklist).
+
+## Contrato
+
+- Viewport fijo: `html.viewer-phase` + `body` + `#root` → sin scroll del documento; **no** `overflow-y: auto` en `.viewer-shell`.
+- Grid `.viewer-main`: fila 1 **`auto`** (timeline a altura de contenido), fila 2 **`minmax(0, 1fr)`** (`.viewer-lower`); scroll vertical solo **dentro** de listas/detalle.
+
+## Trampas (no regresar)
+
+1. **Mismo nodo:** no `overflow-x` ∈ {hidden, auto, scroll} con `overflow-y: visible` → Chromium pone `overflow-y: auto` y aparece **scroll vertical fantasma** (section chart, wrap, `timeline-scroll` con `overflow-x: auto`).
+2. **`body`:** con `viewer-phase`, `min-height: 100dvh` junto a `height: 100dvh` para anular el `min-height: 100vh` global.
+3. **Chart:** `.chart.chart-bleed.chart--viewer` → `width: 100%`, `margin: 0` (no bleed `100vw` del `.chart-bleed` genérico).
+4. **No** `max-height` + scroll en `.viewer-chart-wrap` salvo producto explícito.
+
+Detalle y checklist: **`docs/VIEWER_LAYOUT.md`**.

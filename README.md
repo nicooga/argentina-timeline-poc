@@ -23,6 +23,12 @@ La app se sirve con Vite en modo desarrollo (por defecto en `http://localhost:51
 | `npm run build`| Typecheck (`tsc`) y build de producción en `dist/` |
 | `npm run preview` | Vista previa local del build de producción |
 
+## Layout del visor
+
+El comportamiento esperado del visor (timeline arriba, listas y detalle abajo, sin scroll del documento) está descrito en [`docs/VIEWER_LAYOUT.md`](./docs/VIEWER_LAYOUT.md).
+
+Para asistentes de código (Cursor, Claude Code, etc.): [`AGENTS.md`](./AGENTS.md) (resumen y trampas), [`docs/VIEWER_LAYOUT.md`](./docs/VIEWER_LAYOUT.md) (spec + checklist) y en Cursor la regla [`.cursor/rules/viewer-layout.mdc`](./.cursor/rules/viewer-layout.mdc) (`alwaysApply: true`).
+
 ## Datos y tipos
 
 - Los datos de la línea de tiempo viven en [`timelineHistoriaArgentina.ts`](./timelineHistoriaArgentina.ts).

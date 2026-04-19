@@ -1,7 +1,7 @@
 /* Lista + detalle dentro del visor; estilos base de leyenda/detalle en App.css */
 
 .viewer-lower {
-  flex: 1 1 auto;
+  grid-row: 2;
   min-height: 0;
   height: 100%;
   align-self: stretch;
@@ -171,6 +171,26 @@
   font-size: 1.02rem;
   margin: 0 0 0.18rem;
   line-height: 1.2;
+}
+
+.detail.viewer-lower-detail .detail-lane-icons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.38rem;
+  margin: 0 0 0.28rem;
+}
+
+.detail.viewer-lower-detail .detail-lane-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  opacity: 0.94;
+}
+
+.detail.viewer-lower-detail .detail-lane-icon {
+  flex-shrink: 0;
 }
 
 .detail.viewer-lower-detail .detail-meta {

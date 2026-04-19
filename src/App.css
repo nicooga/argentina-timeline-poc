@@ -20,6 +20,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
+  /* Sin scroll: el alto fijo del viewport se reparte entre timeline (auto) y visor inferior (1fr). */
   overflow: hidden;
 }
 
@@ -250,10 +251,9 @@
 }
 
 /*
- * Grid: la fila del timeline mide lo que pide el contenido (hasta max-height del wrap).
- * Con flex column + hijo flex:1 abajo, el chart-wrap (flex-shrink:1) se encogía hasta
- * min-height:11rem y apenas se veían eventos hasta elegir uno (donde antes solo aplicaba grid).
- * La segunda fila absorbe el resto (listas + detalle).
+ * Visor fijo al viewport (.viewer-shell overflow hidden):
+ * - Fila 1: timeline, alto = contenido (sin scroll vertical ni tope artificial).
+ * - Fila 2: visor inferior (listas | detalle), minmax(0,1fr) = todo el espacio que sobra; scroll solo adentro.
  */
 .viewer-main {
   flex: 1;
@@ -267,18 +267,10 @@
 
 .viewer-shell--has-selection .viewer-chart-wrap,
 .viewer-shell--has-selection .viewer-chart-wrap--pinned {
-  min-height: 0;
   height: auto;
-  align-self: stretch;
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-}
-
-.viewer-shell--has-selection .viewer-chart-wrap::-webkit-scrollbar,
-.viewer-shell--has-selection .viewer-chart-wrap--pinned::-webkit-scrollbar {
-  width: 6px;
+  align-self: start;
+  width: 100%;
+  overflow: visible;
 }
 
 .viewer-shell--has-selection .viewer-chart-wrap--pinned {
@@ -286,14 +278,14 @@
   top: auto;
 }
 
-/* Sin estirar el bloque chart: el wrap ya mide al contenido del timeline */
+/* El section no debe estirarse al alto del wrap (evita overflow interno / scroll en el section). */
 .viewer-shell--has-selection .chart--viewer.chart-bleed {
-  flex: 0 1 auto;
+  flex: 0 0 auto;
 }
 
 .viewer-shell--has-selection .chart--viewer .timeline-scroll {
-  flex: 0 1 auto;
-  min-height: min-content;
+  flex: 0 0 auto;
+  min-height: 0;
 }
 
 /*
@@ -346,8 +338,7 @@
 }
 
 .viewer-shell--has-selection .chart.chart-bleed.chart--viewer {
-  padding-bottom: 0.22rem;
-  /* Aire arriba sin inflar tanto el alto total (evita scrollbar vertical en .viewer-chart-wrap) */
+  padding-bottom: 0.1rem;
   padding-top: clamp(0.26rem, 0.9vw, 0.45rem);
 }
 
@@ -357,10 +348,18 @@
 }
 
 .viewer-chart-wrap {
-  flex: 0 1 auto;
-  max-height: min(56dvh, 34rem);
+  grid-row: 1;
+  align-self: start;
+  justify-self: stretch;
+  width: 100%;
   min-height: 11rem;
-  overflow: hidden;
+  min-height: max(11rem, min-content);
+  /*
+   * No mezclar overflow-x: hidden con overflow-y: visible: en Chromium/WebKit overflow-y pasa a
+   * auto y aparece scroll vertical “fantasma” en este contenedor.
+   * El recorte horizontal lo hace .viewer-main (overflow: hidden) si hiciera falta.
+   */
+  overflow: visible;
   display: flex;
   flex-direction: column;
 }
@@ -374,18 +373,8 @@
   box-shadow: 0 6px 16px color-mix(in srgb, #000 28%, transparent);
 }
 
-.viewer-shell--sel-compact .viewer-chart-wrap,
-.viewer-shell--sel-compact .viewer-chart-wrap--pinned {
-  max-height: min(42dvh, 24rem);
-}
-
-.viewer-shell--has-selection.viewer-shell--sel-compact .viewer-chart-wrap,
-.viewer-shell--has-selection.viewer-shell--sel-compact .viewer-chart-wrap--pinned {
-  max-height: min(62dvh, 36rem);
-}
-
 .chart--viewer.chart-bleed {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -398,6 +387,18 @@
 }
 
 .chart.chart-bleed.chart--viewer {
+  /*
+   * En el visor el contenedor ya es ancho completo: 100vw + margin bleed desborda ~ancho de
+   * scrollbar y dispara scroll global (suele ser pocos px de alto). 100% evita ese overflow.
+   */
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  /*
+   * Nunca overflow-x: hidden + overflow-y: visible en el mismo nodo: el motor fuerza overflow-y
+   * a auto y genera barra de scroll vertical casi llena (pocos px de contenido “scrollable”).
+   */
+  overflow: visible;
   padding-left: clamp(0.28rem, 0.9vw, 0.55rem);
   padding-right: clamp(0.28rem, 0.9vw, 0.55rem);
   padding-top: clamp(0.3rem, 0.95vw, 0.5rem);
@@ -419,9 +420,11 @@
   }
 }
 
-.chart--viewer .timeline-scroll {
-  flex: 1;
+.chart--viewer.chart-bleed .timeline-scroll {
+  flex: 0 0 auto;
   min-height: 0;
+  overflow-y: hidden;
+  overflow-y: clip;
 }
 
 .app-header-inner {
@@ -604,7 +607,7 @@
 
 .timeline-scroll {
   overflow-x: auto;
-  /* overflow-y clip: las etiquetas de eventos viven en padding-bottom de la fila; el hueco lo
+  /* overflow-y clip: etiquetas de eventos desbordan en padding-bottom de `.events-stack`; el hueco
      define --timeline-event-label-room (función de --event-label-max-lane) en .timeline-stack */
   overflow-y: hidden;
   overscroll-behavior-x: contain;
@@ -620,18 +623,15 @@
   .timeline-scroll {
     overflow-y: clip;
   }
-
-  .viewer-shell--has-selection .chart--viewer .timeline-scroll {
-    overflow-y: visible;
-  }
 }
 
 /*
- * Sin scroll vertical interno en el timeline: si el chart tiene tope de alto, el scroll es del
- * .viewer-chart-wrap (bloque chart entero), así siempre se ven eje + períodos + eventos juntos.
+ * Sin scroll vertical en el timeline: solo scroll horizontal; el alto lo define el contenido.
+ * overflow-y: visible junto a overflow-x: auto fuerza overflow-y: auto en Chromium (barra fantasma).
  */
 .viewer-shell--has-selection .chart--viewer .timeline-scroll {
-  overflow-y: visible;
+  overflow-y: hidden;
+  overflow-y: clip;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -703,10 +703,14 @@
 .timeline-stack--compact {
   --events-dot-half: calc(1.22rem / 2);
   --event-dot-visible-r: 0.35rem;
+  /* Recorte extra del conector en la fila de títulos (alinea el fin con el disco) */
+  --events-titles-connector-trim: 0.42rem;
+  /* Aire bajo la línea al seleccionar (anillo 2px + scale; antes ~0.14rem no alcanzaba) */
+  --events-titles-connector-selected-breather: 0.58rem;
   --event-conn-end-adjust: calc(
     var(--touch-target-min, 44px) / 2 - var(--event-dot-visible-r)
   );
-  --event-label-lane-nudge: 0.84rem;
+  --event-label-lane-nudge: 0.88rem;
   --events-row-pad-bottom: calc(
     0.32rem + var(--event-label-max-lane, 0) * var(--event-label-lane-nudge)
   );
@@ -715,12 +719,32 @@
   );
   --timeline-event-label-room: var(--events-row-pad-bottom);
   --timeline-axis-gap: 0.5rem;
-  padding-bottom: 0.5rem;
+  --period-rows-total-h: calc(
+    var(--period-row-count, 1) * var(--period-compact-row-h, 1.06rem)
+  );
+  /* Alto carril: pista un poco más alta + aire vertical para que el rótulo no roce el vecino */
+  --events-lane-label-line-h: 0.36rem;
+  --events-semantic-lane-row-core: max(0.18rem, 8px);
+  --event-lane-tick-w: 3px;
+  --events-semantic-lane-h: calc(
+    max(var(--events-lane-label-line-h), var(--events-semantic-lane-row-core)) +
+      0.09rem
+  );
+  --events-lane-stack-gap: 0.04rem;
+  /* Suma de los carriles semánticos (cada uno + margen inferior de .events-lane) */
+  --events-stack-semantic-rows-h: calc(
+    var(--events-semantic-lane-count, 5) *
+      (var(--events-semantic-lane-h) + var(--events-lane-stack-gap, 0.04rem))
+  );
+  --events-titles-lane-margin-top: 0.1rem;
+  padding-bottom: 0.32rem;
 }
 
 @media (pointer: coarse) {
   .timeline-stack--compact {
     --events-dot-half: calc(1.32rem / 2);
+    --events-titles-connector-trim: 0.5rem;
+    --events-titles-connector-selected-breather: 0.68rem;
     --event-label-lane-nudge: 0.9rem;
     --events-row-pad-bottom: calc(
       0.32rem + var(--event-label-max-lane, 0) * var(--event-label-lane-nudge)
@@ -729,6 +753,14 @@
       var(--events-row-pad-bottom) + var(--events-dot-half)
     );
     --timeline-event-label-room: var(--events-row-pad-bottom);
+    --events-lane-label-line-h: 0.42rem;
+    --events-semantic-lane-row-core: max(0.2rem, 9px);
+    --event-lane-tick-w: 3.5px;
+    --events-semantic-lane-h: calc(
+      max(var(--events-lane-label-line-h), var(--events-semantic-lane-row-core)) +
+        0.1rem
+    );
+    --events-lane-stack-gap: 0.045rem;
   }
 }
 
@@ -758,17 +790,6 @@
 .timeline-stack--compact .period-row .row-bar {
   /* Alto sincronizado con `compactPeriodRowRem` en App.tsx (`--period-compact-row-h`) */
   height: var(--period-compact-row-h, 1.06rem);
-}
-
-.timeline-stack--compact .events-row .row-bar {
-  min-height: 1.22rem;
-  padding-bottom: var(--timeline-event-label-room);
-}
-
-@media (pointer: coarse) {
-  .timeline-stack--compact .events-row .row-bar {
-    min-height: 1.32rem;
-  }
 }
 
 .timeline-stack--compact .period-row .bar {
@@ -1477,24 +1498,13 @@
   overflow: visible;
 }
 
-.period-connectors,
-.event-connectors {
+.period-connectors {
   position: absolute;
   left: 0;
   right: 0;
   pointer-events: none;
-}
-
-.period-connectors {
   inset: 0;
   z-index: 1;
-}
-
-/* Línea desde el eje hasta el centro vertical de la bola (no sigue bajo la fila). */
-.event-connectors {
-  top: calc(-1 * var(--timeline-axis-gap));
-  bottom: var(--event-connector-bottom-inset, 1.5rem);
-  z-index: 0;
 }
 
 .event-connector,
@@ -1513,12 +1523,21 @@
       var(--event-conn-lane, 0) * var(--event-label-lane-nudge, 0.96rem)
   );
   opacity: 0.28;
+  border-left-color: color-mix(
+    in srgb,
+    var(--event-connector-stroke, var(--muted)) 62%,
+    transparent
+  );
 }
 
 .event-connector--selected {
-  opacity: 0.7;
+  opacity: 0.72;
   border-left-width: 1.5px;
-  border-left-color: var(--accent);
+  border-left-color: color-mix(
+    in srgb,
+    var(--event-connector-stroke, var(--accent)) 78%,
+    var(--accent)
+  );
   transition: opacity 0.15s, border-color 0.15s;
 }
 
@@ -1549,27 +1568,244 @@
 }
 
 .period-row,
-.events-row {
-  margin-bottom: 0.1rem;
+.events-lane {
+  margin-bottom: 0.04rem;
 }
 
-/* Puntos táctiles + etiquetas al costado; carriles = filas lógicas (ver --event-label-lane en TS) */
-.events-row .row-bar {
+.events-stack {
+  position: relative;
+  /* Por encima de `.bar.active` (z-index 4): conectores que suben deben verse sobre la barra de período */
+  z-index: 6;
+  /* El aire para etiquetas vive en `.events-titles-lane__row`; respiro para no pegar al borde del scroll */
+  padding-bottom: 0.28rem;
+}
+
+.timeline-stack--compact .events-stack {
+  padding-bottom: 0.12rem;
+}
+
+.events-lane {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: 4px;
+  background: color-mix(
+    in srgb,
+    var(--events-lane-tint, var(--muted)) 13%,
+    var(--surface)
+  );
+}
+
+.events-lane__caption {
+  flex: 0 0 auto;
+  min-height: var(--events-lane-caption-h, 0.42rem);
+  padding: 0.02rem 0.18rem 0.02rem;
+  box-sizing: border-box;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.events-lane__name {
+  display: block;
+  font-size: 0.46rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  line-height: 1.12;
+  color: color-mix(
+    in srgb,
+    var(--events-lane-tint, var(--muted)) 82%,
+    var(--muted)
+  );
+  text-shadow:
+    0 0 6px var(--surface),
+    0 1px 0 color-mix(in srgb, var(--surface) 90%, transparent);
+}
+
+.events-lane[data-lane="politico"] {
+  --events-lane-tint: var(--lane-politico);
+}
+
+.events-lane[data-lane="militar"] {
+  --events-lane-tint: var(--lane-militar);
+}
+
+.events-lane[data-lane="economico"] {
+  --events-lane-tint: var(--lane-economico);
+}
+
+.events-lane[data-lane="social"] {
+  --events-lane-tint: var(--lane-social);
+}
+
+.events-lane[data-lane="diplomatico"] {
+  --events-lane-tint: var(--lane-diplomatico);
+}
+
+/*
+ * Rótulo fuera del flujo: la pista de ticks usa el 100% del ancho de la pista;
+ * los % de fecha coinciden con eje y fila de títulos (antes el flex restaba ancho).
+ */
+.events-lane--semantic {
+  position: relative;
+  justify-content: center;
+}
+
+.events-lane--semantic .events-lane__caption {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+  pointer-events: none;
+  max-width: min(34%, 3.6rem);
+  padding: 0.02rem 0.08rem 0.02rem 0.1rem;
+  box-sizing: border-box;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+}
+
+.timeline-stack--compact .events-lane--semantic {
+  margin-bottom: var(--events-lane-stack-gap, 0.04rem);
+  min-height: var(--events-semantic-lane-h);
+}
+
+.timeline-stack--compact .events-lane--semantic .events-lane__row--dots.row-bar {
+  width: 100%;
+}
+
+.timeline-stack--compact .events-lane--semantic .events-lane__name {
+  font-size: 0.31rem;
+  letter-spacing: 0.06em;
+  line-height: 1.02;
+}
+
+/* Fila inferior: un solo carril con títulos (sin rótulo POLÍTICO/MILITAR…). */
+.events-titles-lane {
+  position: relative;
+  margin-top: var(--events-titles-lane-margin-top, 0.12rem);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--muted) 8%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 45%, transparent);
+}
+
+.events-titles-lane__row.row-bar {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  /* Alto fijo = 2×--events-dot-half: evita que la fila crezca y desalinee --event-connector-bottom-inset */
-  grid-template-rows: max(2.25rem, var(--touch-target-min, 44px));
-  min-height: max(2.25rem, var(--touch-target-min));
+  grid-template-rows: max(1.22rem, var(--touch-target-min, 44px));
+  min-height: max(1.22rem, var(--touch-target-min));
   height: auto;
   padding-bottom: var(--timeline-event-label-room);
   overflow: visible;
 }
 
 @media (pointer: coarse) {
-  .events-row .row-bar {
+  .events-titles-lane__row.row-bar {
+    grid-template-rows: max(1.32rem, var(--touch-target-min, 44px));
+    min-height: max(1.32rem, var(--touch-target-min));
+  }
+}
+
+.events-titles-lane__row.row-bar > * {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.events-titles-lane .event-marker {
+  top: calc(
+    var(--events-dot-half) +
+      var(--event-label-lane, 0) * var(--event-label-lane-nudge, 0.96rem)
+  );
+}
+
+.event-dot--titles::after {
+  background: color-mix(in srgb, var(--muted) 55%, var(--event));
+  border-color: color-mix(in srgb, var(--border) 40%, var(--bg));
+}
+
+/*
+ * Conectores: solo el tramo desde la fila de títulos hasta el carril semántico
+ * más alto donde el evento tiene bola (--event-connector-lane-span-count por evento).
+ */
+.events-titles-lane__connectors {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  pointer-events: none;
+  top: 0;
+  /* No atravesar el colchón inferior reservado para etiquetas (evita “seguir de largo”) */
+  bottom: var(--timeline-event-label-room);
+  overflow: visible;
+}
+
+/*
+ * En la fila de títulos el disco está más arriba que en el modelo genérico;
+ * subimos el tope inferior del trazo (mayor bottom = menos extensión hacia abajo).
+ */
+.events-titles-lane__connectors .event-connector {
+  /* Eje + períodos + carriles semánticos ocupados (sin hueco bajo la barra de período) */
+  top: calc(
+    -1 *
+      (
+        var(--timeline-axis-gap) + var(--period-rows-total-h) +
+          var(--events-titles-lane-margin-top, 0.12rem) +
+          var(--event-connector-lane-span-count, 5) *
+            (
+              var(--events-semantic-lane-h) +
+                var(--events-lane-stack-gap, 0.04rem)
+            )
+      )
+  );
+  bottom: calc(
+    var(--event-conn-end-adjust, 1rem) -
+      var(--event-conn-lane, 0) * var(--event-label-lane-nudge, 0.96rem) +
+      var(--events-titles-connector-trim, 0.38rem)
+  );
+}
+
+/*
+ * Seleccionado: más recorte + un poco por carril de etiqueta (--event-conn-lane baja el
+ * bottom del conector y alarga el trazo hacia el disco).
+ */
+.events-titles-lane__connectors .event-connector--selected {
+  bottom: calc(
+    var(--event-conn-end-adjust, 1rem) -
+      var(--event-conn-lane, 0) * var(--event-label-lane-nudge, 0.96rem) +
+      var(--events-titles-connector-trim, 0.38rem) +
+      var(--events-titles-connector-selected-breather, 0.58rem) +
+      calc(var(--event-conn-lane, 0) * 0.15rem)
+  );
+}
+
+/* Puntos táctiles + etiquetas (fila de títulos); --event-label-lane = apilado (TS) */
+.events-lane__row.row-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: max(2.25rem, var(--touch-target-min, 44px));
+  min-height: max(2.25rem, var(--touch-target-min));
+  height: auto;
+  overflow: visible;
+}
+
+@media (pointer: coarse) {
+  .events-lane__row.row-bar {
     grid-template-rows: max(2.75rem, var(--touch-target-min, 44px));
     min-height: max(2.75rem, var(--touch-target-min));
   }
+}
+
+/* Carril semántico: ticks en fila de altura fija */
+.events-lane--semantic .events-lane__row--dots.row-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: var(--events-semantic-lane-row-core, max(0.16rem, 7px));
+  height: var(--events-semantic-lane-row-core, max(0.16rem, 7px));
+  min-height: var(--events-semantic-lane-row-core, max(0.16rem, 7px));
+  max-height: var(--events-semantic-lane-row-core, max(0.16rem, 7px));
+  overflow: hidden;
 }
 
 .row-bar {
@@ -1578,10 +1814,60 @@
   height: 2.25rem;
 }
 
-/* Marcadores absolutos respecto al ancho de la pista; la fila de grid reserva alto táctil + padding */
-.events-row .row-bar > * {
+.events-titles-lane__row.row-bar {
+  height: auto;
+}
+
+/* Marcadores absolutos respecto al ancho de la pista; la fila de grid reserva alto táctil */
+.events-lane__row.row-bar > * {
   grid-column: 1;
   grid-row: 1;
+}
+
+/* Franja vertical de ancho 0: el hit se centra respecto a la altura real del carril. */
+.events-lane--semantic .event-marker--lane-dot {
+  top: 0;
+  bottom: 0;
+  height: auto;
+  transform: translateX(-50%);
+}
+
+.events-lane--semantic .event-hit--lane-dot {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  /* Ancho táctil; la raya visible es más fina y va centrada */
+  width: max(14px, calc(var(--event-lane-tick-w, 3px) + 10px));
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  transform: translateX(-50%);
+  border: none;
+  background: transparent;
+  line-height: 0;
+  font-size: 0;
+}
+
+/*
+ * La fila de carril es baja (~15px): el min-height táctil global (44px) deformaba el flex
+ * y con overflow:hidden el disco quedaba pegado al borde. Aquí el target fino basta.
+ */
+@media (pointer: coarse) {
+  .events-lane--semantic .event-marker .event-hit--lane-dot {
+    min-height: 0;
+    padding: 0;
+  }
+
+  /* Menos extensión vertical que el hit genérico: evita sensación de solape entre carriles */
+  .events-lane--semantic .event-hit--lane-dot::before {
+    inset: -4px -8px;
+    border-radius: 10px;
+  }
+}
+
+.events-lane--semantic .event-marker--selected .event-hit--lane-dot {
+  gap: 0;
 }
 
 @media (pointer: coarse) {
@@ -1666,12 +1952,6 @@
   z-index: 5;
 }
 
-.events-row .event-marker {
-  top: calc(
-    var(--events-dot-half) +
-      var(--event-label-lane, 0) * var(--event-label-lane-nudge, 0.96rem)
-  );
-}
 
 /*
  * Un solo control táctil: punto + título (toda la caja del botón).
@@ -1822,6 +2102,49 @@
 .event-dot.active:hover::after,
 .event-dot.active:active::after {
   transform: scale(1.18);
+}
+
+/*
+ * Raya vertical en carril: absolute top/bottom (evita colapso de height:100% en filas ~4–6px).
+ */
+.events-lane--semantic .event-lane-tick {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  width: max(3px, var(--event-lane-tick-w, 3px));
+  transform: translateX(-50%);
+  border-radius: 1px;
+  box-sizing: border-box;
+  background: var(--event-dot-fill, var(--event));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--bg) 55%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--event-dot-fill, var(--border)) 40%, transparent);
+  pointer-events: none;
+  transition:
+    filter 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.events-lane--semantic .event-hit--lane-dot:hover .event-lane-tick:not(.event-lane-tick--active) {
+  filter: brightness(1.22);
+}
+
+.events-lane--semantic .event-hit--lane-dot:active .event-lane-tick:not(.event-lane-tick--active) {
+  filter: brightness(0.9);
+}
+
+.events-lane--semantic .event-lane-tick--active {
+  background: color-mix(
+    in srgb,
+    var(--event-dot-fill, var(--event)) 55%,
+    var(--accent)
+  );
+  box-shadow:
+    0 0 0 1px var(--bg),
+    0 0 0 2px color-mix(in srgb, var(--accent) 70%, transparent),
+    0 0 4px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
 .event-marker--selected .event-label-h {
