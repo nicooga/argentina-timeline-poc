@@ -142,7 +142,8 @@
 /* Compactos: la caja dibujada es pequeña; hover/active con velo suave (no “pastilla” grande). */
 .viewer-help-btn,
 .viewer-inicio-btn,
-.viewer-github-link {
+.viewer-github-link,
+.viewer-instagram-link {
   position: relative;
   flex-shrink: 0;
   border: 1px solid var(--border);
@@ -178,7 +179,8 @@
   background: color-mix(in srgb, var(--accent) 16%, var(--surface));
 }
 
-.viewer-github-link {
+.viewer-github-link,
+.viewer-instagram-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -191,19 +193,22 @@
   box-sizing: border-box;
 }
 
-.viewer-github-icon {
+.viewer-github-icon,
+.viewer-instagram-icon {
   display: block;
   flex-shrink: 0;
   opacity: 0.92;
 }
 
-.viewer-github-link:hover {
+.viewer-github-link:hover,
+.viewer-instagram-link:hover {
   border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
   color: var(--accent);
   background: color-mix(in srgb, var(--accent) 8%, var(--surface));
 }
 
-.viewer-github-link:active {
+.viewer-github-link:active,
+.viewer-instagram-link:active {
   background: color-mix(in srgb, var(--accent) 14%, var(--surface));
 }
 
@@ -234,7 +239,8 @@
     font-size: 0.78rem;
   }
 
-  .viewer-github-link {
+  .viewer-github-link,
+  .viewer-instagram-link {
     width: 1.7rem;
     height: 1.7rem;
   }

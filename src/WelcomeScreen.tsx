@@ -1,3 +1,4 @@
+import { SITE_INSTAGRAM_URL } from "./siteLinks";
 import "./WelcomeScreen.css";
 
 type WelcomeScreenProps = {
@@ -18,6 +19,16 @@ export function WelcomeScreen({ onEnter }: WelcomeScreenProps) {
         <p className="welcome-note">
           Pensado para usarse en escritorio y en tablet: el visor ocupa toda la
           pantalla y adapta el espacio cuando elegís un elemento.
+        </p>
+        <p className="welcome-instagram">
+          <a
+            href={SITE_INSTAGRAM_URL}
+            className="welcome-instagram-link"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Instagram: @hisctorictimelines
+          </a>
         </p>
         <button type="button" className="welcome-cta" onClick={onEnter}>
           Entrar al visor
