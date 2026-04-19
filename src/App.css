@@ -1312,6 +1312,15 @@
 }
 
 /* Eje temporal: el trazo queda fijo sobre la barra; las etiquetas (años) suben en filas (--tick-lane). */
+.tick--axis-mark.tick--clickable {
+  cursor: pointer;
+}
+
+.tick--axis-mark.tick--clickable:hover .tick-label {
+  opacity: 1;
+  font-weight: 600;
+}
+
 .tick--axis-mark {
   display: block;
   width: 0;

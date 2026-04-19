@@ -1575,16 +1575,20 @@ export default function App() {
                 const isTickSelected =
                     sel?.kind === "event" &&
                     sel.item.date.getTime() === mark.t;
+                const tickEvent = eventsSorted.find(
+                  (e) => e.date.getTime() === mark.t
+                );
                 return (
                   <div
                     key={`${mark.t}-${i}`}
-                    className={`tick tick--axis-mark ${edgeClass}${isTickSelected ? " tick--selected" : ""}`.trim()}
+                    className={`tick tick--axis-mark ${edgeClass}${isTickSelected ? " tick--selected" : ""}${tickEvent ? " tick--clickable" : ""}`.trim()}
                     style={
                       {
                         left: `${p}%`,
                         "--tick-lane": lane,
                       } as CSSProperties
                     }
+                    onClick={tickEvent ? () => setSel({ kind: "event", item: tickEvent }) : undefined}
                   >
                     <span className="tick-line" />
                     <span className="tick-label">
