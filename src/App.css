@@ -769,10 +769,10 @@
 }
 
 .timeline-stack--compact .axis {
+  /* Paso un poco más apretado; el alto mínimo lo define solo `.axis` (misma fórmula que el tick). */
   --axis-lane-step: calc(
     0.68rem * 1.18 + 0.62rem * 1.18 + 0.12rem + 0.26rem
   );
-  min-height: calc(2.35rem + var(--axis-max-lane, 0) * var(--axis-lane-step));
   margin-bottom: var(--timeline-axis-gap);
 }
 
@@ -1190,6 +1190,7 @@
   position: relative;
   /* Barra del eje (franjas + “1820”); un poco más alta que antes para que el texto no se corte */
   --axis-bar-h: 10px;
+  --tick-line-h: 12px;
   /*
    * Paso vertical entre carriles de fecha: en rem como .tick-label-year / .tick-label-monthday
    * (no en em del padre), más un respiro fijo para que filas consecutivas no se rocen.
@@ -1197,7 +1198,15 @@
   --axis-lane-step: calc(
     0.68rem * 1.18 + 0.62rem * 1.18 + 0.12rem + 0.34rem
   );
-  min-height: calc(3.35rem + var(--axis-max-lane, 0) * var(--axis-lane-step));
+  /*
+   * Misma columna vertical que `.tick--axis-mark` (trazo + carriles + bloque año/mes).
+   * max(em, rem) + colchón: la raíz usa font-size fluido (clamp); un solo 3.35rem fijo
+   * quedaba corto y el carril más alto (fechas muy juntas) recortaba la línea del año.
+   */
+  min-height: calc(
+    var(--tick-line-h) + 4px + var(--axis-max-lane, 0) * var(--axis-lane-step) +
+      max(2.65em, 2.95rem) + 0.55rem
+  );
   margin-bottom: var(--timeline-axis-gap);
   border-bottom: none;
   /* Evita que trazos punteados de ticks sigan dibujándose sobre períodos/eventos */
@@ -1355,7 +1364,8 @@
    * extenderse mal hacia la pista. min-height ≈ carril + tick + ~2 líneas de texto.
    */
   min-height: calc(
-    var(--tick-line-h, 12px) + 4px + var(--tick-lane, 0) * var(--axis-lane-step, 2rem) + 2.55em
+    var(--tick-line-h, 12px) + 4px + var(--tick-lane, 0) * var(--axis-lane-step, 2rem) +
+      max(2.65em, 2.95rem)
   );
   overflow: visible;
 }

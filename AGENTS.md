@@ -23,6 +23,13 @@ En Cursor: regla siempre activa [`.cursor/rules/viewer-layout.mdc`](./.cursor/ru
 - `src/ViewerLower.tsx` / `src/ViewerLower.css` — panel inferior (grid `1fr`, scroll interno)
 - `src/index.css` — `html.viewer-phase`, `#root`
 
+### Eje temporal: fechas “encimadas” y zoom (intencional)
+
+- Las marcas del eje (inicios/fines de período + fechas de eventos) vienen de `mergeAxisMarks` y se colocan con **`assignAxisMarkLanes`** en `src/App.tsx`.
+- El algoritmo mide el **ancho en píxeles** de cada etiqueta y la **anchura útil de la pista** (`stackWidthPx`, vía `ResizeObserver` sobre `.timeline-stack`). Con menos zoom la pista es más ancha en px → las mismas fechas quedan **más separadas en %** del eje → **menos solapes** y menos carriles verticales. Con más zoom la pista se estrecha en pantalla → las etiquetas compiten antes por el mismo hueco → **suben de carril** antes (más filas de fechas apiladas).
+- Eso **no es un bug**: es el mismo criterio que `assignEventLabelLanes` para títulos de eventos (densidad según ancho real vs. zoom).
+- El CSS del eje (`.axis`, `.tick--axis-mark` en `src/App.css`) debe reservar alto coherente con **`--axis-max-lane`** y el paso `--axis-lane-step` (incl. variante `.timeline-stack--compact .axis`), para que la fila superior de fechas no quede recortada por `overflow-y: clip`.
+
 ### Otros puntos de entrada
 
 - [`CLAUDE.md`](./CLAUDE.md) remite aquí.
