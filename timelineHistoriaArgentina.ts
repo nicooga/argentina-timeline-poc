@@ -92,7 +92,8 @@ export const timelineHistoriaArgentina: Timeline = {
         },
         {
             title: "Consolidación del modelo agroexportador",
-            start: utcDate(1860, 1, 1),
+            /* Inicio alineado con la reunificación bajo la Constitución (evita solape 1860-01..1860-10 con “Unificación”). */
+            start: utcDate(1860, 10, 1),
             end: utcDate(1914, 1, 1),
             color: "#8D6E63",
             items: [
@@ -119,8 +120,7 @@ export const timelineHistoriaArgentina: Timeline = {
             end: utcDate(1900, 1, 1),
             color: "#495057", // gris oscuro (orden consolidado)
             items: [
-                "Federalización de Buenos Aires.",
-                "Fin de las guerras civiles.",
+                "Fin de las guerras civiles; la Nación fija la capital federal en Buenos Aires (1880).",
                 "Estabilización del orden político nacional.",
                 "Consolidación del modelo agroexportador.",
             ],
@@ -181,6 +181,26 @@ export const timelineHistoriaArgentina: Timeline = {
             links: ["https://es.wikipedia.org/wiki/Constituci%C3%B3n_argentina_de_1819"],
         },
         {
+            title: "Batalla de Cepeda (1820)",
+            lanes: ["militar", "politico"],
+            items: [
+                "Derrota del Directorio frente a las fuerzas federales.",
+                "Caída del poder central.",
+                "Inicio efectivo de la anarquía del 20.",
+            ],
+            date: utcDate(1820, 2, 1),
+        },
+        {
+            title: "Presidencia de Rivadavia",
+            lanes: ["politico"],
+            items: [
+                "Intento de reconstrucción del poder central.",
+                "Proyecto unitario y centralista.",
+                "Fracasa por oposición provincial.",
+            ],
+            date: utcDate(1826, 2, 8),
+        },
+        {
             title: "Crisis de 1828 y ascenso de Rosas",
             lanes: ["politico", "militar"],
             items: [
@@ -223,7 +243,6 @@ export const timelineHistoriaArgentina: Timeline = {
             date: utcDate(1850, 1, 1),
             links: ["https://es.wikipedia.org/wiki/Bloqueo_anglo-franc%C3%A9s_del_R%C3%ADo_de_la_Plata"],
         },
-
         {
             title: "Batalla de Caseros",
             lanes: ["militar", "politico"],
@@ -281,6 +300,37 @@ export const timelineHistoriaArgentina: Timeline = {
             links: ["https://es.wikipedia.org/wiki/Pacto_de_San_Jos%C3%A9_de_Flores"],
         },
         {
+            title: "Batalla de Pavón",
+            /* Un solo carril: con dos, el visor dibuja dos marcas el mismo día (militar + político). */
+            lanes: ["militar"],
+            items: [
+                "Enfrentamiento entre Buenos Aires y la Confederación.",
+                "El repliegue de Urquiza permite la victoria política porteña.",
+                "Abre el camino a la organización del Estado nacional bajo hegemonía de Buenos Aires.",
+            ],
+            date: utcDate(1861, 9, 17),
+        },
+        {
+            title: "Asunción de Bartolomé Mitre",
+            lanes: ["politico"],
+            items: [
+                "Primer presidente del país unificado tras la derrota de la Confederación.",
+                "Buenos Aires impone su proyecto político e institucional al resto del territorio.",
+                "Inicio efectivo de la organización del Estado nacional centralizado.",
+            ],
+            date: utcDate(1862, 10, 12),
+        },
+        {
+            title: "Expansión ferroviaria",
+            lanes: ["economico", "politico"],
+            items: [
+                "Desarrollo de la red ferroviaria con capital británico.",
+                "Conecta regiones productivas con el puerto de Buenos Aires.",
+                "Base material del modelo agroexportador.",
+            ],
+            date: utcDate(1865, 1, 1),
+        },
+        {
             title: "Guerra del Paraguay",
             lanes: ["militar", "politico", "diplomatico"],
             items: [
@@ -290,6 +340,16 @@ export const timelineHistoriaArgentina: Timeline = {
             ],
             date: utcDate(1865, 5, 1),
             links: ["https://es.wikipedia.org/wiki/Guerra_de_la_Triple_Alianza"],
+        },
+        {
+            title: "Ingreso masivo de capitales británicos",
+            lanes: ["economico"],
+            items: [
+                "Capitales ingleses financian ferrocarriles, bancos, comercio y servicios públicos.",
+                "Financiamiento externo de infraestructura y producción; profundiza la dependencia económica.",
+                "Gran Bretaña como socio central del modelo agroexportador.",
+            ],
+            date: utcDate(1870, 1, 1),
         },
         {
             title: "Zanja de Alsina",
@@ -303,6 +363,25 @@ export const timelineHistoriaArgentina: Timeline = {
             links: ["https://es.wikipedia.org/wiki/Zanja_de_Alsina"],
         },
         {
+            title: "Ley de Inmigración y Colonización",
+            lanes: ["social", "economico", "politico"],
+            items: [
+                "Fomento estatal a la inmigración europea.",
+                "Base demográfica del modelo agroexportador.",
+            ],
+            date: utcDate(1876, 10, 19),
+        },
+        {
+            title: "Primeras huelgas obreras",
+            lanes: ["social"],
+            items: [
+                "Conflictos entre capital y trabajo en ámbitos urbanos y portuarios (olas posteriores, p. ej. 1888, amplían la protesta).",
+                "Participación de trabajadores inmigrantes.",
+                "Expresa tensiones del proceso de modernización.",
+            ],
+            date: utcDate(1878, 1, 1),
+        },
+        {
             title: "Campaña del Desierto",
             lanes: ["militar", "politico", "economico", "social"],
             items: [
@@ -314,12 +393,22 @@ export const timelineHistoriaArgentina: Timeline = {
             links: ["https://es.wikipedia.org/wiki/Conquista_del_Desierto"],
         },
         {
+            title: "Primera gran oleada de inmigración masiva",
+            lanes: ["social", "economico"],
+            items: [
+                "Llegan grandes contingentes de inmigrantes europeos atraídos por la expansión económica.",
+                "Aportan mano de obra al campo, al puerto y a las ciudades en crecimiento.",
+                "Transforman la estructura social y alimentan nuevas tensiones urbanas y laborales.",
+            ],
+            date: utcDate(1880, 1, 1),
+        },
+        {
             title: "Federalización de Buenos Aires",
             lanes: ["politico"],
             items: [
-                "Buenos Aires se convierte en capital federal.",
-                "Resolución del conflicto entre Nación y provincia.",
-                "Consolidación del poder del Estado nacional.",
+                "La ciudad de Buenos Aires pasa a ser capital federal de la República.",
+                "Se resuelve institucionalmente el conflicto histórico entre la provincia y el poder central.",
+                "Consolida la autoridad del Estado nacional sobre el principal centro político y económico.",
             ],
             date: utcDate(1880, 9, 21),
             links: ["https://es.wikipedia.org/wiki/Federalizaci%C3%B3n_de_Buenos_Aires"],
@@ -334,6 +423,86 @@ export const timelineHistoriaArgentina: Timeline = {
             ],
             date: utcDate(1884, 1, 1),
             links: ["https://es.wikipedia.org/wiki/Conquista_del_Chaco"],
+        },
+        {
+            title: "Formación del movimiento obrero organizado",
+            lanes: ["social", "politico"],
+            items: [
+                "Difusión de ideas anarquistas y socialistas.",
+                "Organización sindical de trabajadores.",
+                "Respuesta a las condiciones del modelo agroexportador.",
+            ],
+            date: utcDate(1890, 1, 1),
+        },
+        {
+            title: "Crisis económica de 1890",
+            lanes: ["economico"],
+            items: [
+                "Colapso financiero vinculado a la banca Baring Brothers.",
+                "Evidencia la fragilidad del modelo agroexportador.",
+                "Expone la dependencia del capital externo.",
+            ],
+            date: utcDate(1890, 7, 1),
+        },
+        {
+            title: "Revolución del Parque",
+            lanes: ["politico", "militar"],
+            items: [
+                "Levantamiento cívico-militar contra el régimen conservador.",
+                "Expresa el rechazo al fraude, la corrupción y el control oligárquico del sistema político.",
+                "Marca el comienzo de una oposición política moderna al régimen.",
+            ],
+            date: utcDate(1890, 7, 26),
+        },
+        {
+            title: "Crisis de la Baring Brothers",
+            lanes: ["economico"],
+            items: [
+                "Estalla una crisis financiera internacional vinculada al endeudamiento argentino.",
+                "Queda expuesta la vulnerabilidad del crecimiento basado en crédito externo y capital británico.",
+                "La crisis muestra la fragilidad estructural del modelo agroexportador.",
+            ],
+            date: utcDate(1890, 11, 1),
+        },
+        {
+            title: "Fundación de la Unión Cívica Radical",
+            lanes: ["politico"],
+            items: [
+                "Se organiza una fuerza opositora con base en la denuncia del fraude electoral.",
+                "La UCR cuestiona la legitimidad del orden político oligárquico.",
+                "Se convierte en el principal canal de demanda por democratización.",
+            ],
+            date: utcDate(1891, 6, 26),
+        },
+        {
+            title: "Abstención electoral radical",
+            lanes: ["politico"],
+            items: [
+                "La UCR rechaza participar en elecciones consideradas fraudulentas.",
+                "La abstención busca deslegitimar al régimen y forzar una reforma política.",
+                "La práctica expresa la imposibilidad de competencia real dentro del sistema vigente.",
+            ],
+            date: utcDate(1892, 1, 1),
+        },
+        {
+            title: "Revoluciones radicales",
+            lanes: ["politico", "militar"],
+            items: [
+                "Sectores radicales impulsan levantamientos armados contra el régimen conservador.",
+                "Las insurrecciones muestran que la crisis política no podía resolverse dentro del sistema fraudulento.",
+                "Preparan el terreno para la futura reforma electoral.",
+            ],
+            date: utcDate(1893, 1, 1),
+        },
+        {
+            title: "Formación del socialismo argentino",
+            lanes: ["social", "politico"],
+            items: [
+                "Surgen corrientes políticas obreras vinculadas al socialismo y al anarquismo.",
+                "Se organiza una nueva representación de intereses de trabajadores urbanos.",
+                "El conflicto social entra de lleno en la política argentina moderna.",
+            ],
+            date: utcDate(1896, 6, 28),
         },
         {
             title: "Ley Sáenz Peña",
@@ -356,54 +525,6 @@ export const timelineHistoriaArgentina: Timeline = {
             ],
             date: utcDate(1916, 4, 2),
             links: ["https://es.wikipedia.org/wiki/Hip%C3%B3lito_Yrigoyen"],
-        },
-        {
-            title: "Batalla de Cepeda (1820)",
-            lanes: ["militar", "politico"],
-            items: [
-                "Derrota del Directorio frente a las fuerzas federales.",
-                "Caída del poder central.",
-                "Inicio efectivo de la anarquía del 20.",
-            ],
-            date: utcDate(1820, 2, 1),
-        },
-        {
-            title: "Presidencia de Rivadavia",
-            lanes: ["politico"],
-            items: [
-                "Intento de reconstrucción del poder central.",
-                "Proyecto unitario y centralista.",
-                "Fracasa por oposición provincial.",
-            ],
-            date: utcDate(1826, 2, 8),
-        },
-        {
-            title: "Batalla de Pavón",
-            lanes: ["militar", "politico"],
-            items: [
-                "Enfrentamiento entre Buenos Aires y la Confederación.",
-                "Retiro de Urquiza permite la victoria política porteña.",
-                "Define la hegemonía de Buenos Aires.",
-            ],
-            date: utcDate(1861, 9, 17),
-        },
-        {
-            title: "Presidencia de Mitre",
-            lanes: ["politico"],
-            items: [
-                "Inicio del Estado nacional bajo hegemonía porteña.",
-                "Unificación institucional efectiva.",
-            ],
-            date: utcDate(1862, 10, 12),
-        },
-        {
-            title: "Ley de Inmigración y Colonización",
-            lanes: ["social", "economico", "politico"],
-            items: [
-                "Fomento estatal a la inmigración europea.",
-                "Base demográfica del modelo agroexportador.",
-            ],
-            date: utcDate(1876, 10, 19),
         },
     ],
 };
