@@ -858,13 +858,16 @@
   gap: 0.22rem 0.38rem;
   pointer-events: none;
   overflow: visible;
+  /* Hueco para el botón absoluto (der.): evita que la escala quede debajo y robe clics. */
+  padding-right: calc(1.45rem + 0.42rem);
 }
 
 .timeline-chrome-collapse-btn {
   position: absolute;
   top: -0.02rem;
   right: 0;
-  z-index: 6;
+  z-index: 30;
+  pointer-events: auto;
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -1108,7 +1111,8 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 0.14rem;
-  pointer-events: auto;
+  /* Solo lectura (aria-hidden): no captar toques encima del botón colapsar / timeline. */
+  pointer-events: none;
   order: 3;
 }
 
