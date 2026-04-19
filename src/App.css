@@ -271,6 +271,12 @@
   align-self: start;
   width: 100%;
   overflow: visible;
+  /*
+   * Sin selección el chrome va absoluto y el min 11rem del wrap ayuda al estado vacío.
+   * Con selección el chrome entra en flujo: si el wrap sigue forzando ≥11rem, el section
+   * (flex column stretch) crece y queda una franja vacía bajo los controles.
+   */
+  min-height: 0;
 }
 
 .viewer-shell--has-selection .viewer-chart-wrap--pinned {
@@ -281,6 +287,7 @@
 /* El section no debe estirarse al alto del wrap (evita overflow interno / scroll en el section). */
 .viewer-shell--has-selection .chart--viewer.chart-bleed {
   flex: 0 0 auto;
+  align-self: flex-start;
 }
 
 .viewer-shell--has-selection .chart--viewer .timeline-scroll {
