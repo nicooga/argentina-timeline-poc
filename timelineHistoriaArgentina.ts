@@ -338,5 +338,48 @@ export const timelineHistoriaArgentina: Timeline = {
             date: utcDate(1916, 4, 2),
             links: ["https://es.wikipedia.org/wiki/Hip%C3%B3lito_Yrigoyen"],
         },
+        {
+            title: "Batalla de Cepeda (1820)",
+            items: [
+                "Derrota del Directorio frente a las fuerzas federales.",
+                "Caída del poder central.",
+                "Inicio efectivo de la anarquía del 20.",
+            ],
+            date: utcDate(1820, 2, 1),
+        },
+        {
+            title: "Presidencia de Rivadavia",
+            items: [
+                "Intento de reconstrucción del poder central.",
+                "Proyecto unitario y centralista.",
+                "Fracasa por oposición provincial.",
+            ],
+            date: utcDate(1826, 2, 8),
+        },
+        {
+            title: "Batalla de Pavón",
+            items: [
+                "Enfrentamiento entre Buenos Aires y la Confederación.",
+                "Retiro de Urquiza permite la victoria política porteña.",
+                "Define la hegemonía de Buenos Aires.",
+            ],
+            date: utcDate(1861, 9, 17),
+        },
+        {
+            title: "Presidencia de Mitre",
+            items: [
+                "Inicio del Estado nacional bajo hegemonía porteña.",
+                "Unificación institucional efectiva.",
+            ],
+            date: utcDate(1862, 10, 12),
+        },
+        {
+            title: "Ley de Inmigración y Colonización",
+            items: [
+                "Fomento estatal a la inmigración europea.",
+                "Base demográfica del modelo agroexportador.",
+            ],
+            date: utcDate(1876, 10, 19),
+        },
     ],
 };
