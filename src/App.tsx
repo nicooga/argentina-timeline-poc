@@ -498,9 +498,10 @@ function measureAxisMarkWidthsPx(marks: AxisMark[], rootPx: number): number[] {
     });
   }
   return marks.map((m) => {
-    ctx.font = `600 ${yearPx}px "Source Sans 3",system-ui,sans-serif`;
+    /* Misma pila que `.timeline-date` (Inter) para que el layout del eje coincida con el render. */
+    ctx.font = `600 ${yearPx}px Inter,system-ui,sans-serif`;
     const wy = ctx.measureText(m.year).width;
-    ctx.font = `400 ${monthPx}px "Source Sans 3",system-ui,sans-serif`;
+    ctx.font = `400 ${monthPx}px Inter,system-ui,sans-serif`;
     const wm = ctx.measureText(m.monthDay).width;
     return Math.min(Math.max(wy, wm) + pad, 240);
   });
@@ -1458,7 +1459,7 @@ export default function App() {
                   <h1 className="viewer-toolbar-title">
                     Historia Argentina · línea de tiempo
                   </h1>
-                  <p className="viewer-toolbar-range muted">
+                  <p className="viewer-toolbar-range timeline-date">
                     {formatShortDate(new Date(min))} —{" "}
                     {formatShortDate(new Date(max))}
                   </p>
@@ -1698,8 +1699,8 @@ export default function App() {
                         key={`lbl-${key}`}
                         className={
                           stripe === 0
-                            ? "axis-decade-label axis-decade-label--a"
-                            : "axis-decade-label axis-decade-label--b"
+                            ? "axis-decade-label axis-decade-label--a timeline-date"
+                            : "axis-decade-label axis-decade-label--b timeline-date"
                         }
                         style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
                       >
@@ -1762,8 +1763,12 @@ export default function App() {
                   >
                     <span className="tick-line" />
                     <span className="tick-label">
-                      <span className="tick-label-year">{mark.year}</span>
-                      <span className="tick-label-monthday">{mark.monthDay}</span>
+                      <span className="tick-label-year timeline-date">
+                        {mark.year}
+                      </span>
+                      <span className="tick-label-monthday timeline-date">
+                        {mark.monthDay}
+                      </span>
                     </span>
                   </div>
                 );
@@ -1839,7 +1844,9 @@ export default function App() {
                           onClick={() => setSel({ kind: "period", item: p })}
                           title={`${formatDate(p.start)} — ${formatDate(p.end)}`}
                         >
-                          <span className="bar-text">{p.title}</span>
+                          <span className="bar-text timeline-period-label">
+                            {p.title}
+                          </span>
                         </button>
                       );
                     })}
@@ -1965,7 +1972,7 @@ export default function App() {
                               aria-hidden="true"
                             />
                             <span
-                              className="event-label-h"
+                              className="event-label-h timeline-event-title"
                               style={
                                 {
                                   maxWidth: `${Math.round(pl.maxWidthPx)}px`,
@@ -2129,7 +2136,9 @@ export default function App() {
               <div className="timeline-scale-overlay" aria-hidden>
                 <div className="timeline-scale-topline">
                   <span className="timeline-scale-caption">Escala del eje</span>
-                  <div className="timeline-scale-label">{scaleBarLabel}</div>
+                  <div className="timeline-scale-label timeline-date">
+                    {scaleBarLabel}
+                  </div>
                 </div>
                 <div className="timeline-scale-rail-wrap">
                   <div

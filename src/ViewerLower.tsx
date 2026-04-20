@@ -135,8 +135,8 @@ export function ViewerLower({
                           aria-hidden
                         />
                         <span className="period-link__text">
-                          <strong>{p.title}</strong>
-                          <span className="muted period-link__dates">
+                          <strong className="timeline-event-title">{p.title}</strong>
+                          <span className="period-link__dates timeline-date">
                             {formatDate(p.start)} — {formatDate(p.end)}
                           </span>
                         </span>
@@ -197,8 +197,8 @@ export function ViewerLower({
                         onClick={() => onSelectEvent(e)}
                       >
                         <span className="event-link__text">
-                          <strong>{e.title}</strong>
-                          <span className="muted event-link__date">
+                          <strong className="timeline-event-title">{e.title}</strong>
+                          <span className="event-link__date timeline-date">
                             {formatDate(e.date)}
                           </span>
                         </span>
@@ -229,11 +229,11 @@ export function ViewerLower({
             </p>
           ) : sel.kind === "period" ? (
             <>
-              <h2 className="detail-title">{sel.item.title}</h2>
-              <p className="detail-meta">
+              <h2 className="detail-title timeline-event-title">{sel.item.title}</h2>
+              <p className="detail-meta timeline-date">
                 {formatDate(sel.item.start)} — {formatDate(sel.item.end)}
               </p>
-              <ul className="detail-items">
+              <ul className="detail-items timeline-event-items">
                 {sel.item.items.map((text, i) => (
                   <li key={i}>{text}</li>
                 ))}
@@ -241,7 +241,7 @@ export function ViewerLower({
             </>
           ) : (
             <>
-              <h2 className="detail-title">{sel.item.title}</h2>
+              <h2 className="detail-title timeline-event-title">{sel.item.title}</h2>
               <div
                 className="detail-lane-icons"
                 aria-label="Carriles del evento"
@@ -261,7 +261,7 @@ export function ViewerLower({
                   </span>
                 ))}
               </div>
-              <p className="detail-meta">{formatDate(sel.item.date)}</p>
+              <p className="detail-meta timeline-date">{formatDate(sel.item.date)}</p>
               {studyMode !== "exam" && sel.item.importance ? (
                 <p className="detail-importance muted">
                   Peso:{" "}
@@ -285,7 +285,7 @@ export function ViewerLower({
                 </p>
               ) : null}
               {studyMode !== "exam" ? (
-                <ul className="detail-items">
+                <ul className="detail-items timeline-event-items">
                   {sel.item.items.map((text, i) => (
                     <li key={i}>{text}</li>
                   ))}
