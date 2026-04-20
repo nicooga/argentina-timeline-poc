@@ -1771,19 +1771,36 @@
 }
 
 /*
- * Rótulo fuera del flujo: la pista de ticks usa el 100% del ancho de la pista;
- * los % de fecha coinciden con eje y fila de títulos (antes el flex restaba ancho).
+ * Pista al 100% + rótulo en la misma celda (rejilla): los % de fecha coinciden con eje y títulos.
+ * El rótulo es sticky horizontal (ver spec en `TimelineSemanticEventLanes.tsx`).
  */
 .events-lane--semantic {
   position: relative;
   justify-content: center;
 }
 
-.events-lane--semantic .events-lane__caption {
-  position: absolute;
+.events-lane__semantic-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 1fr;
+  width: 100%;
+  position: relative;
+}
+
+.events-lane--semantic > .events-lane__semantic-body > .events-lane__row.row-bar {
+  grid-column: 1;
+  grid-row: 1;
+  width: 100%;
+  min-width: 0;
+}
+
+.events-lane--semantic > .events-lane__semantic-body > .events-lane__caption {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: start;
+  align-self: center;
+  position: sticky;
   left: 0;
-  top: 50%;
-  transform: translateY(-50%);
   z-index: 4;
   pointer-events: none;
   max-width: min(34%, 3.6rem);
@@ -1792,11 +1809,26 @@
   min-height: 0;
   display: flex;
   align-items: center;
+  top: auto;
+  transform: none;
+  /* Legibilidad al panear: los puntos pasan por debajo (caption con pointer-events: none) */
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--surface) 68%, var(--events-lane-tint, var(--muted)) 32%) 0%,
+    color-mix(in srgb, var(--surface) 40%, transparent) 82%,
+    transparent 100%
+  );
+  border-radius: 3px 0 0 3px;
 }
 
 .timeline-stack--compact .events-lane--semantic {
   margin-bottom: var(--events-lane-stack-gap, 0.04rem);
   min-height: var(--events-semantic-lane-h);
+}
+
+.timeline-stack--compact .events-lane--semantic > .events-lane__semantic-body {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .timeline-stack--compact .events-lane--semantic .events-lane__row--dots.row-bar {

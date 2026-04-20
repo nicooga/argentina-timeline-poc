@@ -27,6 +27,7 @@ import { useNavigate } from "react-router-dom";
 import { SITE_INSTAGRAM_URL } from "./siteLinks";
 import { ViewerLower } from "./ViewerLower";
 import { KeyboardHelpModal } from "./KeyboardHelpModal";
+import { TimelineSemanticEventLanes } from "./TimelineSemanticEventLanes";
 import "./App.css";
 
 function formatDate(d: Date): string {
@@ -1847,76 +1848,16 @@ export default function App() {
               ))}
 
               <div className="events-stack">
-                {EVENT_LANE_ORDER.map((laneId) => {
-                  const laneOn = laneVisibility[laneId];
-                  const eventsHere = eventsSorted.filter(
-                    (e) =>
-                      e.lanes.includes(laneId) &&
-                      laneOn &&
-                      eventPassesLaneFilter(e)
-                  );
-                  return (
-                    <div
-                      key={laneId}
-                      className={`events-lane events-lane--semantic${laneOn ? "" : " events-lane--filtered-off"}`.trim()}
-                      data-lane={laneId}
-                    >
-                      <div className="events-lane__caption">
-                        <span className="events-lane__name">
-                          {LANE_UI[laneId].label}
-                        </span>
-                      </div>
-                      <div
-                        className="events-lane__row events-lane__row--dots row-bar"
-                        role={laneId === EVENT_LANE_ORDER[0] ? "group" : undefined}
-                        aria-label={
-                          laneId === EVENT_LANE_ORDER[0]
-                            ? `Eventos en la línea temporal, carril ${LANE_UI[laneId].label}`
-                            : `Carril ${LANE_UI[laneId].label}, eventos`
-                        }
-                      >
-                        {eventsHere.map((ev) => {
-                          const isEventActive =
-                            sel?.kind === "event" && sel.item === ev;
-                          const isRelated =
-                            studyMode !== "exam" &&
-                            sel?.kind === "event" &&
-                            causalHighlight.has(ev) &&
-                            sel.item !== ev;
-                          const p = pctOnTrack(ev.date.getTime(), min, max);
-                          return (
-                            <div
-                              key={`${laneId}-${ev.title}-${ev.date.toISOString()}`}
-                              className={`event-marker event-marker--lane-dot ${isEventActive ? "event-marker--selected" : ""}${isRelated ? " event-marker--related" : ""}`.trim()}
-                              style={
-                                {
-                                  left: `${p}%`,
-                                  "--event-dot-fill": LANE_UI[laneId].color,
-                                } as CSSProperties
-                              }
-                            >
-                              <button
-                                type="button"
-                                className="event-hit event-hit--lane-dot"
-                                tabIndex={-1}
-                                aria-hidden={true}
-                                onClick={() =>
-                                  setSel({ kind: "event", item: ev })
-                                }
-                                title={eventPointerTitle(ev, studyMode)}
-                              >
-                                <span
-                                  className={`event-lane-tick${isEventActive ? " event-lane-tick--active" : ""}`}
-                                  aria-hidden="true"
-                                />
-                              </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
+                <TimelineSemanticEventLanes
+                  laneVisibility={laneVisibility}
+                  eventsSorted={eventsSorted}
+                  eventPassesLaneFilter={eventPassesLaneFilter}
+                  trackPct={(t) => pctOnTrack(t, min, max)}
+                  selection={sel}
+                  studyMode={studyMode}
+                  causalHighlight={causalHighlight}
+                  onSelectEvent={(item) => setSel({ kind: "event", item })}
+                />
                 <div
                   className="events-titles-lane"
                   role="region"
