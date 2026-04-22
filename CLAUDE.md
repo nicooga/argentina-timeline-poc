@@ -1,3 +1,5 @@
 # Claude / agentes
 
-Instrucciones y enlaces para trabajo asistido: **[`AGENTS.md`](./AGENTS.md)** (tabla de trampas del visor + enlaces a [`docs/VIEWER_LAYOUT.md`](./docs/VIEWER_LAYOUT.md)).
+**Start here:** [`docs/MASTER.md`](./docs/MASTER.md) — project overview, architecture, data model, planned backend, and file index.
+
+**Layout traps (must read before touching viewer CSS):** [`AGENTS.md`](./AGENTS.md) → [`docs/VIEWER_LAYOUT.md`](./docs/VIEWER_LAYOUT.md).
