@@ -29,6 +29,10 @@ export type TimelineEventTitlesLaneProps = {
   pointerCoarse: boolean;
 };
 
+/**
+ * Títulos de eventos por fecha. Horizontal o vertical (zoom bajo).
+ * @see docs/VIEWER_LAYOUT.SPEC.md
+ */
 export function TimelineEventTitlesLane({
   eventsSorted,
   eventLabelPlacements,
@@ -46,8 +50,7 @@ export function TimelineEventTitlesLane({
 }: TimelineEventTitlesLaneProps) {
   /**
    * Conector eje↔bola: `left%` de `.event-marker` = fecha en pista; Y del disco =
-   * `vPadPx` + `--events-dot-half` + trazos; `--ev-titles-v-connector-btm` cierra el punteado en
-   * el disco (no depende de la rotación del texto, solo de `sizerContentMinPx`).
+   * `--events-dot-half` (+ carril); `--ev-titles-v-connector-btm` cierra el punteado en el disco.
    */
   const verticalLayout =
     labelsVertical && eventLabelPlacements.length > 0
@@ -67,7 +70,6 @@ export function TimelineEventTitlesLane({
         style={
           verticalLayout
             ? ({
-                "--v-pad": `${verticalLayout.vPadPx}px`,
                 "--ev-titles-v-connector-btm": `${verticalLayout.connectorBottomInsetPx}px`,
               } as CSSProperties)
             : undefined
@@ -160,4 +162,8 @@ export function TimelineEventTitlesLane({
       </div>
     </div>
   );
+}
+
+function randomColor (): string {
+  return `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
 }

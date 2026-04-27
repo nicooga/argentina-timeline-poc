@@ -108,19 +108,6 @@ describe("assignEventLabelLanes", () => {
   });
 });
 
-function hitBlockForInvariant(
-  maxWidthPx: number,
-  pointerCoarse: boolean,
-  remPx: number
-): number {
-  const readAxisSlotPx = verticalReadSlotHeightPx(maxWidthPx);
-  const gapPx = 0.38 * remPx;
-  const naturalHitH = 14 + gapPx + readAxisSlotPx;
-  return pointerCoarse
-    ? Math.max(44, naturalHitH)
-    : Math.max(28, naturalHitH);
-}
-
 describe("verticalEventTitlesRowLayoutPx", () => {
   it("returns zeros for empty placements", () => {
     const r = verticalEventTitlesRowLayoutPx([], false);
@@ -129,24 +116,17 @@ describe("verticalEventTitlesRowLayoutPx", () => {
     expect(r.connectorBottomInsetPx).toBe(0);
   });
 
-  it("satisfy center-in-row invariant: vPad + eventsDotHalf >= hitBlock/2 (no clip above row)", () => {
+  it("keeps vPadPx at zero (top padding distorted layout for long measured titles)", () => {
     for (const pointerCoarse of [false, true] as const) {
       for (const w of [0, 40, 120, 300]) {
-        const { vPadPx, remPx } = verticalEventTitlesRowLayoutPx(
-          [{ maxWidthPx: w }],
-          pointerCoarse
+        expect(verticalEventTitlesRowLayoutPx([{ maxWidthPx: w }], pointerCoarse).vPadPx).toBe(
+          0
         );
-        const eventsDotHalfPx = (pointerCoarse ? 1.32 : 1.22) / 2 * remPx;
-        const hitBlock = hitBlockForInvariant(w, pointerCoarse, remPx);
-        expect(
-          vPadPx + eventsDotHalfPx + 0.5,
-          `w=${w} coarse=${pointerCoarse}`
-        ).toBeGreaterThanOrEqual(hitBlock / 2);
       }
     }
   });
 
-  it("grows sizer and usually vPad when the longest maxWidthPx increases (regression guard)", () => {
+  it("grows sizer and connector inset when the longest maxWidthPx increases (regression guard)", () => {
     const shortL = verticalEventTitlesRowLayoutPx(
       [{ maxWidthPx: 20 }],
       false
@@ -156,18 +136,11 @@ describe("verticalEventTitlesRowLayoutPx", () => {
       false
     );
     expect(longL.sizerContentMinPx).toBeGreaterThan(shortL.sizerContentMinPx);
-    expect(longL.vPadPx).toBeGreaterThanOrEqual(shortL.vPadPx);
+    expect(shortL.vPadPx).toBe(0);
+    expect(longL.vPadPx).toBe(0);
     expect(longL.connectorBottomInsetPx).toBeGreaterThan(
       shortL.connectorBottomInsetPx
     );
-  });
-
-  it("produces a positive top padding for a wide column even on fine pointer (rotated text needs room)", () => {
-    const { vPadPx } = verticalEventTitlesRowLayoutPx(
-      [{ maxWidthPx: 280 }],
-      false
-    );
-    expect(vPadPx).toBeGreaterThan(12);
   });
 
   it("verticalReadSlotHeightPx adds unified wrap padding to read length", () => {

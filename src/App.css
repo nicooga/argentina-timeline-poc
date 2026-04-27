@@ -2087,8 +2087,8 @@
 }
 
 /*
- * Modo vertical: la fila crece (sizer + --v-pad). El tope de trazo fijo con ~--event-conn-end-adjust
- * dejaba el fin 16px bajo .events-titles-lane__connectors; el ancla del disco va con sizer−dot-half.
+ * Modo vertical: alto de fila vía sizer in-flow; --v-pad queda sin usar (antes crecía con el título).
+ * Antes el fin del trazo vs --event-conn-end-adjust; el ancla del disco usa sizer−dot-half.
  * --ev-titles-v-connector-btm = sizerContentMinPx−eventsDotHalf (TimelineEventTitlesLane).
  */
 .events-titles-lane--labels-vertical .events-titles-lane__connectors .event-connector {

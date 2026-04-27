@@ -94,10 +94,9 @@ const EVENT_DOT_PX = 14;
 
 export type VerticalEventTitlesRowLayoutPx = {
   /**
-   * Relleno superior (px) que desplaza el ancla `--events-dot-half` hacia abajo. Sin esto, el
-   * centro del `.event-hit` queda demasiado cerca del borde y el rótulo rotado queda por encima
-   * de la caja (y negativo) respecto a la fila
-   * respecto a la fila y se recorta bajo `.timeline-scroll` (`overflow-y: clip`).
+   * Histórico: relleno superior en px para `--v-pad`. Queda **0**: el cálculo previo era
+   * proporcional al ancho medido del título más largo (≈ mitad del “hit block”), lo que creaba un
+   * hueco enorme sobre los discos. El alto de fila viene de `sizerContentMinPx`, no de padding-top.
    */
   vPadPx: number;
   /**
@@ -120,11 +119,10 @@ export type VerticalEventTitlesRowLayoutPx = {
  * de `.event-hit`, `--events-dot-half` en `.timeline-stack--compact` y el wrap en `EventTitleMarker`.
  *
  * Comprobación manual (DevTools): a igual `left%` en pista, el centro del `.event-dot` y el tick
- * del carril semántico deben compartir eje X; en Y, con `.events-titles-lane--labels-vertical
- * .event-hit { align-items: center }`, el centro del hit coincide con vPad + events-dot-half.
+ * del carril semántico deben compartir eje X; en Y el disco usa `events-dot-half` (sin `--v-pad`).
  *
  * **Invariante (conector):** el trazo punteado no depende de la rotación del texto, solo de la
- * geometría de esta fila (`vPadPx` + sizer) y de `--ev-titles-v-connector-btm` — ver
+ * geometría de esta fila (sizer + `connectorBottomInsetPx` / `--ev-titles-v-connector-btm`) — ver
  * `connectorBottomInsetPx` y [`TimelineEventTitlesLane`](../TimelineEventTitlesLane.tsx).
  * Recalibración: medición canvas (misma fuente que `measureEventTitleWidthsPx`); si hubiera
  * desvío con webfonts, se podría añadir un ResizeObserver aislado, no hace falta hoy.
@@ -152,7 +150,7 @@ export function verticalEventTitlesRowLayoutPx(
   const hitBlockPx = pointerCoarse
     ? Math.max(44, naturalHitH)
     : Math.max(28, naturalHitH);
-  const vPadPx = Math.max(0, Math.ceil(hitBlockPx / 2 - eventsDotHalfPx));
+  const vPadPx = 0;
   const padBottomPx = (pointerCoarse ? 0.32 : 0.28) * rootRemPx;
   const sizerContentMinPx = Math.ceil(
     eventsDotHalfPx + hitBlockPx / 2 + padBottomPx + 2
