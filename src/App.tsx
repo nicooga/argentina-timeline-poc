@@ -856,7 +856,8 @@ export default function App() {
       stackWidthPx,
       true,
       pointerCoarse,
-      eventLabelsVertical
+      eventLabelsVertical,
+      layoutProbe.vhPx
     );
     return { eventLabelPlacements: placements, eventLabelMaxLane: maxLane };
   }, [
@@ -866,6 +867,7 @@ export default function App() {
     stackWidthPx,
     pointerCoarse,
     eventLabelsVertical,
+    layoutProbe.vhPx,
   ]);
 
   /* Al pasar a títulos verticales (zoom bajo), anclar el scroll vertical al inicio del stack:
@@ -1728,6 +1730,7 @@ export default function App() {
                   eventPassesLaneFilter={eventPassesLaneFilter}
                   labelsVertical={eventLabelsVertical}
                   pointerCoarse={pointerCoarse}
+                  viewportInnerHeightPx={layoutProbe.vhPx}
                   eventPointerTitle={(e: TimelineEvent) =>
                     eventPointerTitle(e, studyMode)
                   }

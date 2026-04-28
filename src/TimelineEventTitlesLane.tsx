@@ -3,6 +3,7 @@ import type { StudyMode } from "../causality";
 import { semanticConnectorLaneSpanCount } from "../eventLanes";
 import type { Selection, TimelineEvent } from "../types";
 import { EventTitleMarker } from "./EventTitleMarker";
+import { EventTitleMarkerVertical } from "./EventTitleMarkerVertical";
 import type { EventLabelPlacement } from "./timeline/eventLabelLayout";
 import { verticalEventTitlesRowLayoutPx } from "./timeline/eventLabelLayout";
 
@@ -27,6 +28,8 @@ export type TimelineEventTitlesLaneProps = {
   timelineSelectedEventDotRef: RefObject<HTMLButtonElement | null>;
   /** Coherente con `matchMedia('(pointer: coarse)')` en App — afecta `--events-dot-half` y el layout. */
   pointerCoarse: boolean;
+  /** Para alinear alto del visor de título vertical con TS (`verticalEventTitlesRowLayoutPx`). */
+  viewportInnerHeightPx: number;
 };
 
 /**
@@ -47,6 +50,7 @@ export function TimelineEventTitlesLane({
   onSelectEvent,
   timelineSelectedEventDotRef,
   pointerCoarse,
+  viewportInnerHeightPx,
 }: TimelineEventTitlesLaneProps) {
   /**
    * Conector eje↔bola: `left%` de `.event-marker` = fecha en pista; Y del disco =
@@ -54,7 +58,12 @@ export function TimelineEventTitlesLane({
    */
   const verticalLayout =
     labelsVertical && eventLabelPlacements.length > 0
-      ? verticalEventTitlesRowLayoutPx(eventLabelPlacements, pointerCoarse)
+      ? verticalEventTitlesRowLayoutPx(
+          eventLabelPlacements,
+          pointerCoarse,
+          16,
+          viewportInnerHeightPx
+        )
       : null;
 
   return (
@@ -142,14 +151,26 @@ export function TimelineEventTitlesLane({
           const p = trackPct(e.date.getTime());
           const lanesMuted = !eventPassesLaneFilter(e);
           const layoutLaneY = labelsVertical ? 0 : pl.lane;
-          return (
+          return labelsVertical ? (
+            <EventTitleMarkerVertical
+              key={`title-${e.title}-${e.date.toISOString()}`}
+              event={e}
+              placement={pl}
+              leftPct={p}
+              isEventActive={isEventActive}
+              isRelated={isRelated}
+              lanesMuted={lanesMuted}
+              eventPointerTitle={eventPointerTitle}
+              onSelectEvent={onSelectEvent}
+              timelineSelectedEventDotRef={timelineSelectedEventDotRef}
+            />
+          ) : (
             <EventTitleMarker
               key={`title-${e.title}-${e.date.toISOString()}`}
               event={e}
               placement={pl}
               leftPct={p}
               layoutLaneY={layoutLaneY}
-              labelsVertical={labelsVertical}
               isEventActive={isEventActive}
               isRelated={isRelated}
               lanesMuted={lanesMuted}
@@ -162,8 +183,4 @@ export function TimelineEventTitlesLane({
       </div>
     </div>
   );
-}
-
-function randomColor (): string {
-  return `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
 }

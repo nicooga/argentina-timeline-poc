@@ -1,6 +1,6 @@
 import type { TimelineEvent } from "../../types";
 
-/** Alineada con `font-size: 0.68rem` de `.event-label-h` y `1.02em` en `.event-label-vrot-wrap`. */
+/** Alineada con `font-size: 0.68rem` de `.event-label-h` / `.evt-v-caption.timeline-event-title` en App.css. */
 const EVENT_LABEL_VROT_LABEL_FONT_EM = 0.68;
 
 export type EventLabelAnchor = "start" | "center" | "end";
@@ -9,15 +9,13 @@ export type EventLabelPlacement = {
   lane: number;
   anchor: EventLabelAnchor;
   /**
-   * Modo horizontal: `max-width` CSS del título.
-   * Modo vertical (eje de lectura tras 90°): límite en px = longitud de línea medida; ver
-   * `readLengthPx` eje semántico y `columnPx` para el grosor en pista.
+   * Modo vertical (`writing-mode`): tope útil para el texto (altura lógica de la columna); ver
+   * `--evt-v-read-inner-max` en App.css y `verticalReadAxisInnerMaxPx` en código.
    */
   maxWidthPx: number;
   /**
-   * Modo vertical: grosor de la “columna” en píxeles (eje X en pantalla, ortogonal a la lectura).
-   * Alinea con `verticalColumnWidthPx` y con el ancho de `.event-label-vrot-wrap`. No se usa en
-   * horizontal.
+   * Modo vertical: grosor de la columna en pista (`width` inline en `.evt-v-caption`).
+   * Coincide con `verticalColumnWidthPx`; no se usa en horizontal.
    */
   columnPx?: number;
 };
@@ -33,7 +31,7 @@ export function readRootRemPx(fallbackRemPx = 16): number {
 
 /**
  * Grosor en pista (eje X) de la caja de etiqueta vertical, coherente con
- * [`App.css`](../App.css) (`.event-label-vrot-wrap` / coarse touch).
+ * [`App.css`](../App.css) (`.evt-v-caption`; coarse touch).
  */
 export function verticalColumnWidthPx(
   pointerCoarse: boolean,
@@ -45,12 +43,46 @@ export function verticalColumnWidthPx(
   return Math.max(0.78 * remPx, 1.02 * EVENT_LABEL_VROT_LABEL_FONT_EM * remPx);
 }
 
+/** Padding unificado del wrap vertical (par con CSS `calc(... - 24px)`). Ver [`EventTitleMarker`](../EventTitleMarker.tsx). */
+export const EVENT_TITLE_VROT_WRAP_PAD_PX = 24;
+
 /**
- * Altura (eje de lectura en pantalla) reservada para el título + padding unificado del wrap.
- * `readLengthPx` = `maxWidthPx` en vertical (medida canvas del texto en una línea).
+ * Altura (eje de lectura en pantalla) reservada para el título + padding unificado del wrap (modo horizontal o tests).
+ * Modo vertical: el alto efectivo viene de `verticalReadAxisTotalPx` (+ CSS `--evt-v-read-axis-max`).
  */
 export function verticalReadSlotHeightPx(readLengthPx: number): number {
   return readLengthPx + EVENT_TITLE_VROT_WRAP_PAD_PX;
+}
+
+/**
+ * Límites del alto del wrap de lectura vertical; debe coincidir con
+ * `--evt-v-read-*` (`clamp(...)`) en `.events-titles-lane--labels-vertical` en App.css.
+ */
+export const EVENT_VROT_READ_AXIS_MIN_PX = 112;
+export const EVENT_VROT_READ_AXIS_MAX_PX = 220;
+/** Coherente con `20dvh` en CSS (altura útil tipica ≈ proporcional a innerHeight). */
+export const EVENT_VROT_READ_AXIS_VH_RATIO = 0.2;
+
+/** Altura total (px) del visor de lectura vertical (par con `--evt-v-read-axis-max` en CSS). */
+export function verticalReadAxisTotalPx(viewportHeightPx: number): number {
+  const vh = Math.max(0, viewportHeightPx);
+  return Math.round(
+    Math.min(
+      EVENT_VROT_READ_AXIS_MAX_PX,
+      Math.max(
+        EVENT_VROT_READ_AXIS_MIN_PX,
+        vh * EVENT_VROT_READ_AXIS_VH_RATIO
+      )
+    )
+  );
+}
+
+/** Espacio disponible para el texto en línea antes de rotar (= eje vertical en pantalla); resta padding del wrap. */
+export function verticalReadAxisInnerMaxPx(viewportHeightPx: number): number {
+  return Math.max(
+    8,
+    verticalReadAxisTotalPx(viewportHeightPx) - EVENT_TITLE_VROT_WRAP_PAD_PX
+  );
 }
 
 let eventLabelMeasureCtx: CanvasRenderingContext2D | null = null;
@@ -86,9 +118,6 @@ export function labelIntervalsOverlap(
 ): boolean {
   return a[0] < b[1] + gapPct && a[1] > b[0] - gapPct;
 }
-
-/** Igual que el `+ 24` de [`EventTitleMarker`](../EventTitleMarker.tsx) en el wrap vertical. */
-export const EVENT_TITLE_VROT_WRAP_PAD_PX = 24;
 
 const EVENT_DOT_PX = 14;
 
@@ -130,7 +159,8 @@ export type VerticalEventTitlesRowLayoutPx = {
 export function verticalEventTitlesRowLayoutPx(
   placements: readonly { maxWidthPx: number }[],
   pointerCoarse: boolean,
-  remPx = 16
+  remPx = 16,
+  viewportHeightPx = typeof window !== "undefined" ? window.innerHeight : 800
 ): VerticalEventTitlesRowLayoutPx {
   const rootRemPx = readRootRemPx(remPx);
   if (placements.length === 0) {
@@ -141,9 +171,8 @@ export function verticalEventTitlesRowLayoutPx(
       connectorBottomInsetPx: 0,
     };
   }
-  const maxReadLengthPx = Math.max(...placements.map((p) => p.maxWidthPx));
-  /** Eje de lectura en pantalla (tras 90°) = longitud de línea + padding del wrap. */
-  const readAxisSlotPx = verticalReadSlotHeightPx(maxReadLengthPx);
+  /** Visor táctil: alto fijo según viewport (par con CSS); el título recorta con ellipsis si excede. */
+  const readAxisSlotPx = verticalReadAxisTotalPx(viewportHeightPx);
   const eventsDotHalfPx = (pointerCoarse ? 1.32 : 1.22) / 2 * rootRemPx;
   const gapPx = 0.38 * rootRemPx;
   const naturalHitH = EVENT_DOT_PX + gapPx + readAxisSlotPx;
@@ -186,7 +215,10 @@ export function assignEventLabelLanes(
   stackWidthPx: number | null,
   compact: boolean,
   pointerCoarse: boolean,
-  labelsVertical: boolean
+  labelsVertical: boolean,
+  viewportHeightPx: number = typeof window !== "undefined"
+    ? window.innerHeight
+    : 800
 ): { placements: EventLabelPlacement[]; maxLane: number } {
   const n = eventsSorted.length;
   if (n === 0) {
@@ -203,6 +235,10 @@ export function assignEventLabelLanes(
     compact,
     pointerCoarse
   );
+
+  const verticalReadInnerCapPx = labelsVertical
+    ? verticalReadAxisInnerMaxPx(viewportHeightPx)
+    : 0;
 
   const items = eventsSorted.map((event, i) => {
     const measured = widthsPx[i]! * EVENT_LABEL_MEASURE_SAFETY;
@@ -312,7 +348,7 @@ export function assignEventLabelLanes(
       if (!clash) {
         occupied.push(interval);
         const maxWidthPx = labelsVertical
-          ? Math.min(measuredWidthPx, 300)
+          ? Math.min(measuredWidthPx, verticalReadInnerCapPx)
           : Math.min(
               baseWidthPx,
               Math.max(48, (widthPct / 100) * stackPx)

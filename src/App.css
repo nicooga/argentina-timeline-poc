@@ -1957,6 +1957,14 @@
 }
 
 /*
+ * Alto del visor de lectura vertical (par con timeline/eventLabelLayoutCore: verticalReadAxisTotalPx).
+ */
+.events-titles-lane--labels-vertical {
+  --evt-v-read-axis-max: clamp(112px, 20dvh, 220px);
+  --evt-v-read-inner-max: calc(var(--evt-v-read-axis-max) - 24px);
+}
+
+/*
  * Títulos verticales: la pista de grid no puede quedar fija a ~44px; el título crecería hacia
  * abajo y se recorta bajo .timeline-scroll. minmax(…, auto) hace crecer la fila con el contenido.
  * El colchón inferior pasa a ser pequeño: el “aire” vive en el alto in-flow, no otra vez en padding.
@@ -2019,7 +2027,7 @@
   );
 }
 
-.events-titles-lane--labels-vertical .events-titles-lane .event-marker {
+.events-titles-lane .evt-v-marker {
   top: calc(
     var(--v-pad, 0px) + var(--events-dot-half) +
       var(--event-label-lane, 0) * var(--event-label-lane-nudge, 0.96rem)
@@ -2269,7 +2277,8 @@
 }
 
 /* Ancla en la fecha: mitad de la franja útil de la fila (no del padding de etiquetas) */
-.event-marker {
+.event-marker,
+.evt-v-marker {
   position: absolute;
   width: 0;
   height: 0;
@@ -2278,11 +2287,13 @@
   z-index: 2;
 }
 
-.event-marker--selected {
+.event-marker--selected,
+.evt-v-marker.evt-v-marker--selected {
   z-index: 5;
 }
 
-.event-marker--related {
+.event-marker--related,
+.evt-v-marker.evt-v-marker--related {
   z-index: 4;
 }
 
@@ -2295,6 +2306,147 @@
 
 .viewer-shell--study-causal .event-marker--related .event-label-h.timeline-event-title {
   color: color-mix(in srgb, var(--accent) 55%, var(--text));
+}
+
+.evt-v-marker.evt-v-marker--related .evt-v-caption.timeline-event-title {
+  color: color-mix(in srgb, var(--accent) 42%, var(--text));
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  text-underline-offset: 0.12em;
+}
+
+.viewer-shell--study-causal
+  .evt-v-marker.evt-v-marker--related
+  .evt-v-caption.timeline-event-title {
+  color: color-mix(in srgb, var(--accent) 55%, var(--text));
+}
+
+/*
+ * Títulos en vertical (solo modo zoom): `EventTitleMarkerVertical` — no reusar `.event-hit--*`;
+ * escritura vertical nativa (`writing-mode`), disco + texto en un solo flex táctil.
+ */
+.evt-v-marker .evt-v-hit {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.38rem;
+  margin: 0;
+  padding: 0.12rem 0;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+  isolation: isolate;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: none;
+}
+
+.evt-v-marker.evt-v-marker--selected .evt-v-hit {
+  gap: 0.55rem;
+}
+
+.evt-v-hit:focus {
+  outline: none;
+}
+
+.evt-v-hit:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.evt-v-hit::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: transparent;
+  z-index: -1;
+  transition: background-color 0.12s ease;
+}
+
+.evt-v-hit:hover::before {
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+.evt-v-hit:active::before {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
+.evt-v-caption.timeline-event-title {
+  display: inline-block;
+  flex: 0 1 auto;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  box-sizing: border-box;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-size: 0.68rem;
+  line-height: 1.24;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  color: color-mix(in srgb, var(--text) 86%, var(--muted) 14%);
+  max-height: var(--evt-v-read-inner-max);
+  text-shadow:
+    0 0 8px var(--surface),
+    0 0 4px var(--surface),
+    0 1px 0 var(--surface);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.evt-v-marker.evt-v-marker--selected .evt-v-caption.timeline-event-title {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.evt-v-marker.evt-v-marker--lanes-muted {
+  opacity: 0.36;
+}
+
+.evt-v-marker.evt-v-marker--lanes-muted.evt-v-marker--related,
+.evt-v-marker.evt-v-marker--lanes-muted.evt-v-marker--selected {
+  opacity: 1;
+}
+
+@media (pointer: coarse) {
+  .evt-v-marker .evt-v-hit {
+    gap: 0.28rem;
+    min-height: var(--touch-target-min, 44px);
+    padding: 0.12rem 0.15rem;
+  }
+
+  .evt-v-marker.evt-v-marker--selected .evt-v-hit {
+    gap: 0.5rem;
+  }
+
+  .evt-v-hit::before {
+    inset: -10px -8px;
+    border-radius: 12px;
+  }
+
+  .evt-v-hit:hover::before {
+    background: color-mix(in srgb, var(--text) 8%, transparent);
+  }
+
+  .evt-v-hit:active::before {
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+
+  .evt-v-caption.timeline-event-title {
+    font-size: 0.74rem;
+  }
 }
 
 .events-titles-lane__causality-wrap {
@@ -2570,70 +2722,6 @@
 
 .event-hit--end .event-label-h {
   text-align: right;
-}
-
-/*
- * Modo vertical: [disco] + [caja w×h]. Solo `.event-label-vrot-slab` se transforma (gira con el
- * título, mismo rectángulo; `pointer-events: none` para tocar toda la caja del wrap).
- * Origen abajo-izq + 90° CW: el título “cae” hacia abajo, no hacia arriba.
- * Alternativa futura: `writing-mode: vertical-rl` evita transform; requeriría spike (ellipsis/UX).
- */
-.event-label-vrot-wrap {
-  position: relative;
-  flex: 0 0 auto;
-  display: inline-block;
-  width: max(0.78rem, 1.02em);
-  min-width: 0;
-  box-sizing: border-box;
-  align-self: center;
-  vertical-align: bottom;
-  overflow: visible;
-}
-
-/* En títulos verticales el padre ya centra; la columna no ancla al bajo (evitaba bajar el disco). */
-.events-titles-lane--labels-vertical .event-label-vrot-wrap {
-  align-self: center;
-  vertical-align: middle;
-}
-
-.event-label-h.event-label-vrot-slab {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  margin: 0;
-  max-width: min(12rem, 40vw);
-  width: max-content;
-  min-width: 0;
-  display: block;
-  white-space: nowrap;
-  transform: rotate(90deg);
-  transform-origin: bottom left;
-  pointer-events: none;
-  flex: 0 0 auto;
-  z-index: 1;
-}
-
-/*
- * Eje Y: con flex-end el disco y la base de la columna quedaban al fondo y desalineados con
- * --events-dot-half (centro de franja). Centrado en el eje transversal alinea con el ancla
- * top: vPad + events-dot-half + translateY(-50%) del .event-hit.
- */
-.events-titles-lane--labels-vertical .event-hit {
-  align-items: center;
-}
-
-@media (pointer: coarse) {
-  .events-titles-lane--labels-vertical .event-label-vrot-wrap {
-    width: max(0.85rem, var(--touch-target-min, 44px));
-  }
-
-  .events-titles-lane--labels-vertical .event-marker .event-hit::before {
-    inset: -6px 0;
-  }
-}
-
-.events-titles-lane--labels-vertical .event-hit .event-label-h {
-  text-align: left;
 }
 
 @media (pointer: coarse) {

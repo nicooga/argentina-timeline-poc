@@ -110,7 +110,7 @@ describe("assignEventLabelLanes", () => {
 
 describe("verticalEventTitlesRowLayoutPx", () => {
   it("returns zeros for empty placements", () => {
-    const r = verticalEventTitlesRowLayoutPx([], false);
+    const r = verticalEventTitlesRowLayoutPx([], false, 16, 800);
     expect(r.vPadPx).toBe(0);
     expect(r.sizerContentMinPx).toBe(0);
     expect(r.connectorBottomInsetPx).toBe(0);
@@ -119,28 +119,45 @@ describe("verticalEventTitlesRowLayoutPx", () => {
   it("keeps vPadPx at zero (top padding distorted layout for long measured titles)", () => {
     for (const pointerCoarse of [false, true] as const) {
       for (const w of [0, 40, 120, 300]) {
-        expect(verticalEventTitlesRowLayoutPx([{ maxWidthPx: w }], pointerCoarse).vPadPx).toBe(
-          0
-        );
+        expect(
+          verticalEventTitlesRowLayoutPx([{ maxWidthPx: w }], pointerCoarse, 16, 800)
+            .vPadPx
+        ).toBe(0);
       }
     }
   });
 
-  it("grows sizer and connector inset when the longest maxWidthPx increases (regression guard)", () => {
-    const shortL = verticalEventTitlesRowLayoutPx(
+  it("Sizer height follows viewport (fixed read slot), not longest maxWidthPx title", () => {
+    const short = verticalEventTitlesRowLayoutPx(
       [{ maxWidthPx: 20 }],
-      false
+      false,
+      16,
+      400
     );
-    const longL = verticalEventTitlesRowLayoutPx(
+    const long = verticalEventTitlesRowLayoutPx(
       [{ maxWidthPx: 400 }],
-      false
+      false,
+      16,
+      400
     );
-    expect(longL.sizerContentMinPx).toBeGreaterThan(shortL.sizerContentMinPx);
-    expect(shortL.vPadPx).toBe(0);
-    expect(longL.vPadPx).toBe(0);
-    expect(longL.connectorBottomInsetPx).toBeGreaterThan(
-      shortL.connectorBottomInsetPx
+    expect(long.sizerContentMinPx).toBe(short.sizerContentMinPx);
+    expect(long.connectorBottomInsetPx).toBe(short.connectorBottomInsetPx);
+  });
+
+  it("taller viewport increases sizer until axis cap (regression)", () => {
+    const lowVh = verticalEventTitlesRowLayoutPx(
+      [{ maxWidthPx: 80 }],
+      false,
+      16,
+      400
     );
+    const midVh = verticalEventTitlesRowLayoutPx(
+      [{ maxWidthPx: 80 }],
+      false,
+      16,
+      900
+    );
+    expect(midVh.sizerContentMinPx).toBeGreaterThan(lowVh.sizerContentMinPx);
   });
 
   it("verticalReadSlotHeightPx adds unified wrap padding to read length", () => {

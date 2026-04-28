@@ -2,11 +2,10 @@ import type { CSSProperties, RefObject } from "react";
 import type { TimelineEvent } from "../types";
 import type { EventLabelPlacement } from "./timeline/eventLabelLayout";
 
-export type EventTitleMarkerProps = {
+export type EventTitleMarkerVerticalProps = {
   event: TimelineEvent;
   placement: EventLabelPlacement;
   leftPct: number;
-  layoutLaneY: number;
   isEventActive: boolean;
   isRelated: boolean;
   lanesMuted: boolean;
@@ -16,37 +15,37 @@ export type EventTitleMarkerProps = {
 };
 
 /**
- * Solo modo horizontal: bola + etiqueta lateral. Para vertical ver [`EventTitleMarkerVertical`](./EventTitleMarkerVertical.tsx).
+ * Solo modo etiquetas vertical: layout (`writing-mode`) independiente del modo horizontal;
+ * sin `.event-marker` ni `.event-hit--*`.
  */
-export function EventTitleMarker({
+export function EventTitleMarkerVertical({
   event,
   placement: pl,
   leftPct: p,
-  layoutLaneY,
   isEventActive,
   isRelated,
   lanesMuted,
   eventPointerTitle,
   onSelectEvent,
   timelineSelectedEventDotRef,
-}: EventTitleMarkerProps) {
-  const labelStyle = {
-    maxWidth: `${Math.round(pl.maxWidthPx)}px`,
-  } as CSSProperties;
+}: EventTitleMarkerVerticalProps) {
+  const captionStyle =
+    pl.columnPx != null
+      ? ({ width: `${Math.round(pl.columnPx)}px` } as CSSProperties)
+      : undefined;
 
   return (
     <div
-      className={`event-marker ${isEventActive ? "event-marker--selected" : ""}${isRelated ? " event-marker--related" : ""}${lanesMuted ? " event-marker--lanes-muted" : ""}`.trim()}
+      className={`evt-v-marker ${isEventActive ? "evt-v-marker--selected" : ""}${isRelated ? " evt-v-marker--related" : ""}${lanesMuted ? " evt-v-marker--lanes-muted" : ""}`.trim()}
       style={
         {
           left: `${p}%`,
-          "--event-label-lane": layoutLaneY,
         } as CSSProperties
       }
     >
       <button
         type="button"
-        className={`event-hit event-hit--${pl.anchor}`}
+        className="evt-v-hit"
         ref={(el) => {
           if (isEventActive) {
             timelineSelectedEventDotRef.current = el;
@@ -61,7 +60,10 @@ export function EventTitleMarker({
           className={`event-dot event-dot--titles ${isEventActive ? "active" : ""}`}
           aria-hidden="true"
         />
-        <span className="event-label-h timeline-event-title" style={labelStyle}>
+        <span
+          className="evt-v-caption timeline-event-title"
+          style={captionStyle}
+        >
           {event.title}
         </span>
       </button>
