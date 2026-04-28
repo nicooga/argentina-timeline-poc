@@ -29,14 +29,8 @@ export function EventTitleMarkerVertical({
   onSelectEvent,
   timelineSelectedEventDotRef,
 }: EventTitleMarkerVerticalProps) {
-  const clipStyle =
-    pl.columnPx != null
-      ? ({
-          width: `${Math.round(pl.columnPx)}px`,
-          '--evt-v-read-inner-max': 'unset'
-        } as CSSProperties)
-      : undefined;
-
+  const clipStyle = {}
+ 
   return (
     <div
       className={`evt-v-marker ${isEventActive ? "evt-v-marker--selected" : ""}${isRelated ? " evt-v-marker--related" : ""}${lanesMuted ? " evt-v-marker--lanes-muted" : ""}`.trim()}

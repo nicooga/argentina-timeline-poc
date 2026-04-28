@@ -2379,6 +2379,7 @@
   background: transparent;
   z-index: -1;
   transition: background-color 0.12s ease;
+  background: var(--bg);
 }
 
 .evt-v-hit:hover::before {
@@ -2398,7 +2399,6 @@
 .evt-v-clip {
   flex: 0 1 auto;
   min-width: 0;
-  width: max(44px, 0.85rem);
   height: var(--evt-v-read-inner-max);
   max-height: var(--evt-v-read-inner-max);
   overflow: hidden;
@@ -2458,8 +2458,8 @@
   }
 
   .evt-v-hit::before {
-    inset: -10px -8px;
     border-radius: 12px;
+    inset: 5px 2px;
   }
 
   .evt-v-hit:hover::before {
@@ -2719,7 +2719,7 @@
   z-index: 1;
   max-width: min(12rem, 40vw);
   padding: 0;
-  font-size: 0.68rem;
+  font-size: 0.58rem;
   line-height: 1.24;
   white-space: nowrap;
   overflow: hidden;
