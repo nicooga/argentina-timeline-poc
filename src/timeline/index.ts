@@ -3,6 +3,7 @@
  * Importá desde aquí en lugar de rutas internas (`timeline/ui/...`, `eventLabelLayout` directo).
  */
 export * from "./eventLabelLayout";
+export * from "./axisMarkLayout";
 export {
   LaneGlyph,
   TimelineEventTitlesLane,

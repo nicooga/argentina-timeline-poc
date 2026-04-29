@@ -23,12 +23,16 @@ import { SITE_INSTAGRAM_URL, KeyboardHelpModal } from "./shell";
 import { ViewerLower } from "./viewer";
 /* Títulos de eventos: si `timelineZoom < EVENT_LABEL_VERTICAL_ZOOM_THRESHOLD` van verticales (layout+CSS); ver `timeline/eventLabelLayout.ts`. */
 import {
+  assignAxisMarkLanes,
   assignEventLabelLanes,
+  axisTickAriaLabel,
+  computeAxisShowYearFlags,
   EVENT_LABEL_VERTICAL_ZOOM_THRESHOLD,
-  labelIntervalsOverlap,
+  mergeAxisMarks,
   TimelineSemanticEventLanes,
   TimelineEventTitlesLane,
 } from "./timeline";
+import { AxisTickMark } from "./AxisTickMark";
 import "./App.css";
 
 function formatDate(d: Date): string {
@@ -44,23 +48,6 @@ function formatShortDate(d: Date): string {
   return d.toLocaleDateString("es-AR", {
     timeZone: "UTC",
     year: "numeric",
-  });
-}
-
-/** Línea superior del tick del eje (año). */
-function formatAxisYear(d: Date): string {
-  return d.toLocaleDateString("es-AR", {
-    timeZone: "UTC",
-    year: "numeric",
-  });
-}
-
-/** Línea inferior: mes abreviado + día (ahorra ancho vs. una sola línea larga). */
-function formatAxisMonthDay(d: Date): string {
-  return d.toLocaleDateString("es-AR", {
-    timeZone: "UTC",
-    month: "short",
-    day: "numeric",
   });
 }
 
@@ -285,50 +272,6 @@ function assignPeriodLanes(periods: Period[]): {
   return { laneByIndex, laneCount: laneEndMs.length };
 }
 
-type AxisMark = { t: number; year: string; monthDay: string };
-
-function mergeAxisMarks(
-  periods: { start: Date; end: Date }[],
-  events: { date: Date }[]
-): AxisMark[] {
-  const raw: AxisMark[] = [];
-  for (const p of periods) {
-    raw.push({
-      t: p.start.getTime(),
-      year: formatAxisYear(p.start),
-      monthDay: formatAxisMonthDay(p.start),
-    });
-    raw.push({
-      t: p.end.getTime(),
-      year: formatAxisYear(p.end),
-      monthDay: formatAxisMonthDay(p.end),
-    });
-  }
-  for (const e of events) {
-    raw.push({
-      t: e.date.getTime(),
-      year: formatAxisYear(e.date),
-      monthDay: formatAxisMonthDay(e.date),
-    });
-  }
-  raw.sort((a, b) => a.t - b.t);
-  const out: AxisMark[] = [];
-  for (const item of raw) {
-    const prev = out[out.length - 1];
-    if (prev && prev.t === item.t) {
-      if (prev.year !== item.year) {
-        prev.year = `${prev.year} · ${item.year}`;
-      }
-      if (prev.monthDay !== item.monthDay) {
-        prev.monthDay = `${prev.monthDay} · ${item.monthDay}`;
-      }
-    } else {
-      out.push({ ...item });
-    }
-  }
-  return out;
-}
-
 /** 0 | 1 según la década (años …0–…9), estable con años negativos. */
 function decadeStripeIndex(decadeStartYear: number): 0 | 1 {
   const k = Math.floor(decadeStartYear / 10);
@@ -497,144 +440,6 @@ function formatApproxTimeSpan(ms: number): string {
   return `≈ ${rounded} ${rounded === 1 ? "hora" : "horas"}`;
 }
 
-type AxisMarkLabelAnchor = "start" | "center" | "end";
-
-/** Coherente con .tick-label-year / .tick-label-monthday (rem) en App.css. */
-const AXIS_LABEL_MEASURE_SAFETY = 1.12;
-
-let axisLabelMeasureCtx: CanvasRenderingContext2D | null = null;
-
-function measureAxisMarkWidthsPx(marks: AxisMark[], rootPx: number): number[] {
-  const yearPx = rootPx * 0.68;
-  const monthPx = rootPx * 0.62;
-  const pad = 6;
-  if (typeof document === "undefined") {
-    return marks.map((m) => {
-      const est = Math.max(
-        m.year.length * yearPx * 0.55,
-        m.monthDay.length * monthPx * 0.52
-      );
-      return Math.min(est + pad, 220);
-    });
-  }
-  if (!axisLabelMeasureCtx) {
-    const c = document.createElement("canvas");
-    axisLabelMeasureCtx = c.getContext("2d");
-  }
-  const ctx = axisLabelMeasureCtx;
-  if (!ctx) {
-    return marks.map((m) => {
-      const est = Math.max(
-        m.year.length * yearPx * 0.55,
-        m.monthDay.length * monthPx * 0.52
-      );
-      return Math.min(est + pad, 220);
-    });
-  }
-  return marks.map((m) => {
-    /* Misma pila que `.timeline-date` (Inter) para que el layout del eje coincida con el render. */
-    ctx.font = `600 ${yearPx}px Inter,system-ui,sans-serif`;
-    const wy = ctx.measureText(m.year).width;
-    ctx.font = `400 ${monthPx}px Inter,system-ui,sans-serif`;
-    const wm = ctx.measureText(m.monthDay).width;
-    return Math.min(Math.max(wy, wm) + pad, 240);
-  });
-}
-
-function axisMarkLabelAnchor(sortedIndex: number, n: number, p: number): AxisMarkLabelAnchor {
-  if (n === 1) {
-    return p <= 6 ? "start" : p >= 94 ? "end" : "center";
-  }
-  if (sortedIndex === 0) return "start";
-  if (sortedIndex === n - 1) return "end";
-  return "center";
-}
-
-/**
- * Reparte marcas del eje (año + mes/día) en carriles verticales.
- * Usa el ancho real del texto en px frente al ancho de la pista: con menos zoom la pista
- * ocupa menos px y las mismas fechas quedan más juntas en pantalla, así que el intervalo
- * en % crece y el algoritmo sube etiquetas de carril antes (misma idea que assignEventLabelLanes).
- */
-function assignAxisMarkLanes(
-  marks: AxisMark[],
-  min: number,
-  max: number,
-  stackWidthPx: number | null,
-  rootPx: number
-): { mark: AxisMark; p: number; lane: number }[] {
-  const n = marks.length;
-  if (n === 0) return [];
-
-  const stackPx =
-    stackWidthPx != null && stackWidthPx > 0 ? stackWidthPx : 520;
-  const widthsPx = measureAxisMarkWidthsPx(marks, rootPx > 0 ? rootPx : 16);
-  /** Hueco mínimo entre cajas; acotado en px para que no desaparezca en pistas anchas. */
-  const gapPct = Math.max(0.45, (10 / stackPx) * 100);
-
-  const order = marks
-    .map((mark, i) => ({
-      mark,
-      p: pctOnTrack(mark.t, min, max),
-      baseWidthPx: widthsPx[i]! * AXIS_LABEL_MEASURE_SAFETY,
-    }))
-    .sort((a, b) => a.p - b.p || a.mark.t - b.mark.t);
-
-  const lanes: [number, number][][] = [];
-  const out: { mark: AxisMark; p: number; lane: number }[] = [];
-
-  for (let s = 0; s < order.length; s++) {
-    const { mark, p, baseWidthPx } = order[s]!;
-    const anchor = axisMarkLabelAnchor(s, order.length, p);
-
-    const rawSpanPct = (baseWidthPx / stackPx) * 100 + 0.12;
-    let spanPct = Math.min(rawSpanPct, 50);
-    if (anchor === "start") {
-      spanPct = Math.min(spanPct, Math.max(0.35, 100 - p - 0.15));
-    } else if (anchor === "end") {
-      spanPct = Math.min(spanPct, Math.max(0.35, p - 0.15));
-    } else {
-      spanPct = Math.min(
-        spanPct,
-        Math.max(0.35, 2 * Math.min(p, 100 - p) - 0.25)
-      );
-    }
-
-    let left: number;
-    let right: number;
-    if (anchor === "start") {
-      left = p;
-      right = p + spanPct;
-    } else if (anchor === "end") {
-      right = p;
-      left = p - spanPct;
-    } else {
-      left = p - spanPct / 2;
-      right = p + spanPct / 2;
-    }
-
-    const interval: [number, number] = [left, right];
-
-    let lane = 0;
-    for (;; lane++) {
-      if (lane >= lanes.length) {
-        lanes.push([]);
-      }
-      const occupied = lanes[lane]!;
-      const clash = occupied.some((iv) =>
-        labelIntervalsOverlap(interval, iv, gapPct)
-      );
-      if (!clash) {
-        occupied.push(interval);
-        out.push({ mark, p, lane });
-        break;
-      }
-    }
-  }
-
-  return out;
-}
-
 export default function App() {
   const { periods, events } = timelineHistoriaArgentina;
 
@@ -715,15 +520,28 @@ export default function App() {
       window.matchMedia("(pointer: coarse)").matches
   );
 
-  const axisMarksPlaced = useMemo(
-    () => assignAxisMarkLanes(axisMarks, min, max, stackWidthPx, layoutProbe.rootPx),
-    [axisMarks, min, max, stackWidthPx, layoutProbe.rootPx]
+  const eventLabelsVertical =
+    timelineZoom < EVENT_LABEL_VERTICAL_ZOOM_THRESHOLD;
+
+  const axisShowYearFlags = useMemo(
+    () => computeAxisShowYearFlags(axisMarks),
+    [axisMarks]
   );
 
-  const axisMaxLane = useMemo(
+  const axisShowYearByT = useMemo(() => {
+    const m = new Map<number, boolean>();
+    axisMarks.forEach((mk, i) => {
+      m.set(mk.t, axisShowYearFlags[i]!);
+    });
+    return m;
+  }, [axisMarks, axisShowYearFlags]);
+
+  const axisMarksPlaced = useMemo(
     () =>
-      axisMarksPlaced.reduce((m, x) => Math.max(m, x.lane), 0),
-    [axisMarksPlaced]
+      assignAxisMarkLanes(axisMarks, (tMs: number) =>
+        pctOnTrack(tMs, min, max)
+      ),
+    [axisMarks, min, max]
   );
 
   useEffect(() => {
@@ -843,9 +661,6 @@ export default function App() {
       root.classList.remove("viewer-phase");
     };
   }, []);
-
-  const eventLabelsVertical =
-    timelineZoom < EVENT_LABEL_VERTICAL_ZOOM_THRESHOLD;
 
   const { eventLabelPlacements, eventLabelMaxLane } = useMemo(() => {
     const trackPct = (tMs: number) => pctOnTrack(tMs, min, max);
@@ -1525,10 +1340,10 @@ export default function App() {
             }
           >
             <div
-              className="axis"
+              className={`axis${eventLabelsVertical ? " axis--ticks-single-vline-breakpoint" : ""}`.trim()}
               style={
                 {
-                  "--axis-max-lane": axisMaxLane,
+                  "--axis-max-lane": 0,
                 } as CSSProperties
               }
             >
@@ -1582,7 +1397,7 @@ export default function App() {
                   />
                 ))}
               </div>
-              {axisMarksPlaced.map(({ mark, p, lane }, i) => {
+              {axisMarksPlaced.map(({ mark, p }, i) => {
                 const isFirst = i === 0;
                 const isLast = i === axisMarksPlaced.length - 1;
                 let edgeClass = "";
@@ -1603,28 +1418,23 @@ export default function App() {
                 const tickEvent = eventsSorted.find(
                   (e) => e.date.getTime() === mark.t
                 );
+                const showYear = axisShowYearByT.get(mark.t) ?? true;
+                const ariaLabel = axisTickAriaLabel(mark);
+                const tickProps = {
+                  mark,
+                  p,
+                  edgeClass,
+                  isTickSelected,
+                  tickEvent,
+                  showYear,
+                  ariaLabel,
+                  singleVerticalLine: eventLabelsVertical,
+                  onTickClick: tickEvent
+                    ? () => setSel({ kind: "event", item: tickEvent })
+                    : undefined,
+                };
                 return (
-                  <div
-                    key={`${mark.t}-${i}`}
-                    className={`tick tick--axis-mark ${edgeClass}${isTickSelected ? " tick--selected" : ""}${tickEvent ? " tick--clickable" : ""}`.trim()}
-                    style={
-                      {
-                        left: `${p}%`,
-                        "--tick-lane": lane,
-                      } as CSSProperties
-                    }
-                    onClick={tickEvent ? () => setSel({ kind: "event", item: tickEvent }) : undefined}
-                  >
-                    <span className="tick-line" />
-                    <span className="tick-label">
-                      <span className="tick-label-year timeline-date">
-                        {mark.year}
-                      </span>
-                      <span className="tick-label-monthday timeline-date">
-                        {mark.monthDay}
-                      </span>
-                    </span>
-                  </div>
+                  <AxisTickMark key={`${mark.t}-${i}`} {...tickProps} />
                 );
               })}
             </div>

@@ -908,6 +908,11 @@
   margin-bottom: var(--timeline-axis-gap);
 }
 
+.timeline-stack--compact.timeline-stack--event-labels-vertical .axis.axis--ticks-single-vline-breakpoint {
+  padding-top: clamp(0.28rem, 0.9dvh, 0.52rem);
+  box-sizing: border-box;
+}
+
 .timeline-stack--compact .row-bar {
   height: 1.22rem;
 }
@@ -1362,8 +1367,8 @@
   --axis-bar-h: 10px;
   --tick-line-h: 12px;
   /*
-   * Paso vertical entre carriles de fecha: en rem como .tick-label-year / .tick-label-monthday
-   * (no en em del padre), más un respiro fijo para que filas consecutivas no se rocen.
+   * Paso vertical entre carriles (--axis-lane-step); las etiquetas del eje usan
+   * `.tick-label-axis-year` / `.tick-label-axis-monthday` (vertical-rl).
    */
   --axis-lane-step: calc(
     0.68rem * 1.18 + 0.62rem * 1.18 + 0.12rem + 0.34rem
@@ -1516,7 +1521,7 @@
   align-items: center;
 }
 
-/* Eje temporal: el trazo queda fijo sobre la barra; las etiquetas (años) suben en filas (--tick-lane). */
+/* Eje temporal: trazo sobre la barra; fecha vertical (.tick-label-axis-*). Una columna si zoom bajo (véase .tick--axis-mark-single-vline). */
 .tick--axis-mark.tick--clickable {
   cursor: pointer;
 }
@@ -1525,20 +1530,19 @@
   opacity: 1;
 }
 
-.tick--axis-mark.tick--clickable:hover .tick-label-year {
-  font-weight: 600;
+.tick--axis-mark.tick--clickable:hover .tick-label-axis-year {
+  font-weight: 700;
+}
+
+.tick--axis-mark.tick--clickable:hover .tick-label-axis-monthday {
+  font-weight: 500;
 }
 
 .tick--axis-mark {
   display: block;
   width: 0;
-  /*
-   * height: 0 colapsaba el bloque de contención del tick: el ::after de la etiqueta podía
-   * extenderse mal hacia la pista. min-height ≈ carril + tick + ~2 líneas de texto.
-   */
   min-height: calc(
-    var(--tick-line-h, 12px) + 4px + var(--tick-lane, 0) * var(--axis-lane-step, 2rem) +
-      max(2.65em, 2.95rem)
+    var(--tick-line-h, 12px) + 4px + max(3.35rem, 3.55em)
   );
   overflow: visible;
 }
@@ -1550,24 +1554,99 @@
   transform: translateX(-50%);
 }
 
+/* Etiquetas del eje: único modo — año y mes/día en vertical-rl (fila año | fecha). */
 .tick--axis-mark .tick-label {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  /* Borde inferior del bloque por encima del trazo; más carril = más arriba (evita solape entre ticks cercanos) */
   bottom: calc(
     var(--tick-line-h, 12px) + 4px + var(--tick-lane, 0) * var(--axis-lane-step, 2rem)
   );
   margin-top: 0;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.14rem;
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.22rem;
   line-height: 1.12;
   text-align: center;
-  /* Caja estable de dos líneas (año + mes/día) para que el eje no “salte” entre marcas. */
-  min-height: calc(0.68rem * 1.12 + 0.14rem + 0.62rem * 1.12);
+  min-height: calc(3.25rem + 0.08rem);
+}
+
+.tick--axis-mark .tick-label.tick-label--year-suppressed {
+  gap: 0;
+  min-height: calc(3rem + 0.08rem);
+}
+
+/* Mismo breakpoint que etiquetas de eventos verticales: año + mes/día en una sola columna vertical. */
+.tick--axis-mark.tick--axis-mark-single-vline {
+  min-height: calc(
+    var(--tick-line-h, 12px) + 4px + max(4.15rem, 4.35em)
+  );
+}
+
+.tick--axis-mark .tick-label.tick-label--axis-single-vline {
+  flex-direction: column;
+  align-items: center;
   justify-content: flex-end;
+  gap: 0;
+  min-height: calc(4rem + 0.12rem);
+}
+
+.tick--axis-mark .tick-label.tick-label--axis-single-vline.tick-label--year-suppressed {
+  min-height: calc(3rem + 0.08rem);
+}
+
+.tick-label-axis-vline.timeline-date {
+  display: inline-block;
+  margin: 0;
+  padding: 0;
+  max-height: 4.5rem;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow:
+    0 0 6px var(--surface),
+    0 0 3px var(--surface);
+}
+
+.tick-label-axis-vline-year {
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  color: color-mix(in srgb, var(--text) 86%, var(--muted) 14%);
+}
+
+.tick-label-axis-vline-month {
+  font-size: 0.54rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: color-mix(in srgb, var(--muted) 22%, var(--text) 78%);
+}
+
+.timeline-stack--event-labels-vertical .tick-label-axis-vline.timeline-date {
+  max-height: 4rem;
+}
+
+.tick--axis-mark.tick--clickable:hover .tick-label-axis-vline-year {
+  font-weight: 700;
+}
+
+.tick--axis-mark.tick--clickable:hover .tick-label-axis-vline-month {
+  font-weight: 500;
+}
+
+.tick--selected .tick-label-axis-vline-year {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.tick--selected .tick-label-axis-vline-month {
+  color: color-mix(in srgb, var(--accent) 72%, var(--muted));
+  font-weight: 600;
 }
 
 /* Línea punteada desde la fecha hasta el trazo / barra del eje */
@@ -1599,28 +1678,63 @@
   border-right: 1px dashed color-mix(in srgb, var(--muted) 75%, transparent);
 }
 
-.tick-label-year {
-  font-size: 0.68rem;
-  font-weight: 500;
-  color: var(--text);
+.tick-label-axis-year.timeline-date {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+  max-height: 3rem;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-size: 0.58rem;
+  transform: rotate(180deg);
+  line-height: 1.24;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  color: color-mix(in srgb, var(--text) 86%, var(--muted) 14%);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow:
+    0 0 6px var(--surface),
+    0 0 3px var(--surface);
 }
 
-.tick-label-monthday {
-  font-size: 0.62rem;
+.tick-label-axis-monthday.timeline-date {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  align-self: flex-end;
+  margin: 0;
+  padding: 0;
+  max-height: 3.25rem;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-size: 0.4rem;
+  transform: rotate(180deg);
+  line-height: 1.22;
   font-weight: 400;
+  letter-spacing: -0.01em;
   color: color-mix(in srgb, var(--muted) 22%, var(--text) 78%);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow:
+    0 0 6px var(--surface),
+    0 0 3px var(--surface);
 }
 
-.tick--selected .tick-label-year {
+.tick--selected .tick-label-axis-year {
   color: var(--accent);
-  font-weight: 600;
+  font-weight: 700;
 }
 
-.tick--selected .tick-label-monthday {
+.tick--selected .tick-label-axis-monthday {
   color: color-mix(in srgb, var(--accent) 72%, var(--muted));
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .tick--selected .tick-label::after {
@@ -1655,6 +1769,11 @@
   right: 0;
   transform: none;
   text-align: right;
+  align-items: flex-end;
+}
+
+.tick--axis-mark.tick--start .tick-label.tick-label--axis,
+.tick--axis-mark.tick--end .tick-label.tick-label--axis {
   align-items: flex-end;
 }
 
