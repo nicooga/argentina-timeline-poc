@@ -11,7 +11,7 @@ export type AxisTickMarkProps = {
   showYear: boolean;
   ariaLabel: string;
   onTickClick?: () => void;
-  /** Igual que `eventLabelsVertical`: un solo trazo vertical (año + mes/día en línea con espacio). */
+  /** Un solo trazo vertical (año + mes/día en línea con espacio). */
   singleVerticalLine: boolean;
 };
 

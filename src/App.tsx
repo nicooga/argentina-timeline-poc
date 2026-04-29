@@ -21,13 +21,12 @@ import type { Period, Selection, TimelineEvent } from "../types";
 import { useNavigate } from "react-router-dom";
 import { SITE_INSTAGRAM_URL, KeyboardHelpModal } from "./shell";
 import { EventEditorModal, ViewerDetailPanel, ViewerIndexPanel } from "./viewer";
-/* Títulos de eventos: si `timelineZoom < EVENT_LABEL_VERTICAL_ZOOM_THRESHOLD` van verticales (layout+CSS); ver `timeline/eventLabelLayout.ts`. */
+/* Títulos de eventos: único modo vertical (layout+CSS); ver `timeline/eventLabelLayout.ts`. */
 import {
   assignAxisMarkLanes,
   assignEventLabelLanes,
   axisTickAriaLabel,
   computeAxisShowYearFlags,
-  EVENT_LABEL_VERTICAL_ZOOM_THRESHOLD,
   mergeAxisMarks,
   TimelineSemanticEventLanes,
   TimelineEventTitlesLane,
@@ -711,9 +710,6 @@ export default function App() {
     };
   }, []);
 
-  const eventLabelsVertical =
-    timelineZoom < EVENT_LABEL_VERTICAL_ZOOM_THRESHOLD;
-
   const axisShowYearFlags = useMemo(
     () => computeAxisShowYearFlags(axisMarks),
     [axisMarks]
@@ -855,40 +851,26 @@ export default function App() {
     };
   }, []);
 
-  const { eventLabelPlacements, eventLabelMaxLane } = useMemo(() => {
+  const eventLabelPlacements = useMemo(() => {
     const trackPct = (tMs: number) => pctOnTrack(tMs, min, max);
-    const { placements, maxLane } = assignEventLabelLanes(
+    const { placements } = assignEventLabelLanes(
       eventsSorted,
       trackPct,
       stackWidthPx,
       true,
       pointerCoarse,
-      eventLabelsVertical,
+      true,
       layoutProbe.vhPx
     );
-    return { eventLabelPlacements: placements, eventLabelMaxLane: maxLane };
+    return placements;
   }, [
     eventsSorted,
     min,
     max,
     stackWidthPx,
     pointerCoarse,
-    eventLabelsVertical,
     layoutProbe.vhPx,
   ]);
-
-  /* Al pasar a títulos verticales (zoom bajo), anclar el scroll vertical al inicio del stack:
-   * evita que el bloque quede “pegado al fondo” con aire vacío arriba. */
-  const prevEventLabelsVerticalRef = useRef(eventLabelsVertical);
-  useLayoutEffect(() => {
-    const el = timelineScrollRef.current;
-    if (!el) return;
-    const wasVertical = prevEventLabelsVerticalRef.current;
-    prevEventLabelsVerticalRef.current = eventLabelsVertical;
-    if (!wasVertical && eventLabelsVertical) {
-      el.scrollTop = 0;
-    }
-  }, [eventLabelsVertical]);
 
   const laneColorCssVars = useMemo((): CSSProperties => {
     const o: Record<string, string> = {};
@@ -1736,13 +1718,11 @@ export default function App() {
         >
           <div
             ref={timelineStackRef}
-            className={`timeline-stack timeline-stack--compact${eventLabelsVertical ? " timeline-stack--event-labels-vertical" : ""}`.trim()}
+            className="timeline-stack timeline-stack--compact timeline-stack--event-labels-vertical"
             style={
               {
                 "--timeline-zoom": String(timelineZoom),
-                "--event-label-max-lane": eventLabelsVertical
-                  ? 0
-                  : eventLabelMaxLane,
+                "--event-label-max-lane": 0,
                 "--period-compact-row-h": `${compactPeriodRowRem}rem`,
                 "--period-row-count": periodIndicesByLane.length,
                 "--events-semantic-lane-count": EVENT_LANE_ORDER.length,
@@ -1751,7 +1731,7 @@ export default function App() {
             }
           >
             <div
-              className={`axis${eventLabelsVertical ? " axis--ticks-single-vline-breakpoint" : ""}`.trim()}
+              className="axis axis--ticks-single-vline-breakpoint"
               style={
                 {
                   "--axis-max-lane": 0,
@@ -1839,7 +1819,7 @@ export default function App() {
                   tickEvent,
                   showYear,
                   ariaLabel,
-                  singleVerticalLine: eventLabelsVertical,
+                  singleVerticalLine: true,
                   onTickClick: tickEvent
                     ? () => setSel({ kind: "event", item: tickEvent })
                     : undefined,
@@ -1948,7 +1928,6 @@ export default function App() {
                   causalHighlight={causalHighlight}
                   causalitySvgEdges={causalitySvgEdges}
                   eventPassesLaneFilter={eventPassesLaneFilter}
-                  labelsVertical={eventLabelsVertical}
                   pointerCoarse={pointerCoarse}
                   viewportInnerHeightPx={layoutProbe.vhPx}
                   eventPointerTitle={(e: TimelineEvent) =>

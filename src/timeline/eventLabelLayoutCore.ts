@@ -43,7 +43,7 @@ export function verticalColumnWidthPx(
   return Math.max(0.78 * remPx, 1.02 * EVENT_LABEL_VROT_LABEL_FONT_EM * remPx);
 }
 
-/** Padding unificado del wrap vertical (par con CSS `calc(... - 24px)`). Ver [`EventTitleMarker`](./ui/EventTitleMarker.tsx). */
+/** Padding unificado del wrap vertical (par con CSS `calc(... - 24px)`). Ver `EventTitleMarkerVertical`. */
 export const EVENT_TITLE_VROT_WRAP_PAD_PX = 24;
 
 /**
@@ -145,7 +145,7 @@ export type VerticalEventTitlesRowLayoutPx = {
 
 /**
  * Tamaños para la fila de títulos en modo vertical: deben mantenerse alineados con el CSS
- * de `.event-hit`, `--events-dot-half` en `.timeline-stack--compact` y el wrap en `EventTitleMarker`.
+ * de `.event-hit`, `--events-dot-half` en `.timeline-stack--compact` y el wrap en `EventTitleMarkerVertical`.
  *
  * Comprobación manual (DevTools): a igual `left%` en pista, el centro del `.event-dot` y el tick
  * del carril semántico deben compartir eje X; en Y el disco usa `events-dot-half` (sin `--v-pad`).

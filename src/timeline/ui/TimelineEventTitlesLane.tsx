@@ -2,7 +2,6 @@ import type { CSSProperties, RefObject } from "react";
 import type { StudyMode } from "../../../causality";
 import { semanticConnectorLaneSpanCount } from "../../../eventLanes";
 import type { Selection, TimelineEvent } from "../../../types";
-import { EventTitleMarker } from "./EventTitleMarker";
 import { EventTitleMarkerVertical } from "./EventTitleMarkerVertical";
 import type { EventLabelPlacement } from "../eventLabelLayout";
 import { verticalEventTitlesRowLayoutPx } from "../eventLabelLayout";
@@ -21,8 +20,6 @@ export type TimelineEventTitlesLaneProps = {
   causalHighlight: ReadonlySet<TimelineEvent>;
   causalitySvgEdges: TimelineCausalitySvgEdge[];
   eventPassesLaneFilter: (ev: TimelineEvent) => boolean;
-  /** `timelineZoom < EVENT_LABEL_VERTICAL_ZOOM_THRESHOLD` — ver `timeline/eventLabelLayout.ts`. */
-  labelsVertical: boolean;
   eventPointerTitle: (e: TimelineEvent) => string;
   onSelectEvent: (e: TimelineEvent) => void;
   timelineSelectedEventDotRef: RefObject<HTMLButtonElement | null>;
@@ -33,7 +30,7 @@ export type TimelineEventTitlesLaneProps = {
 };
 
 /**
- * Títulos de eventos por fecha. Horizontal o vertical (zoom bajo).
+ * Títulos de eventos por fecha. Único modo visual: etiquetas verticales.
  * @see docs/VIEWER_LAYOUT.SPEC.md
  */
 export function TimelineEventTitlesLane({
@@ -45,7 +42,6 @@ export function TimelineEventTitlesLane({
   causalHighlight,
   causalitySvgEdges,
   eventPassesLaneFilter,
-  labelsVertical,
   eventPointerTitle,
   onSelectEvent,
   timelineSelectedEventDotRef,
@@ -57,7 +53,7 @@ export function TimelineEventTitlesLane({
    * `--events-dot-half` (+ carril); `--ev-titles-v-connector-btm` cierra el punteado en el disco.
    */
   const verticalLayout =
-    labelsVertical && eventLabelPlacements.length > 0
+    eventLabelPlacements.length > 0
       ? verticalEventTitlesRowLayoutPx(
           eventLabelPlacements,
           pointerCoarse,
@@ -68,7 +64,7 @@ export function TimelineEventTitlesLane({
 
   return (
     <div
-      className={`events-titles-lane${labelsVertical ? " events-titles-lane--labels-vertical" : ""}`.trim()}
+      className="events-titles-lane events-titles-lane--labels-vertical"
       role="region"
       aria-label="Títulos de eventos por fecha"
     >
@@ -116,11 +112,9 @@ export function TimelineEventTitlesLane({
           </div>
         ) : null}
         <div className="events-titles-lane__connectors" aria-hidden>
-          {eventsSorted.map((e, eventIdx) => {
-            const pl = eventLabelPlacements[eventIdx]!;
+          {eventsSorted.map((e) => {
             const isConnActive = sel?.kind === "event" && sel.item === e;
             const lanesMuted = !eventPassesLaneFilter(e);
-            const layoutLaneY = labelsVertical ? 0 : pl.lane;
             return (
               <div
                 key={`conn-title-${e.title}-${e.date.toISOString()}`}
@@ -128,7 +122,7 @@ export function TimelineEventTitlesLane({
                 style={
                   {
                     left: `${trackPct(e.date.getTime())}%`,
-                    "--event-conn-lane": layoutLaneY,
+                    "--event-conn-lane": 0,
                     "--event-connector-lane-span-count":
                       semanticConnectorLaneSpanCount(e.lanes),
                     "--event-connector-stroke": isConnActive
@@ -140,8 +134,7 @@ export function TimelineEventTitlesLane({
             );
           })}
         </div>
-        {eventsSorted.map((e, eventIdx) => {
-          const pl = eventLabelPlacements[eventIdx]!;
+        {eventsSorted.map((e) => {
           const isEventActive = sel?.kind === "event" && sel.item === e;
           const isRelated =
             studyMode !== "exam" &&
@@ -150,26 +143,11 @@ export function TimelineEventTitlesLane({
             sel.item !== e;
           const p = trackPct(e.date.getTime());
           const lanesMuted = !eventPassesLaneFilter(e);
-          const layoutLaneY = labelsVertical ? 0 : pl.lane;
-          return labelsVertical ? (
+          return (
             <EventTitleMarkerVertical
               key={`title-${e.title}-${e.date.toISOString()}`}
               event={e}
               leftPct={p}
-              isEventActive={isEventActive}
-              isRelated={isRelated}
-              lanesMuted={lanesMuted}
-              eventPointerTitle={eventPointerTitle}
-              onSelectEvent={onSelectEvent}
-              timelineSelectedEventDotRef={timelineSelectedEventDotRef}
-            />
-          ) : (
-            <EventTitleMarker
-              key={`title-${e.title}-${e.date.toISOString()}`}
-              event={e}
-              placement={pl}
-              leftPct={p}
-              layoutLaneY={layoutLaneY}
               isEventActive={isEventActive}
               isRelated={isRelated}
               lanesMuted={lanesMuted}

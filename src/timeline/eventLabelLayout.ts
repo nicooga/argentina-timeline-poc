@@ -14,13 +14,12 @@
  *   [`../App.css`](../App.css)).
  *
  * ## Criterio de aceptación
- * - **Horizontal** (`labelsVertical = false`):
+ * - **Horizontal** (`labelsVertical = false`, legacy/test-only):
  *   - `lane` y `maxLane` alimentan el apilado Y (evita solapar títulos largos a lo largo del tiempo)
  *     y CSS `--event-label-max-lane` (padding bajo el timeline en `.timeline-stack--compact`).
  *   - `anchor` afecta dónde se extiende el título en X respecto a la bolita; alternar
  *     anclas vecinas reduce colisiones antes de subir de carril.
- * - **Vertical** (`labelsVertical = true`, zoom bajo, umbral
- *   `EVENT_LABEL_VERTICAL_ZOOM_THRESHOLD`):
+ * - **Vertical** (`labelsVertical = true`, único modo de UI):
  *   - `maxWidthPx` = eje de **lectura** (long); `columnPx` = grosor en pista (eje X). Colisión en
  *     `assignEventLabelLanes` usa `columnPx` (vía `verticalColumnWidthPx`) en % de pista. Al
  *     terminar, **fuerza `lane: 0` y `maxLane: 0`**: el apilado Y de horizontal **no** aplica al
@@ -46,5 +45,3 @@ export {
 } from "./eventLabelLayoutCore";
 export { EVENT_TITLE_VROT_WRAP_PAD_PX } from "./eventLabelLayoutCore";
 export type { EventLabelAnchor, EventLabelPlacement } from "./eventLabelLayoutCore";
-
-export const EVENT_LABEL_VERTICAL_ZOOM_THRESHOLD = 1;
