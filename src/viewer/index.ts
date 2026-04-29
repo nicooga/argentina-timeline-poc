@@ -1,1 +1,1 @@
-export { ViewerLower } from "./ViewerLower";
+export { ViewerDetailPanel, ViewerIndexPanel } from "./ViewerLower";

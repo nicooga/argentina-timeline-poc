@@ -3062,3 +3062,220 @@
     margin: 0;
   }
 }
+
+/* Map-like viewer shell: timeline as canvas, panels as overlays. */
+.viewer-shell {
+  position: relative;
+}
+
+.viewer-header-wrap {
+  position: absolute;
+  z-index: 28;
+  top: max(0.38rem, env(safe-area-inset-top, 0px));
+  left: clamp(0.45rem, 1.2vw, 0.85rem);
+  right: clamp(0.45rem, 1.2vw, 0.85rem);
+  border-bottom: none;
+  background: transparent;
+  pointer-events: none;
+}
+
+.viewer-header-inner {
+  max-width: none;
+  padding: 0;
+}
+
+.viewer-toolbar {
+  pointer-events: auto;
+  max-width: min(68rem, calc(100vw - 1rem));
+  padding: 0.32rem 0.38rem;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, #000 18%, transparent),
+    0 10px 26px color-mix(in srgb, #000 34%, transparent);
+  backdrop-filter: blur(12px);
+}
+
+.viewer-toolbar-top {
+  gap: 0.3rem;
+}
+
+.viewer-toolbar-title {
+  font-size: clamp(0.86rem, 1.25vw, 1rem);
+}
+
+.viewer-toolbar-range {
+  font-size: 0.68rem;
+  margin-top: 0;
+}
+
+.viewer-study-toolbar {
+  gap: 0.28rem 0.38rem;
+  padding-top: 0.28rem;
+}
+
+.viewer-study-mode-btn,
+.viewer-lane-filter {
+  border-radius: 6px;
+  min-height: 1.55rem;
+}
+
+.viewer-lane-filter {
+  padding: 0.12rem 0.3rem;
+  font-size: 0.56rem;
+}
+
+.viewer-map-btn {
+  position: relative;
+  flex-shrink: 0;
+  width: 1.58rem;
+  height: 1.58rem;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  transition:
+    border-color 0.12s ease,
+    background-color 0.12s ease,
+    color 0.12s ease;
+}
+
+.viewer-map-btn--with-label {
+  width: auto;
+  padding: 0 0.46rem;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.viewer-map-btn:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
+}
+
+.viewer-main {
+  position: relative;
+  flex: 1 1 auto;
+  height: 100%;
+}
+
+.viewer-chart-wrap,
+.viewer-shell--has-selection .viewer-chart-wrap,
+.viewer-shell--has-selection .viewer-chart-wrap--pinned {
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  position: relative;
+  top: auto;
+  box-shadow: none;
+}
+
+.chart--viewer.chart-bleed,
+.viewer-shell--has-selection .chart--viewer.chart-bleed {
+  flex: 1 1 auto;
+  height: 100%;
+  padding-top: clamp(4.8rem, 12dvh, 7.3rem);
+  padding-bottom: clamp(3.15rem, 7dvh, 4.6rem);
+}
+
+.viewer-header-wrap--collapsed {
+  pointer-events: none;
+}
+
+.viewer-header-peek-toggle--floating {
+  z-index: 34;
+}
+
+.viewer-shell--has-selection .timeline-chrome,
+.viewer-shell:not(.viewer-shell--has-selection) .timeline-chrome {
+  position: absolute;
+  left: clamp(0.5rem, 1.3vw, 0.9rem);
+  right: clamp(0.5rem, 1.3vw, 0.9rem);
+  bottom: clamp(0.45rem, 1.1dvh, 0.75rem);
+  pointer-events: none;
+}
+
+.viewer-shell--has-selection .chart-bleed-overlays {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.22rem 0.38rem;
+  padding-right: calc(1.45rem + 0.42rem);
+  pointer-events: none;
+}
+
+.timeline-event-nav-btn {
+  width: 1.78rem;
+  min-width: 1.78rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.timeline-event-nav-btn svg {
+  display: block;
+}
+
+.timeline-scale-overlay {
+  padding: 0.18rem 0.3rem 0.24rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  box-shadow: 0 5px 16px color-mix(in srgb, #000 28%, transparent);
+}
+
+.viewer-map-overlays {
+  position: absolute;
+  inset: 0;
+  z-index: 22;
+  pointer-events: none;
+}
+
+.viewer-map-fab {
+  position: absolute;
+  left: clamp(0.55rem, 1.35vw, 0.9rem);
+  top: clamp(5rem, 13dvh, 7.6rem);
+  z-index: 24;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 94%, var(--bg));
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  cursor: pointer;
+  box-shadow: 0 8px 22px color-mix(in srgb, #000 34%, transparent);
+}
+
+.viewer-map-fab:hover {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 44%, var(--border));
+}
+
+@media (max-width: 70rem) {
+  .viewer-toolbar {
+    max-width: calc(100vw - 1rem);
+  }
+
+  .viewer-toolbar-text {
+    flex-basis: 10rem;
+  }
+
+  .chart--viewer.chart-bleed,
+  .viewer-shell--has-selection .chart--viewer.chart-bleed {
+    padding-top: clamp(5.45rem, 15dvh, 7.8rem);
+  }
+}

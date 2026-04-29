@@ -20,7 +20,7 @@ import { EVENT_LANE_ORDER, LANE_UI, type EventLaneId } from "../eventLanes";
 import type { Period, Selection, TimelineEvent } from "../types";
 import { useNavigate } from "react-router-dom";
 import { SITE_INSTAGRAM_URL, KeyboardHelpModal } from "./shell";
-import { ViewerLower } from "./viewer";
+import { ViewerDetailPanel, ViewerIndexPanel } from "./viewer";
 /* Títulos de eventos: si `timelineZoom < EVENT_LABEL_VERTICAL_ZOOM_THRESHOLD` van verticales (layout+CSS); ver `timeline/eventLabelLayout.ts`. */
 import {
   assignAxisMarkLanes,
@@ -492,6 +492,8 @@ export default function App() {
   );
   const [helpOpen, setHelpOpen] = useState(false);
   const [viewerHeaderCollapsed, setViewerHeaderCollapsed] = useState(false);
+  const [indexOpen, setIndexOpen] = useState(false);
+  const [detailCollapsed, setDetailCollapsed] = useState(false);
   /** Zoom, escala del eje y navegación de eventos (panel inferior del timeline). */
   const [timelineChromeExpanded, setTimelineChromeExpanded] = useState(false);
   const [timelineZoom, setTimelineZoom] = useState(1);
@@ -649,7 +651,9 @@ export default function App() {
 
   useEffect(() => {
     const tablet = viewerIsTabletViewport();
-    setViewerHeaderCollapsed(tablet);
+    setViewerHeaderCollapsed(false);
+    setIndexOpen(false);
+    setDetailCollapsed(tablet);
     setTimelineChromeExpanded(!tablet);
   }, []);
 
@@ -1109,7 +1113,7 @@ export default function App() {
   return (
     <div className="app app--viewer">
       <div
-        className={`viewer-shell ${viewerShellClass} ${sel != null ? "viewer-shell--has-selection" : ""}`.trim()}
+        className={`viewer-shell ${viewerShellClass} ${sel != null ? "viewer-shell--has-selection" : ""} ${indexOpen ? "viewer-shell--index-open" : ""} ${detailCollapsed ? "viewer-shell--detail-collapsed" : ""}`.trim()}
       >
         <div
           className={`viewer-header-wrap${viewerHeaderCollapsed ? " viewer-header-wrap--collapsed" : ""}`.trim()}
@@ -1132,6 +1136,69 @@ export default function App() {
                   </p>
                 </div>
                 <div className="viewer-toolbar-actions">
+                  <button
+                    type="button"
+                    className="viewer-map-btn viewer-map-btn--with-label"
+                    onClick={() => setIndexOpen((open) => !open)}
+                    aria-expanded={indexOpen}
+                    aria-controls="viewer-index-panel"
+                    aria-label={indexOpen ? "Ocultar índice" : "Mostrar índice"}
+                    title={indexOpen ? "Ocultar índice" : "Índice"}
+                  >
+                    <svg
+                      className="viewer-header-icon-svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"
+                      />
+                    </svg>
+                    <span>Índice</span>
+                  </button>
+                  {sel != null ? (
+                    <button
+                      type="button"
+                      className="viewer-map-btn"
+                      onClick={() => setDetailCollapsed((collapsed) => !collapsed)}
+                      aria-expanded={!detailCollapsed}
+                      aria-controls="viewer-detail-panel"
+                      aria-label={
+                        detailCollapsed
+                          ? "Expandir detalle seleccionado"
+                          : "Contraer detalle seleccionado"
+                      }
+                      title={detailCollapsed ? "Expandir detalle" : "Contraer detalle"}
+                    >
+                      <svg
+                        className="viewer-header-icon-svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d={
+                            detailCollapsed
+                              ? "M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"
+                              : "M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"
+                          }
+                        />
+                      </svg>
+                    </button>
+                  ) : null}
                   <a
                     href={VIEWER_SOURCE_REPO_URL}
                     className="viewer-github-link"
@@ -1630,8 +1697,18 @@ export default function App() {
                       disabled={!eventStepAvailability.canPrev}
                       onClick={() => stepEvent(-1)}
                       aria-label="Ir al evento anterior"
+                      title="Evento anterior"
                     >
-                      Anterior
+                      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                        <path
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M15 18l-6-6 6-6"
+                        />
+                      </svg>
                     </button>
                     <button
                       type="button"
@@ -1639,8 +1716,18 @@ export default function App() {
                       disabled={!eventStepAvailability.canNext}
                       onClick={() => stepEvent(1)}
                       aria-label="Ir al evento siguiente"
+                      title="Evento siguiente"
                     >
-                      Siguiente
+                      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                        <path
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M9 18l6-6-6-6"
+                        />
+                      </svg>
                     </button>
                   </div>
                   <span className="timeline-zoom-sep" aria-hidden="true" />
@@ -1723,16 +1810,58 @@ export default function App() {
       </section>
         </div>
 
-        <ViewerLower
-          periods={periods}
-          events={events}
-          sel={sel}
-          studyMode={studyMode}
-          eventsByTitle={eventsByTitle}
-          activePeriodForTimeline={activePeriodForTimeline}
-          onSelectPeriod={(p) => setSel({ kind: "period", item: p })}
-          onSelectEvent={(e) => setSel({ kind: "event", item: e })}
-        />
+        <div className="viewer-map-overlays" aria-label="Paneles del visor">
+          {indexOpen ? (
+            <ViewerIndexPanel
+              periods={periods}
+              events={events}
+              sel={sel}
+              activePeriodForTimeline={activePeriodForTimeline}
+              onSelectPeriod={(p) => {
+                setSel({ kind: "period", item: p });
+                if (viewerIsTabletViewport()) setIndexOpen(false);
+              }}
+              onSelectEvent={(e) => {
+                setSel({ kind: "event", item: e });
+                if (viewerIsTabletViewport()) setIndexOpen(false);
+              }}
+              onClose={() => setIndexOpen(false)}
+            />
+          ) : (
+            <button
+              type="button"
+              className="viewer-map-fab viewer-map-fab--index"
+              onClick={() => setIndexOpen(true)}
+              aria-controls="viewer-index-panel"
+              aria-expanded={false}
+              aria-label="Mostrar índice de períodos y eventos"
+              title="Índice"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"
+                />
+              </svg>
+            </button>
+          )}
+
+          <ViewerDetailPanel
+            sel={sel}
+            studyMode={studyMode}
+            eventsByTitle={eventsByTitle}
+            activePeriodForTimeline={activePeriodForTimeline}
+            collapsed={detailCollapsed}
+            onToggleCollapsed={() =>
+              setDetailCollapsed((collapsed) => !collapsed)
+            }
+            onSelectEvent={(e) => setSel({ kind: "event", item: e })}
+          />
+        </div>
         </div>
 
         <KeyboardHelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
