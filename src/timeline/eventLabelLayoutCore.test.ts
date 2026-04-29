@@ -15,6 +15,7 @@ function makeEvent(
   date: Date
 ): TimelineEvent {
   return {
+    id: title.toLowerCase().replace(/\s+/g, "-"),
     title,
     items: [],
     date,

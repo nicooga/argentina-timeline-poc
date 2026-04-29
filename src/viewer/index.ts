@@ -1,1 +1,1 @@
-export { ViewerDetailPanel, ViewerIndexPanel } from "./ViewerLower";
+export { EventEditorModal, ViewerDetailPanel, ViewerIndexPanel } from "./ViewerLower";

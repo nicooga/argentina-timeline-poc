@@ -6,7 +6,10 @@ interface Linked {
 
 export type { EventLaneId };
 
+export type TimelineEventId = string;
+
 export interface TimelineEvent extends Linked {
+    id: TimelineEventId;
     title: string;
     /** Resumen corto (hover / disclosure progresiva). */
     summary?: string;
@@ -15,9 +18,9 @@ export interface TimelineEvent extends Linked {
     date: Date;
     /** Carril(es) semántico(s); no vacío. */
     lanes: EventLaneId[];
-    /** Títulos de otros eventos que ayudan a explicar por qué ocurre. */
+    /** IDs de otros eventos que ayudan a explicar por qué ocurre. */
     causes?: string[];
-    /** Títulos de otros eventos que este hecho condiciona o desencadena. */
+    /** IDs de otros eventos que este hecho condiciona o desencadena. */
     consequences?: string[];
     /** Peso didáctico en listas compactas. */
     importance?: "primary" | "secondary" | "contextual";

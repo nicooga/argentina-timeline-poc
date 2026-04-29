@@ -13,14 +13,14 @@ import { timelineHistoriaArgentina } from "../timelineHistoriaArgentina";
 import {
   causalEdgesInSet,
   causalHighlightSet,
-  eventByTitleMap,
+  eventByIdMap,
   type StudyMode,
 } from "../causality";
 import { EVENT_LANE_ORDER, LANE_UI, type EventLaneId } from "../eventLanes";
 import type { Period, Selection, TimelineEvent } from "../types";
 import { useNavigate } from "react-router-dom";
 import { SITE_INSTAGRAM_URL, KeyboardHelpModal } from "./shell";
-import { ViewerDetailPanel, ViewerIndexPanel } from "./viewer";
+import { EventEditorModal, ViewerDetailPanel, ViewerIndexPanel } from "./viewer";
 /* Títulos de eventos: si `timelineZoom < EVENT_LABEL_VERTICAL_ZOOM_THRESHOLD` van verticales (layout+CSS); ver `timeline/eventLabelLayout.ts`. */
 import {
   assignAxisMarkLanes,
@@ -33,7 +33,15 @@ import {
   TimelineEventTitlesLane,
 } from "./timeline";
 import { AxisTickMark } from "./AxisTickMark";
+import {
+  LocalStorageTimelineRepo,
+  TimelineEditionService,
+  type TimelineEventDraft,
+} from "./timelineEdition";
 import "./App.css";
+
+const timelineRepo = new LocalStorageTimelineRepo();
+const timelineEditionService = new TimelineEditionService(timelineRepo);
 
 function formatDate(d: Date): string {
   return d.toLocaleDateString("es-AR", {
@@ -441,7 +449,8 @@ function formatApproxTimeSpan(ms: number): string {
 }
 
 export default function App() {
-  const { periods, events } = timelineHistoriaArgentina;
+  const [timeline, setTimeline] = useState(() => timelineHistoriaArgentina);
+  const { periods, events } = timeline;
 
   const { min, max } = useMemo(() => {
     const times: number[] = [];
@@ -458,6 +467,18 @@ export default function App() {
     () => [...events].sort((a, b) => a.date.getTime() - b.date.getTime()),
     [events]
   );
+
+  useEffect(() => {
+    setSel((current) => {
+      if (current == null) return defaultEventSelection(eventsSorted);
+      if (current.kind === "event") {
+        const fresh = eventsSorted.find((e) => e.id === current.item.id);
+        return fresh ? { kind: "event", item: fresh } : defaultEventSelection(eventsSorted);
+      }
+      const freshPeriod = periods.find((p) => p.title === current.item.title);
+      return freshPeriod ? { kind: "period", item: freshPeriod } : current;
+    });
+  }, [eventsSorted, periods]);
 
   const axisMarks = useMemo(
     () => mergeAxisMarks(periods, events),
@@ -490,6 +511,11 @@ export default function App() {
   const [sel, setSel] = useState<Selection>(() =>
     defaultEventSelection(timelineHistoriaArgentina.events)
   );
+  const [editorState, setEditorState] = useState<
+    | { kind: "create" }
+    | { kind: "edit"; event: TimelineEvent }
+    | null
+  >(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [viewerHeaderCollapsed, setViewerHeaderCollapsed] = useState(false);
   const [indexOpen, setIndexOpen] = useState(false);
@@ -522,6 +548,18 @@ export default function App() {
       typeof window !== "undefined" &&
       window.matchMedia("(pointer: coarse)").matches
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    timelineRepo.get().then((loaded) => {
+      if (cancelled) return;
+      setTimeline(loaded);
+      setSel(defaultEventSelection(loaded.events));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const eventLabelsVertical =
     timelineZoom < EVENT_LABEL_VERTICAL_ZOOM_THRESHOLD;
@@ -588,7 +626,7 @@ export default function App() {
   const eventStepAvailability = useMemo(() => {
     if (sel == null) return { canPrev: false, canNext: false };
     if (sel.kind === "event") {
-      const idx = eventsSorted.indexOf(sel.item);
+      const idx = eventsSorted.findIndex((e) => e.id === sel.item.id);
       return {
         canPrev: idx > 0,
         canNext: idx >= 0 && idx < eventsSorted.length - 1,
@@ -606,7 +644,7 @@ export default function App() {
       setSel((cur) => {
         if (cur == null) return cur;
         if (cur.kind === "event") {
-          const idx = eventsSorted.indexOf(cur.item);
+          const idx = eventsSorted.findIndex((e) => e.id === cur.item.id);
           if (idx < 0) return cur;
           const nextIdx = idx + delta;
           if (nextIdx < 0 || nextIdx >= eventsSorted.length) return cur;
@@ -710,15 +748,15 @@ export default function App() {
     return o as CSSProperties;
   }, []);
 
-  const eventsByTitle = useMemo(
-    () => eventByTitleMap(eventsSorted),
+  const eventsById = useMemo(
+    () => eventByIdMap(eventsSorted),
     [eventsSorted]
   );
 
   const causalHighlight = useMemo(() => {
     if (sel?.kind !== "event") return new Set<TimelineEvent>();
-    return causalHighlightSet(sel.item, eventsByTitle, studyMode);
-  }, [sel, eventsByTitle, studyMode]);
+    return causalHighlightSet(sel.item, eventsById, studyMode);
+  }, [sel, eventsById, studyMode]);
 
   const causalChainSet = useMemo(() => {
     const s = new Set(causalHighlight);
@@ -728,8 +766,8 @@ export default function App() {
 
   const causalitySvgEdges = useMemo(() => {
     if (studyMode === "exam") return [];
-    return causalEdgesInSet(causalChainSet, eventsByTitle);
-  }, [studyMode, causalChainSet, eventsByTitle]);
+    return causalEdgesInSet(causalChainSet, eventsById);
+  }, [studyMode, causalChainSet, eventsById]);
 
   const eventPassesLaneFilter = useCallback(
     (ev: TimelineEvent) => ev.lanes.some((l) => laneVisibility[l]),
@@ -743,6 +781,43 @@ export default function App() {
       return next;
     });
   }, []);
+
+  const saveNewEvent = useCallback(async (draft: TimelineEventDraft) => {
+    const result = await timelineEditionService.createEvent(draft);
+    setTimeline(result.timeline);
+    if (result.event) setSel({ kind: "event", item: result.event });
+    setEditorState(null);
+    setDetailCollapsed(false);
+  }, []);
+
+  const saveEditedEvent = useCallback(
+    async (eventId: string, draft: TimelineEventDraft) => {
+      const result = await timelineEditionService.updateEvent(eventId, draft);
+      setTimeline(result.timeline);
+      if (result.event) setSel({ kind: "event", item: result.event });
+      setEditorState(null);
+      setDetailCollapsed(false);
+    },
+    []
+  );
+
+  const deleteSelectedEvent = useCallback(
+    async (event: TimelineEvent) => {
+      if (!window.confirm(`¿Eliminar "${event.title}"?`)) return;
+      const result = await timelineEditionService.deleteEvent(event.id);
+      setTimeline(result.timeline);
+      const sorted = [...result.timeline.events].sort(
+        (a, b) => a.date.getTime() - b.date.getTime()
+      );
+      const deletedTime = event.date.getTime();
+      const next =
+        firstEventFromSorted(sorted, deletedTime) ??
+        lastEventBeforeSorted(sorted, deletedTime);
+      setSel(next ? { kind: "event", item: next } : null);
+      setDetailCollapsed(next == null);
+    },
+    []
+  );
 
   useLayoutEffect(() => {
     if (sel == null) return;
@@ -1230,6 +1305,31 @@ export default function App() {
                       </svg>
                     </button>
                   ) : null}
+                  <button
+                    type="button"
+                    className="viewer-map-btn viewer-map-btn--with-label"
+                    onClick={() => setEditorState({ kind: "create" })}
+                    aria-label="Crear evento"
+                    title="Crear evento"
+                  >
+                    <svg
+                      className="viewer-header-icon-svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 5v14M5 12h14"
+                      />
+                    </svg>
+                    <span>Evento</span>
+                  </button>
                   <div className="viewer-layers-menu">
                     <button
                       type="button"
@@ -1890,17 +1990,32 @@ export default function App() {
           <ViewerDetailPanel
             sel={sel}
             studyMode={studyMode}
-            eventsByTitle={eventsByTitle}
+            eventsById={eventsById}
             activePeriodForTimeline={activePeriodForTimeline}
             collapsed={detailCollapsed}
             onToggleCollapsed={() =>
               setDetailCollapsed((collapsed) => !collapsed)
             }
             onSelectEvent={(e) => setSel({ kind: "event", item: e })}
+            onEditEvent={(e) => setEditorState({ kind: "edit", event: e })}
+            onDeleteEvent={deleteSelectedEvent}
           />
         </div>
         </div>
 
+        {editorState ? (
+          <EventEditorModal
+            mode={editorState.kind}
+            event={editorState.kind === "edit" ? editorState.event : undefined}
+            events={eventsSorted}
+            onClose={() => setEditorState(null)}
+            onSave={(draft) =>
+              editorState.kind === "edit"
+                ? saveEditedEvent(editorState.event.id, draft)
+                : saveNewEvent(draft)
+            }
+          />
+        ) : null}
         <KeyboardHelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
       </div>
     </div>

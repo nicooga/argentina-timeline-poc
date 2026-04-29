@@ -1,8 +1,32 @@
-import { Timeline } from "./types";
+import type { Timeline, TimelineEvent } from "./types";
 
 /** Fecha civil gregoriana en UTC (mediodía), sin corrimiento por zona del navegador. */
 function utcDate(year: number, month: number, day: number): Date {
     return new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+}
+
+type SeedTimelineEvent = Omit<TimelineEvent, "id" | "causes" | "consequences"> & {
+    causes?: string[];
+    consequences?: string[];
+};
+
+function eventIdFromTitle(title: string): string {
+    return title
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+}
+
+function withEventIds(events: SeedTimelineEvent[]): TimelineEvent[] {
+    const titleToId = new Map(events.map((e) => [e.title, eventIdFromTitle(e.title)]));
+    return events.map((e) => ({
+        ...e,
+        id: titleToId.get(e.title)!,
+        causes: e.causes?.map((title) => titleToId.get(title) ?? title),
+        consequences: e.consequences?.map((title) => titleToId.get(title) ?? title),
+    }));
 }
 
 export const timelineHistoriaArgentina: Timeline = {
@@ -150,7 +174,7 @@ export const timelineHistoriaArgentina: Timeline = {
         },
     ],
 
-    events: [
+    events: withEventIds([
         {
             title: "Revolución de Mayo",
             importance: "primary",
@@ -561,5 +585,5 @@ export const timelineHistoriaArgentina: Timeline = {
             date: utcDate(1916, 4, 2),
             links: ["https://es.wikipedia.org/wiki/Hip%C3%B3lito_Yrigoyen"],
         },
-    ],
+    ]),
 };

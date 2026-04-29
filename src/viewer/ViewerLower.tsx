@@ -4,11 +4,13 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type FormEvent,
   type ReactNode,
 } from "react";
 import type { StudyMode } from "../../causality";
 import { lanesInDisplayOrder, LANE_UI } from "../../eventLanes";
 import type { Period, Selection, TimelineEvent } from "../../types";
+import type { TimelineEventDraft } from "../timelineEdition";
 import { LaneGlyph } from "../timeline";
 import "./ViewerLower.css";
 
@@ -34,11 +36,13 @@ type ViewerIndexPanelProps = {
 type ViewerDetailPanelProps = {
   sel: Selection;
   studyMode: StudyMode;
-  eventsByTitle: Map<string, TimelineEvent>;
+  eventsById: Map<string, TimelineEvent>;
   activePeriodForTimeline: Period | null;
   collapsed: boolean;
   onToggleCollapsed: () => void;
   onSelectEvent: (e: TimelineEvent) => void;
+  onEditEvent: (e: TimelineEvent) => void;
+  onDeleteEvent: (e: TimelineEvent) => void;
 };
 
 function PanelChrome({
@@ -211,9 +215,9 @@ export function ViewerIndexPanel({
           >
             <ul className="event-list">
               {events.map((e) => {
-                const eventSelected = sel?.kind === "event" && sel.item === e;
+                const eventSelected = sel?.kind === "event" && sel.item.id === e.id;
                 return (
-                  <li key={e.title + e.date.toISOString()}>
+                  <li key={e.id}>
                     <button
                       type="button"
                       className={`linkish${eventSelected ? " linkish--selected" : ""}`}
@@ -251,14 +255,228 @@ function ViewerMediaSlot({ children }: { children?: ReactNode }) {
   return <div className="viewer-media-frame">{children}</div>;
 }
 
+function dateInputValue(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function dateFromInput(value: string): Date {
+  return new Date(`${value}T12:00:00.000Z`);
+}
+
+function linesFrom(values: readonly string[] | undefined): string {
+  return (values ?? []).join("\n");
+}
+
+function linesToList(value: string): string[] {
+  return value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+type EventEditorModalProps = {
+  mode: "create" | "edit";
+  event?: TimelineEvent;
+  events: TimelineEvent[];
+  onClose: () => void;
+  onSave: (draft: TimelineEventDraft) => Promise<void>;
+};
+
+export function EventEditorModal({
+  mode,
+  event,
+  events,
+  onClose,
+  onSave,
+}: EventEditorModalProps) {
+  const [title, setTitle] = useState(event?.title ?? "");
+  const [date, setDate] = useState(dateInputValue(event?.date ?? new Date()));
+  const [summary, setSummary] = useState(event?.summary ?? "");
+  const [items, setItems] = useState(linesFrom(event?.items ?? [""]));
+  const [links, setLinks] = useState(linesFrom(event?.links));
+  const [lanes, setLanes] = useState<TimelineEvent["lanes"]>(
+    event?.lanes ?? ["politico"]
+  );
+  const [importance, setImportance] = useState<TimelineEvent["importance"] | "">(
+    event?.importance ?? ""
+  );
+  const [causes, setCauses] = useState<string[]>(event?.causes ?? []);
+  const [consequences, setConsequences] = useState<string[]>(
+    event?.consequences ?? []
+  );
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const relatedEvents = events.filter((e) => e.id !== event?.id);
+
+  const toggleLane = (lane: TimelineEvent["lanes"][number]) => {
+    setLanes((current) => {
+      if (current.includes(lane)) {
+        const next = current.filter((id) => id !== lane);
+        return next.length ? next : current;
+      }
+      return [...current, lane];
+    });
+  };
+
+  const selectedOptions = (select: HTMLSelectElement): string[] =>
+    Array.from(select.selectedOptions).map((option) => option.value);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave({
+        title,
+        date: dateFromInput(date),
+        summary,
+        items: linesToList(items),
+        lanes,
+        links: linesToList(links),
+        causes,
+        consequences,
+        importance: importance || undefined,
+      });
+    } catch (err) {
+      const validationErrors = (err as { validationErrors?: Array<{ message: string }> })
+        .validationErrors;
+      setError(
+        validationErrors?.map((v) => v.message).join(" ") ??
+          "No se pudo guardar el evento."
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="event-editor-root" role="presentation">
+      <form className="event-editor-dialog" onSubmit={submit}>
+        <div className="event-editor-header">
+          <h2>{mode === "create" ? "Crear evento" : "Editar evento"}</h2>
+          <button type="button" className="viewer-panel-icon-btn" onClick={onClose}>
+            <span aria-hidden>×</span>
+          </button>
+        </div>
+        <div className="event-editor-body">
+          <label className="event-editor-field">
+            <span>Título</span>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} />
+          </label>
+          <label className="event-editor-field">
+            <span>Fecha</span>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </label>
+          <label className="event-editor-field event-editor-field--wide">
+            <span>Resumen</span>
+            <input
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
+            />
+          </label>
+          <fieldset className="event-editor-field event-editor-field--wide">
+            <legend>Carriles</legend>
+            <div className="event-editor-lanes">
+              {Object.entries(LANE_UI).map(([lane, ui]) => (
+                <label key={lane} style={{ color: ui.color }}>
+                  <input
+                    type="checkbox"
+                    checked={lanes.includes(lane as TimelineEvent["lanes"][number])}
+                    onChange={() => toggleLane(lane as TimelineEvent["lanes"][number])}
+                  />
+                  <span>{ui.label}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <label className="event-editor-field">
+            <span>Importancia</span>
+            <select
+              value={importance}
+              onChange={(e) =>
+                setImportance(e.target.value as TimelineEvent["importance"] | "")
+              }
+            >
+              <option value="">Sin peso</option>
+              <option value="primary">Central</option>
+              <option value="secondary">Secundario</option>
+              <option value="contextual">Contextual</option>
+            </select>
+          </label>
+          <label className="event-editor-field event-editor-field--wide">
+            <span>Puntos</span>
+            <textarea
+              rows={5}
+              value={items}
+              onChange={(e) => setItems(e.target.value)}
+            />
+          </label>
+          <label className="event-editor-field event-editor-field--wide">
+            <span>Links</span>
+            <textarea
+              rows={3}
+              value={links}
+              onChange={(e) => setLinks(e.target.value)}
+            />
+          </label>
+          <label className="event-editor-field">
+            <span>Antecedentes</span>
+            <select
+              multiple
+              value={causes}
+              onChange={(e) => setCauses(selectedOptions(e.currentTarget))}
+            >
+              {relatedEvents.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="event-editor-field">
+            <span>Consecuencias</span>
+            <select
+              multiple
+              value={consequences}
+              onChange={(e) => setConsequences(selectedOptions(e.currentTarget))}
+            >
+              {relatedEvents.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          {error ? <p className="event-editor-error">{error}</p> : null}
+        </div>
+        <div className="event-editor-footer">
+          <button type="button" className="viewer-editor-btn" onClick={onClose}>
+            Cancelar
+          </button>
+          <button type="submit" className="viewer-editor-btn" disabled={saving}>
+            {saving ? "Guardando..." : "Guardar"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export function ViewerDetailPanel({
   sel,
   studyMode,
-  eventsByTitle,
+  eventsById,
   activePeriodForTimeline,
   collapsed,
   onToggleCollapsed,
   onSelectEvent,
+  onEditEvent,
+  onDeleteEvent,
 }: ViewerDetailPanelProps) {
   const title =
     sel == null
@@ -331,6 +549,22 @@ export function ViewerDetailPanel({
             </>
           ) : (
             <>
+              <div className="viewer-detail-actions">
+                <button
+                  type="button"
+                  className="viewer-editor-btn"
+                  onClick={() => onEditEvent(sel.item)}
+                >
+                  Editar
+                </button>
+                <button
+                  type="button"
+                  className="viewer-editor-btn viewer-editor-btn--danger"
+                  onClick={() => onDeleteEvent(sel.item)}
+                >
+                  Eliminar
+                </button>
+              </div>
               <h2 className="detail-title timeline-event-title">{sel.item.title}</h2>
               <div className="detail-lane-icons" aria-label="Carriles del evento">
                 {lanesInDisplayOrder(sel.item.lanes).map((lane) => (
@@ -382,20 +616,20 @@ export function ViewerDetailPanel({
                 <section className="detail-causal detail-causal--causes">
                   <h3 className="detail-causal-title">Antecedentes</h3>
                   <ul className="detail-causal-list">
-                    {sel.item.causes!.map((causeTitle) => {
-                      const ev = eventsByTitle.get(causeTitle);
+                    {sel.item.causes!.map((causeId) => {
+                      const ev = eventsById.get(causeId);
                       return (
-                        <li key={causeTitle}>
+                        <li key={causeId}>
                           {ev ? (
                             <button
                               type="button"
                               className="linkish detail-causal-link"
                               onClick={() => onSelectEvent(ev)}
                             >
-                              {causeTitle}
+                              {ev.title}
                             </button>
                           ) : (
-                            <span className="muted">{causeTitle}</span>
+                            <span className="muted">{causeId}</span>
                           )}
                         </li>
                       );
@@ -407,20 +641,20 @@ export function ViewerDetailPanel({
                 <section className="detail-causal detail-causal--effects">
                   <h3 className="detail-causal-title">Consecuencias</h3>
                   <ul className="detail-causal-list">
-                    {sel.item.consequences!.map((effectTitle) => {
-                      const ev = eventsByTitle.get(effectTitle);
+                    {sel.item.consequences!.map((effectId) => {
+                      const ev = eventsById.get(effectId);
                       return (
-                        <li key={effectTitle}>
+                        <li key={effectId}>
                           {ev ? (
                             <button
                               type="button"
                               className="linkish detail-causal-link"
                               onClick={() => onSelectEvent(ev)}
                             >
-                              {effectTitle}
+                              {ev.title}
                             </button>
                           ) : (
-                            <span className="muted">{effectTitle}</span>
+                            <span className="muted">{effectId}</span>
                           )}
                         </li>
                       );
