@@ -35,7 +35,7 @@ export const timelineHistoriaArgentina: Timeline = {
             title: "Revolución y crisis del orden colonial",
             start: utcDate(1810, 5, 25),
             end: utcDate(1820, 2, 1),
-            color: "#6C757D", // gris (ruptura / transición)
+            color: "#6d7470", // gris salvia (ruptura / transición)
             items: [
                 "Ruptura del orden colonial con la Revolución de Mayo.",
                 "Intentos fallidos de centralización (Directorio).",
@@ -47,7 +47,7 @@ export const timelineHistoriaArgentina: Timeline = {
             title: "Anarquía y autonomías provinciales",
             start: utcDate(1820, 2, 1),
             end: utcDate(1829, 12, 8),
-            color: "#ADB5BD", // gris claro (fragmentación)
+            color: "#a9a28f", // trigo grisáceo (fragmentación)
             items: [
                 "Disolución del poder central y soberanía de las provincias.",
                 "Conflictos entre unitarios y federales.",
@@ -59,7 +59,7 @@ export const timelineHistoriaArgentina: Timeline = {
             title: "Primer gobierno de Rosas",
             start: utcDate(1829, 12, 8),
             end: utcDate(1832, 12, 17),
-            color: "#F08A8A", // rojo claro (inicio del orden rosista)
+            color: "#9a6a61", // terracota apagado (inicio del orden rosista)
             items: [
                 "Ascenso de Rosas como garante del orden en Buenos Aires.",
                 "Centralización política con límites institucionales.",
@@ -70,7 +70,7 @@ export const timelineHistoriaArgentina: Timeline = {
             title: "Inestabilidad y transición",
             start: utcDate(1832, 12, 17),
             end: utcDate(1835, 4, 13),
-            color: "#FFE066", // amarillo (transición / inestabilidad)
+            color: "#b69a58", // trigo viejo (transición / inestabilidad)
             items: [
                 "Crisis política tras la salida de Rosas.",
                 "Incapacidad de sostener el orden sin liderazgo fuerte.",
@@ -81,7 +81,7 @@ export const timelineHistoriaArgentina: Timeline = {
             title: "Régimen rosista",
             start: utcDate(1835, 4, 13),
             end: utcDate(1852, 2, 3),
-            color: "#C1121F", // rojo intenso (hegemonía rosista)
+            color: "#8f4b3f", // rojo ladrillo sobrio (hegemonía rosista)
             items: [
                 "Concentración del poder con la suma del poder público.",
                 "Hegemonía de Buenos Aires sobre el resto del territorio.",
@@ -94,7 +94,7 @@ export const timelineHistoriaArgentina: Timeline = {
             title: "Organización nacional sin Buenos Aires",
             start: utcDate(1852, 2, 3),
             end: utcDate(1860, 10, 1),
-            color: "#1971C2", // azul (institucionalización inicial)
+            color: "#325f87", // azul marino medio (institucionalización inicial)
             items: [
                 "Caída de Rosas y apertura del proceso constitucional.",
                 "Sanción de la Constitución de 1853.",
@@ -106,7 +106,7 @@ export const timelineHistoriaArgentina: Timeline = {
             title: "Unificación y construcción del Estado nacional",
             start: utcDate(1860, 10, 1),
             end: utcDate(1880, 1, 1),
-            color: "#2B8A3E", // verde (construcción del Estado)
+            color: "#4f7257", // verde institucional apagado (construcción del Estado)
             items: [
                 "Incorporación de Buenos Aires al orden constitucional.",
                 "Conflictos internos por la hegemonía política.",
@@ -119,7 +119,7 @@ export const timelineHistoriaArgentina: Timeline = {
             /* Inicio alineado con la reunificación bajo la Constitución (evita solape 1860-01..1860-10 con “Unificación”). */
             start: utcDate(1860, 10, 1),
             end: utcDate(1914, 1, 1),
-            color: "#8D6E63",
+            color: "#7e6b5a",
             items: [
                 "Inserción de Argentina en el mercado mundial como exportador de materias primas.",
                 "Expansión ganadera y agrícola en la pampa húmeda.",
@@ -130,7 +130,7 @@ export const timelineHistoriaArgentina: Timeline = {
             title: "Expansión y control territorial del Estado",
             start: utcDate(1865, 1, 1),
             end: utcDate(1884, 1, 1),
-            color: "#A47148",
+            color: "#9d8258",
             items: [
                 "Construcción del monopolio de la violencia estatal.",
                 "Expansión sobre territorios indígenas (sur y norte).",
@@ -142,7 +142,7 @@ export const timelineHistoriaArgentina: Timeline = {
             title: "Consolidación del Estado nacional",
             start: utcDate(1880, 1, 1),
             end: utcDate(1900, 1, 1),
-            color: "#495057", // gris oscuro (orden consolidado)
+            color: "#4e5a63", // gris azulado (orden consolidado)
             items: [
                 "Fin de las guerras civiles; la Nación fija la capital federal en Buenos Aires (1880).",
                 "Estabilización del orden político nacional.",
@@ -153,7 +153,7 @@ export const timelineHistoriaArgentina: Timeline = {
             title: "Régimen oligárquico",
             start: utcDate(1880, 1, 1),
             end: utcDate(1916, 1, 1),
-            color: "#343A40",
+            color: "#354253",
             items: [
                 "Dominio político de la élite terrateniente.",
                 "Sistema electoral restringido y fraudulento.",
@@ -164,7 +164,7 @@ export const timelineHistoriaArgentina: Timeline = {
             title: "Inmigración masiva y transformación social",
             start: utcDate(1880, 1, 1),
             end: utcDate(1914, 7, 28),
-            color: "#5F9EA0",
+            color: "#5f817f",
             items: [
                 "Llegada masiva de inmigrantes europeos.",
                 "Rápida urbanización y crecimiento de Buenos Aires.",
