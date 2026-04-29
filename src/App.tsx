@@ -23,6 +23,7 @@ import { SITE_INSTAGRAM_URL, KeyboardHelpModal } from "./shell";
 import { EventEditorModal, ViewerDetailPanel, ViewerIndexPanel } from "./viewer";
 /* Títulos de eventos: único modo vertical (layout+CSS); ver `timeline/eventLabelLayout.ts`. */
 import {
+  axisMarkLaneOffsetPx,
   assignAxisMarkLanes,
   assignEventLabelLanes,
   axisTickAriaLabel,
@@ -725,10 +726,23 @@ export default function App() {
 
   const axisMarksPlaced = useMemo(
     () =>
-      assignAxisMarkLanes(axisMarks, (tMs: number) =>
-        pctOnTrack(tMs, min, max)
+      assignAxisMarkLanes(
+        axisMarks,
+        (tMs: number) => pctOnTrack(tMs, min, max),
+        axisShowYearByT,
+        stackWidthPx
       ),
-    [axisMarks, min, max]
+    [axisMarks, min, max, axisShowYearByT, stackWidthPx]
+  );
+
+  const axisMarkMaxLaneOffsetPx = useMemo(
+    () =>
+      axisMarksPlaced.reduce(
+        (maxOffset, item) =>
+          Math.max(maxOffset, axisMarkLaneOffsetPx(item.lane)),
+        0
+      ),
+    [axisMarksPlaced]
   );
 
   useEffect(() => {
@@ -1734,7 +1748,7 @@ export default function App() {
               className="axis axis--ticks-single-vline-breakpoint"
               style={
                 {
-                  "--axis-max-lane": 0,
+                  "--axis-max-lane-offset": `${axisMarkMaxLaneOffsetPx}px`,
                 } as CSSProperties
               }
             >
@@ -1788,7 +1802,7 @@ export default function App() {
                   />
                 ))}
               </div>
-              {axisMarksPlaced.map(({ mark, p }, i) => {
+              {axisMarksPlaced.map(({ mark, p, lane }, i) => {
                 const isFirst = i === 0;
                 const isLast = i === axisMarksPlaced.length - 1;
                 let edgeClass = "";
@@ -1820,6 +1834,8 @@ export default function App() {
                   showYear,
                   ariaLabel,
                   singleVerticalLine: true,
+                  lane,
+                  laneOffsetPx: axisMarkLaneOffsetPx(lane),
                   onTickClick: tickEvent
                     ? () => setSel({ kind: "event", item: tickEvent })
                     : undefined,

@@ -1394,20 +1394,13 @@
   --axis-bar-h: 10px;
   --tick-line-h: 12px;
   /*
-   * Paso vertical entre carriles (--axis-lane-step); las etiquetas del eje usan
-   * `.tick-label-axis-year` / `.tick-label-axis-monthday` (vertical-rl).
-   */
-  --axis-lane-step: calc(
-    0.68rem * 1.18 + 0.62rem * 1.18 + 0.12rem + 0.34rem
-  );
-  /*
    * Misma columna vertical que `.tick--axis-mark` (trazo + carriles + bloque año/mes).
    * max(em, rem) + colchón: la raíz usa font-size fluido (clamp); un solo 3.35rem fijo
    * quedaba corto y el carril más alto (fechas muy juntas) recortaba la línea del año.
    */
   min-height: calc(
-    var(--tick-line-h) + 4px + var(--axis-max-lane, 0) * var(--axis-lane-step) +
-      max(2.65em, 2.95rem) + 0.55rem
+    var(--tick-line-h) + 4px + var(--axis-max-lane-offset, 0rem) +
+      max(4.15rem, 4.35em) + 0.85rem
   );
   margin-bottom: var(--timeline-axis-gap);
   border-bottom: none;
@@ -1618,6 +1611,12 @@
   justify-content: flex-end;
   gap: 0;
   min-height: calc(4rem + 0.12rem);
+}
+
+.tick--axis-mark.tick--axis-mark-single-vline .tick-label {
+  bottom: calc(
+    var(--tick-line-h, 12px) + 4px + var(--tick-lane-offset, 0rem)
+  );
 }
 
 .tick--axis-mark .tick-label.tick-label--axis-single-vline.tick-label--year-suppressed {

@@ -10,6 +10,8 @@ export type AxisTickMarkProps = {
   tickEvent: TimelineEvent | undefined;
   showYear: boolean;
   ariaLabel: string;
+  lane: number;
+  laneOffsetPx: number;
   onTickClick?: () => void;
   /** Un solo trazo vertical (año + mes/día en línea con espacio). */
   singleVerticalLine: boolean;
@@ -23,6 +25,8 @@ export function AxisTickMark({
   tickEvent,
   showYear,
   ariaLabel,
+  lane,
+  laneOffsetPx,
   onTickClick,
   singleVerticalLine,
 }: AxisTickMarkProps) {
@@ -46,6 +50,8 @@ export function AxisTickMark({
       style={
         {
           left: `${p}%`,
+          "--tick-lane": lane,
+          "--tick-lane-offset": `${laneOffsetPx}px`,
         } as CSSProperties
       }
       role={tickEvent ? "button" : undefined}
