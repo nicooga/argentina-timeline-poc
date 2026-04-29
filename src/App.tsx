@@ -38,6 +38,7 @@ import {
   TimelineEditionService,
   type TimelineEventDraft,
 } from "./timelineEdition";
+import { useThemeMode, type ThemeMode } from "./shell/theme";
 import "./App.css";
 
 const timelineRepo = new LocalStorageTimelineRepo();
@@ -69,6 +70,140 @@ const TIMELINE_TRACK_INSET_RIGHT_PCT = 4;
 /** Repositorio público del visor (icono en la barra del visor). */
 const VIEWER_SOURCE_REPO_URL =
   "https://github.com/nicooga/argentina-timeline-poc";
+
+const THEME_MODE_OPTIONS: readonly { id: ThemeMode; label: string }[] = [
+  { id: "system", label: "Sistema" },
+  { id: "light", label: "Claro" },
+  { id: "dark", label: "Oscuro" },
+];
+
+const STUDY_MODE_OPTIONS: readonly { id: StudyMode; label: string }[] = [
+  { id: "normal", label: "Normal" },
+  { id: "exam", label: "Examen" },
+  { id: "causal", label: "Causal" },
+];
+
+function ThemeModeIcon({ mode }: { mode: ThemeMode }) {
+  if (mode === "light") {
+    return (
+      <svg
+        className="viewer-header-icon-svg"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+          d="M12 4V2m0 20v-2m5.66-13.66 1.41-1.41M4.93 19.07l1.41-1.41M20 12h2M2 12h2m14.07 7.07-1.41-1.41M6.34 6.34 4.93 4.93M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z"
+        />
+      </svg>
+    );
+  }
+  if (mode === "dark") {
+    return (
+      <svg
+        className="viewer-header-icon-svg"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+          d="M21 13.5A8.5 8.5 0 0 1 10.5 3 7 7 0 1 0 21 13.5Z"
+        />
+      </svg>
+    );
+  }
+  return (
+    <svg
+      className="viewer-header-icon-svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+        d="M4 5h16v10H4V5Zm5 14h6m-3-4v4"
+      />
+    </svg>
+  );
+}
+
+function StudyModeIcon({ mode }: { mode: StudyMode }) {
+  if (mode === "exam") {
+    return (
+      <svg
+        className="viewer-header-icon-svg"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+          d="M9 11h6m-6 4h4m-7 6h12a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v15a2 2 0 0 0 2 2Zm8-19v5h5"
+        />
+      </svg>
+    );
+  }
+  if (mode === "causal") {
+    return (
+      <svg
+        className="viewer-header-icon-svg"
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+          d="M8 5a3 3 0 1 1-3 3 3 3 0 0 1 3-3Zm8 8a3 3 0 1 1-3 3 3 3 0 0 1 3-3ZM10.6 9.4l2.8 3.2"
+        />
+      </svg>
+    );
+  }
+  return (
+    <svg
+      className="viewer-header-icon-svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <path
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+        d="M4 6h16M4 12h16M4 18h16"
+      />
+    </svg>
+  );
+}
 
 function pctOnTrack(time: number, min: number, max: number): number {
   if (max <= min) return TIMELINE_TRACK_INSET_LEFT_PCT;
@@ -145,6 +280,8 @@ function defaultEventSelection(events: TimelineEvent[]): Selection {
 }
 
 function foregroundForHex(hex: string): string {
+  const navy = "#102033";
+  const wheat = "#fff8ec";
   const raw = hex.trim().replace(/^#/, "");
   if (raw.length !== 3 && raw.length !== 6) return "var(--text)";
   const full =
@@ -156,15 +293,25 @@ function foregroundForHex(hex: string): string {
       : raw;
   const n = Number.parseInt(full, 16);
   if (Number.isNaN(n)) return "var(--text)";
-  const r = (n >> 16) & 0xff;
-  const g = (n >> 8) & 0xff;
-  const b = n & 0xff;
-  const lin = [r, g, b].map((c) => {
-    const x = c / 255;
-    return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4;
-  });
-  const L = 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
-  return L > 0.45 ? "#1a1d21" : "#ffffff";
+  const luminance = (value: number) => {
+    const r = (value >> 16) & 0xff;
+    const g = (value >> 8) & 0xff;
+    const b = value & 0xff;
+    const lin = [r, g, b].map((c) => {
+      const x = c / 255;
+      return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
+  };
+  const contrast = (a: number, b: number) => {
+    const hi = Math.max(a, b);
+    const lo = Math.min(a, b);
+    return (hi + 0.05) / (lo + 0.05);
+  };
+  const bgL = luminance(n);
+  const navyL = luminance(Number.parseInt(navy.replace(/^#/, ""), 16));
+  const wheatL = luminance(Number.parseInt(wheat.replace(/^#/, ""), 16));
+  return contrast(bgL, navyL) >= contrast(bgL, wheatL) ? navy : wheat;
 }
 
 /** Contenedor con scroll vertical bajo el foco (p. ej. listas de la leyenda). */
@@ -521,10 +668,13 @@ export default function App() {
   const [indexOpen, setIndexOpen] = useState(false);
   const [detailCollapsed, setDetailCollapsed] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
+  const [studyMenuOpen, setStudyMenuOpen] = useState(false);
   /** Zoom, escala del eje y navegación de eventos (panel inferior del timeline). */
   const [timelineChromeExpanded, setTimelineChromeExpanded] = useState(false);
   const [timelineZoom, setTimelineZoom] = useState(1);
   const [studyMode, setStudyMode] = useState<StudyMode>("normal");
+  const [themeMode, setThemeMode] = useThemeMode();
   const [laneVisibility, setLaneVisibility] = useState<
     Record<EventLaneId, boolean>
   >(
@@ -1211,31 +1361,91 @@ export default function App() {
                     {formatShortDate(new Date(max))}
                   </p>
                 </div>
-                <div
-                  className="viewer-study-modes"
-                  role="radiogroup"
-                  aria-label="Modo de estudio"
-                >
-                  {(
-                    [
-                      ["normal", "Normal"],
-                      ["exam", "Examen"],
-                      ["causal", "Causal"],
-                    ] as const
-                  ).map(([id, label]) => (
-                    <button
-                      key={id}
-                      type="button"
-                      role="radio"
-                      aria-checked={studyMode === id}
-                      className={`viewer-study-mode-btn${studyMode === id ? " viewer-study-mode-btn--active" : ""}`.trim()}
-                      onClick={() => setStudyMode(id)}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
                 <div className="viewer-toolbar-actions">
+                  <div className="viewer-study-menu">
+                    <button
+                      type="button"
+                      className="viewer-map-btn"
+                      onClick={() => setStudyMenuOpen((open) => !open)}
+                      aria-expanded={studyMenuOpen}
+                      aria-haspopup="menu"
+                      aria-controls="viewer-study-menu"
+                      aria-label={`Modo de estudio: ${
+                        STUDY_MODE_OPTIONS.find((option) => option.id === studyMode)
+                          ?.label ?? "Normal"
+                      }`}
+                      title="Modo de estudio"
+                    >
+                      <StudyModeIcon mode={studyMode} />
+                    </button>
+                    {studyMenuOpen ? (
+                      <div
+                        id="viewer-study-menu"
+                        className="viewer-study-menu-popover"
+                        role="radiogroup"
+                        aria-label="Modo de estudio"
+                      >
+                        {STUDY_MODE_OPTIONS.map(({ id, label }) => (
+                          <button
+                            key={id}
+                            type="button"
+                            role="radio"
+                            aria-checked={studyMode === id}
+                            className={`viewer-study-menu-option${studyMode === id ? " viewer-study-menu-option--active" : ""}`.trim()}
+                            onClick={() => {
+                              setStudyMode(id);
+                              setStudyMenuOpen(false);
+                            }}
+                          >
+                            <StudyModeIcon mode={id} />
+                            <span>{label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className="viewer-theme-menu">
+                    <button
+                      type="button"
+                      className="viewer-map-btn"
+                      onClick={() => setThemeMenuOpen((open) => !open)}
+                      aria-expanded={themeMenuOpen}
+                      aria-haspopup="menu"
+                      aria-controls="viewer-theme-menu"
+                      aria-label={`Tema visual: ${
+                        THEME_MODE_OPTIONS.find((option) => option.id === themeMode)
+                          ?.label ?? "Sistema"
+                      }`}
+                      title="Tema visual"
+                    >
+                      <ThemeModeIcon mode={themeMode} />
+                    </button>
+                    {themeMenuOpen ? (
+                      <div
+                        id="viewer-theme-menu"
+                        className="viewer-theme-menu-popover"
+                        role="radiogroup"
+                        aria-label="Tema visual"
+                      >
+                        {THEME_MODE_OPTIONS.map(({ id, label }) => (
+                          <button
+                            key={id}
+                            type="button"
+                            role="radio"
+                            aria-checked={themeMode === id}
+                            className={`viewer-theme-menu-option${themeMode === id ? " viewer-theme-menu-option--active" : ""}`.trim()}
+                            onClick={() => {
+                              setThemeMode(id);
+                              setThemeMenuOpen(false);
+                            }}
+                          >
+                            <ThemeModeIcon mode={id} />
+                            <span>{label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
                   <button
                     type="button"
                     className="viewer-map-btn viewer-map-btn--with-label"

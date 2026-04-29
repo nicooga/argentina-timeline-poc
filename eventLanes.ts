@@ -26,11 +26,11 @@ export const LANE_UI: Record<
   EventLaneId,
   { label: string; color: string; glyph: LaneGlyphId }
 > = {
-  politico: { label: "Político", color: "#4c6ef5", glyph: "landmark" },
-  militar: { label: "Militar", color: "#c92a2a", glyph: "shield" },
-  economico: { label: "Económico", color: "#EAB308", glyph: "coins" },
-  social: { label: "Social", color: "#9c36b5", glyph: "users" },
-  diplomatico: { label: "Diplomático", color: "#2b8a3e", glyph: "globe" },
+  politico: { label: "Político", color: "#325f87", glyph: "landmark" },
+  militar: { label: "Militar", color: "#8f4b3f", glyph: "shield" },
+  economico: { label: "Económico", color: "#a7792d", glyph: "coins" },
+  social: { label: "Social", color: "#6f5b83", glyph: "users" },
+  diplomatico: { label: "Diplomático", color: "#4f7257", glyph: "globe" },
 };
 
 /** Primer carril en orden visual que el evento ocupa (etiqueta + foco principal). */

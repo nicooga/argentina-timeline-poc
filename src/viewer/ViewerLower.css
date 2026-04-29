@@ -702,8 +702,8 @@
 /* UX pass 2: tabbed index and peripheral map panels. */
 .viewer-floating-panel,
 .viewer-detail-panel {
-  background: color-mix(in srgb, #172131 96%, var(--surface));
-  border-color: color-mix(in srgb, #6a7890 36%, transparent);
+  background: color-mix(in srgb, var(--surface) 96%, var(--bg));
+  border-color: color-mix(in srgb, var(--border) 62%, transparent);
 }
 
 .viewer-floating-panel {
@@ -866,12 +866,12 @@
 }
 
 .viewer-editor-btn--danger {
-  color: #fda4af;
+  color: #d98b82;
 }
 
 .viewer-editor-btn--danger:hover:not(:disabled) {
-  border-color: color-mix(in srgb, #fb7185 52%, var(--border));
-  color: #fecdd3;
+  border-color: color-mix(in srgb, #b96b62 56%, var(--border));
+  color: #e7aaa2;
 }
 
 .event-editor-root {
@@ -882,7 +882,7 @@
   align-items: center;
   justify-content: center;
   padding: clamp(0.6rem, 2vw, 1.25rem);
-  background: color-mix(in srgb, #020617 54%, transparent);
+  background: color-mix(in srgb, var(--bg) 62%, transparent);
 }
 
 .event-editor-dialog {
@@ -891,9 +891,9 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, #6a7890 42%, transparent);
+  border: 1px solid color-mix(in srgb, var(--border) 68%, transparent);
   border-radius: 8px;
-  background: color-mix(in srgb, #172131 98%, var(--surface));
+  background: color-mix(in srgb, var(--surface) 98%, var(--bg));
   color: var(--text);
   box-shadow: 0 24px 60px color-mix(in srgb, #000 48%, transparent);
 }
@@ -991,7 +991,7 @@
 
 .event-editor-error {
   margin: 0;
-  color: #fecdd3;
+  color: #e7aaa2;
   font-size: 0.78rem;
   font-weight: 650;
 }
