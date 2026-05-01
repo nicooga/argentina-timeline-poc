@@ -2552,6 +2552,12 @@
 
 .evt-v-caption.timeline-event-title {
   display: inline-flex;
+  /* IMPORTANT: this is required for label to display correctly in Safari and iOS devices in general.
+  Before removing this test, please check if the label is displayed correctly in Safari and iOS devices. */
+  position: absolute;
+  top: 0;
+  left: 0;
+  /* END IMPORTANT */
   align-items: center;
   margin: 0;
   padding: 0;
