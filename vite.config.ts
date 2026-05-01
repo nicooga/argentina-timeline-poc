@@ -7,6 +7,12 @@ const repo = process.env.GITHUB_REPOSITORY?.split("/")[1];
 export default defineConfig({
   plugins: [react()],
   base: repo ? `/${repo}/` : "/",
+  server: {
+    allowedHosts: true,
+  },
+  preview: {
+    allowedHosts: true,
+  },
   test: {
     include: ["src/**/*.test.ts"],
   },
