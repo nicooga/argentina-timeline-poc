@@ -70,20 +70,63 @@ export function timelineFromJson(json: unknown): Timeline {
   return {
     periods: payload.periods.map((p) => ({
       ...p,
-      start: new Date(p.start),
-      end: new Date(p.end),
+      start: parseTimelineDate(p.start),
+      end: parseTimelineDate(p.end),
     })),
     events: payload.events.map((e) => {
       const id = e.id ?? titleToId.get(e.title) ?? eventIdFromTitle(e.title);
       return {
         ...e,
         id,
-        date: new Date(e.date),
+        date: parseTimelineDate(e.date),
         causes: e.causes?.map((ref) => titleToId.get(ref) ?? ref),
         consequences: e.consequences?.map((ref) => titleToId.get(ref) ?? ref),
       };
     }),
   };
+}
+
+const TIMELINE_UTC_DATE_RE =
+  /^([+-]?\d{1,6})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?Z$/;
+
+function parseTimelineDate(value: string): Date {
+  const match = TIMELINE_UTC_DATE_RE.exec(value);
+  if (!match) {
+    return assertValidDate(new Date(value), value);
+  }
+
+  const [, yearRaw, monthRaw, dayRaw, hourRaw, minuteRaw, secondRaw, msRaw = "0"] =
+    match;
+  const year = Number(yearRaw);
+  const month = Number(monthRaw);
+  const day = Number(dayRaw);
+  const hour = Number(hourRaw);
+  const minute = Number(minuteRaw);
+  const second = Number(secondRaw);
+  const millisecond = Number(msRaw.padEnd(3, "0"));
+  const date = new Date(Date.UTC(0, month - 1, day, hour, minute, second, millisecond));
+  date.setUTCFullYear(year);
+
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day ||
+    date.getUTCHours() !== hour ||
+    date.getUTCMinutes() !== minute ||
+    date.getUTCSeconds() !== second ||
+    date.getUTCMilliseconds() !== millisecond
+  ) {
+    throw new Error(`Invalid timeline date: ${value}`);
+  }
+
+  return assertValidDate(date, value);
+}
+
+function assertValidDate(date: Date, value: string): Date {
+  if (Number.isNaN(date.getTime())) {
+    throw new Error(`Invalid timeline date: ${value}`);
+  }
+  return date;
 }
 
 function eventIdFromTitle(title: string): string {
