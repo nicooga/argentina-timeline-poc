@@ -27,10 +27,13 @@ import {
   assignAxisMarkLanes,
   assignEventLabelLanes,
   axisTickAriaLabel,
+  chooseAxisScaleDetail,
+  chooseTimelineZoomMax,
   computeAxisShowYearFlags,
   mergeAxisMarks,
   TimelineSemanticEventLanes,
   TimelineEventTitlesLane,
+  utcYearStartMs,
 } from "./timeline";
 import { AxisTickMark } from "./AxisTickMark";
 import {
@@ -429,15 +432,16 @@ function assignPeriodLanes(periods: Period[]): {
 }
 
 /** 0 | 1 según la década (años …0–…9), estable con años negativos. */
-function decadeStripeIndex(decadeStartYear: number): 0 | 1 {
-  const k = Math.floor(decadeStartYear / 10);
+function axisBandStripeIndex(bandStartYear: number, bandYears: number): 0 | 1 {
+  const k = Math.floor(bandStartYear / bandYears);
   return (((k % 2) + 2) % 2) as 0 | 1;
 }
 
-/** Franjas [1 ene D, 1 ene D+10) recortadas al rango del eje, para colores alternos. */
+/** Franjas temporales recortadas al rango del eje, para colores alternos. */
 function axisDecadeBands(
   minMs: number,
-  maxMs: number
+  maxMs: number,
+  bandYears: number
 ): {
   key: string;
   leftPct: number;
@@ -450,7 +454,7 @@ function axisDecadeBands(
   }
   const yMin = new Date(minMs).getUTCFullYear();
   const yMax = new Date(maxMs).getUTCFullYear();
-  const dStart = Math.floor(yMin / 10) * 10;
+  const dStart = Math.floor(yMin / bandYears) * bandYears;
   const out: {
     key: string;
     leftPct: number;
@@ -458,9 +462,9 @@ function axisDecadeBands(
     stripe: 0 | 1;
     decadeLabel: string;
   }[] = [];
-  for (let D = dStart; D <= yMax; D += 10) {
-    const t0 = Date.UTC(D, 0, 1);
-    const t1 = Date.UTC(D + 10, 0, 1);
+  for (let D = dStart; D <= yMax; D += bandYears) {
+    const t0 = utcYearStartMs(D);
+    const t1 = utcYearStartMs(D + bandYears);
     const segLo = Math.max(minMs, t0);
     const segHi = Math.min(maxMs, t1);
     if (segHi <= segLo) continue;
@@ -469,11 +473,11 @@ function axisDecadeBands(
     const widthPct = Math.max(0, rightPct - leftPct);
     if (widthPct <= 0) continue;
     out.push({
-      key: `band-${D}`,
+      key: `band-${D}-${bandYears}`,
       leftPct,
       widthPct,
-      stripe: decadeStripeIndex(D),
-      decadeLabel: String(D),
+      stripe: axisBandStripeIndex(D, bandYears),
+      decadeLabel: axisBandLabel(D, bandYears),
     });
   }
   return out;
@@ -481,44 +485,49 @@ function axisDecadeBands(
 
 /**
  * Instantes del 1 ene (UTC) dentro de [minMs, maxMs] para micro-marcas del eje;
- * `major`: cada 10 años el trazo es un poco más alto.
+ * `major`: cada franja temporal principal el trazo es un poco más alto.
  */
 function yearAxisMicroTicks(
   minMs: number,
-  maxMs: number
+  maxMs: number,
+  tickYears: number,
+  bandYears: number
 ): { t: number; major: boolean; stripe: 0 | 1 }[] {
   if (!Number.isFinite(minMs) || !Number.isFinite(maxMs) || maxMs <= minMs) {
     return [];
   }
   let yStart = new Date(minMs).getUTCFullYear();
-  const firstJan = Date.UTC(yStart, 0, 1);
-  if (firstJan < minMs) yStart += 1;
+  yStart = Math.ceil(yStart / tickYears) * tickYears;
+  const firstJan = utcYearStartMs(yStart);
+  if (firstJan < minMs) yStart += tickYears;
   const yEnd = new Date(maxMs).getUTCFullYear();
   const out: { t: number; major: boolean; stripe: 0 | 1 }[] = [];
-  for (let y = yStart; y <= yEnd; y++) {
-    const t = Date.UTC(y, 0, 1);
+  for (let y = yStart; y <= yEnd; y += tickYears) {
+    const t = utcYearStartMs(y);
     if (t >= minMs && t <= maxMs) {
-      const decadeStart = Math.floor(y / 10) * 10;
+      const bandStart = Math.floor(y / bandYears) * bandYears;
       out.push({
         t,
-        major: y % 10 === 0,
-        stripe: decadeStripeIndex(decadeStart),
+        major: y % bandYears === 0,
+        stripe: axisBandStripeIndex(bandStart, bandYears),
       });
     }
   }
   return out;
 }
 
+function axisBandLabel(startYear: number, bandYears: number): string {
+  if (bandYears === 10) return String(startYear);
+  return `${startYear}`;
+}
+
 /** Zoom horizontal del timeline (Ctrl + rueda). 1 = ancho base en CSS. */
 const TIMELINE_ZOOM_MIN = 0.35;
-const TIMELINE_ZOOM_MAX = 14;
+const TIMELINE_ZOOM_DEFAULT_MAX = 14;
 const TIMELINE_ZOOM_STEP = 1.085;
 
 /** Ancho visual de la barra de escala (px); el texto indica el lapso temporal que cubre. */
 const SCALE_BAR_PX = 112;
-
-/** Ancho mínimo de una franja decenal (% pista) para mostrar la etiqueta "1820", etc. */
-const AXIS_DECADE_LABEL_MIN_WIDTH_PCT = 2.15;
 
 /** Viewport “tablet” para el visor: barras colapsadas al entrar. */
 const VIEWER_TABLET_MQ = "(max-width: 1024px)";
@@ -533,22 +542,22 @@ function clamp(n: number, lo: number, hi: number): number {
 }
 
 /** Slider 0…1 ↔ zoom (escala log para que el control se sienta natural). */
-function zoomFromSliderT(t: number): number {
+function zoomFromSliderT(t: number, maxZoom: number): number {
   const tt = clamp(t, 0, 1);
   const lo = Math.log(TIMELINE_ZOOM_MIN);
-  const hi = Math.log(TIMELINE_ZOOM_MAX);
+  const hi = Math.log(maxZoom);
   return Math.exp(lo + tt * (hi - lo));
 }
 
-function sliderTFromZoom(z: number): number {
+function sliderTFromZoom(z: number, maxZoom: number): number {
   const lo = Math.log(TIMELINE_ZOOM_MIN);
-  const hi = Math.log(TIMELINE_ZOOM_MAX);
-  const lz = Math.log(clamp(z, TIMELINE_ZOOM_MIN, TIMELINE_ZOOM_MAX));
+  const hi = Math.log(maxZoom);
+  const lz = Math.log(clamp(z, TIMELINE_ZOOM_MIN, maxZoom));
   return clamp((lz - lo) / (hi - lo), 0, 1);
 }
 
-function formatZoomFactorUi(z: number): string {
-  const c = clamp(z, TIMELINE_ZOOM_MIN, TIMELINE_ZOOM_MAX);
+function formatZoomFactorUi(z: number, maxZoom: number): string {
+  const c = clamp(z, TIMELINE_ZOOM_MIN, maxZoom);
   if (c >= 10) return `×${Math.round(c)}`;
   const r = Math.round(c * 10) / 10;
   const s = Number.isInteger(r) ? String(r) : String(r).replace(".", ",");
@@ -640,16 +649,6 @@ export default function App() {
     [periods, events]
   );
 
-  const axisYearMicroTicks = useMemo(
-    () => yearAxisMicroTicks(min, max),
-    [min, max]
-  );
-
-  const axisDecadeBandRects = useMemo(
-    () => axisDecadeBands(min, max),
-    [min, max]
-  );
-
   const { laneByIndex, periodIndicesByLane } = useMemo(() => {
     const { laneByIndex: lanes, laneCount } = assignPeriodLanes(periods);
     const periodIndicesByLane: number[][] = Array.from(
@@ -692,6 +691,38 @@ export default function App() {
       ) as Record<EventLaneId, boolean>
   );
   const [stackWidthPx, setStackWidthPx] = useState<number | null>(null);
+  const [scrollViewportWidthPx, setScrollViewportWidthPx] = useState<number | null>(
+    null
+  );
+  const timelineZoomMax = useMemo(
+    () =>
+      chooseTimelineZoomMax(
+        min,
+        max,
+        stackWidthPx == null ? null : stackWidthPx / timelineZoom,
+        scrollViewportWidthPx,
+        TIMELINE_ZOOM_DEFAULT_MAX
+      ),
+    [min, max, stackWidthPx, timelineZoom, scrollViewportWidthPx]
+  );
+  const axisScaleDetail = useMemo(
+    () => chooseAxisScaleDetail(min, max, stackWidthPx),
+    [min, max, stackWidthPx]
+  );
+  const axisYearMicroTicks = useMemo(
+    () =>
+      yearAxisMicroTicks(
+        min,
+        max,
+        axisScaleDetail.microTickYears,
+        axisScaleDetail.bandYears
+      ),
+    [min, max, axisScaleDetail]
+  );
+  const axisDecadeBandRects = useMemo(
+    () => axisDecadeBands(min, max, axisScaleDetail.bandYears),
+    [min, max, axisScaleDetail]
+  );
   const [layoutProbe, setLayoutProbe] = useState(() => ({
     vminPx:
       typeof window !== "undefined"
@@ -1083,14 +1114,22 @@ export default function App() {
 
   useEffect(() => {
     const el = timelineStackRef.current;
+    const scrollEl = timelineScrollRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => {
+    const updateMetrics = () => {
       setStackWidthPx(el.offsetWidth);
-    });
+      setScrollViewportWidthPx(scrollEl?.clientWidth ?? null);
+    };
+    const ro = new ResizeObserver(updateMetrics);
     ro.observe(el);
-    setStackWidthPx(el.offsetWidth);
+    if (scrollEl) ro.observe(scrollEl);
+    updateMetrics();
     return () => ro.disconnect();
   }, [timelineZoom]);
+
+  useEffect(() => {
+    setTimelineZoom((z) => clamp(z, TIMELINE_ZOOM_MIN, timelineZoomMax));
+  }, [timelineZoomMax]);
 
   useLayoutEffect(() => {
     const pending = pendingZoomAnchorRef.current;
@@ -1108,7 +1147,7 @@ export default function App() {
   }, [timelineZoom]);
 
   const setTimelineZoomCentered = useCallback((next: number) => {
-    const z1 = clamp(next, TIMELINE_ZOOM_MIN, TIMELINE_ZOOM_MAX);
+    const z1 = clamp(next, TIMELINE_ZOOM_MIN, timelineZoomMax);
     const scrollEl = timelineScrollRef.current;
     if (scrollEl) {
       const viewportX = scrollEl.clientWidth / 2;
@@ -1117,21 +1156,24 @@ export default function App() {
       pendingZoomAnchorRef.current = { frac, viewportX };
     }
     setTimelineZoom(z1);
-  }, []);
+  }, [timelineZoomMax]);
 
   const onZoomSliderChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
       const t = Number(e.target.value) / 1000;
-      setTimelineZoomCentered(zoomFromSliderT(t));
+      setTimelineZoomCentered(zoomFromSliderT(t, timelineZoomMax));
     },
-    [setTimelineZoomCentered]
+    [setTimelineZoomCentered, timelineZoomMax]
   );
 
   const onZoomNudge = useCallback(
     (direction: 1 | -1) => {
       setTimelineZoom((z0) => {
-        const t0 = sliderTFromZoom(z0);
-        const z1 = zoomFromSliderT(clamp(t0 + 0.045 * direction, 0, 1));
+        const t0 = sliderTFromZoom(z0, timelineZoomMax);
+        const z1 = zoomFromSliderT(
+          clamp(t0 + 0.045 * direction, 0, 1),
+          timelineZoomMax
+        );
         const scrollEl = timelineScrollRef.current;
         if (scrollEl) {
           const viewportX = scrollEl.clientWidth / 2;
@@ -1143,10 +1185,12 @@ export default function App() {
         return z1;
       });
     },
-    []
+    [timelineZoomMax]
   );
 
-  const zoomSliderValue = Math.round(sliderTFromZoom(timelineZoom) * 1000);
+  const zoomSliderValue = Math.round(
+    sliderTFromZoom(timelineZoom, timelineZoomMax) * 1000
+  );
 
   const onTimelineWheelRef = useRef<(e: WheelEvent) => void>(() => {});
   onTimelineWheelRef.current = (e: WheelEvent) => {
@@ -1164,7 +1208,7 @@ export default function App() {
     const factor = Math.pow(TIMELINE_ZOOM_STEP, direction * steps);
 
     setTimelineZoom((z0) => {
-      const z1 = clamp(z0 * factor, TIMELINE_ZOOM_MIN, TIMELINE_ZOOM_MAX);
+      const z1 = clamp(z0 * factor, TIMELINE_ZOOM_MIN, timelineZoomMax);
       if (Math.abs(z1 - z0) < 1e-9) return z0;
 
       const rect = scrollEl.getBoundingClientRect();
@@ -1211,7 +1255,7 @@ export default function App() {
       const z1 = clamp(
         p.startZoom * ratio,
         TIMELINE_ZOOM_MIN,
-        TIMELINE_ZOOM_MAX
+        timelineZoomMax
       );
       const viewportX = touchPinchMidViewportX(scrollEl, e.touches);
       const frac =
@@ -1247,7 +1291,7 @@ export default function App() {
       scrollEl.removeEventListener("touchend", endPinch, true);
       scrollEl.removeEventListener("touchcancel", endPinch, true);
     };
-  }, []);
+  }, [timelineZoomMax]);
 
   const onTimelinePointerDown = useCallback(
     (e: ReactPointerEvent<HTMLDivElement>) => {
@@ -1880,20 +1924,19 @@ export default function App() {
               </div>
               <div className="axis-decade-labels" aria-hidden>
                 {axisDecadeBandRects.map(
-                  ({ key, leftPct, widthPct, stripe, decadeLabel }) =>
-                    widthPct >= AXIS_DECADE_LABEL_MIN_WIDTH_PCT ? (
-                      <span
-                        key={`lbl-${key}`}
-                        className={
-                          stripe === 0
-                            ? "axis-decade-label axis-decade-label--a timeline-date"
-                            : "axis-decade-label axis-decade-label--b timeline-date"
-                        }
-                        style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
-                      >
-                        {decadeLabel}
-                      </span>
-                    ) : null
+                  ({ key, leftPct, widthPct, stripe, decadeLabel }) => (
+                    <span
+                      key={`lbl-${key}`}
+                      className={
+                        stripe === 0
+                          ? "axis-decade-label axis-decade-label--a timeline-date"
+                          : "axis-decade-label axis-decade-label--b timeline-date"
+                      }
+                      style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
+                    >
+                      {decadeLabel}
+                    </span>
+                  )
                 )}
               </div>
               <div className="axis-micro-ticks" aria-hidden>
@@ -2228,7 +2271,7 @@ export default function App() {
                     +
                   </button>
                   <span className="timeline-zoom-readout" aria-live="polite">
-                    {formatZoomFactorUi(timelineZoom)}
+                    {formatZoomFactorUi(timelineZoom, timelineZoomMax)}
                   </span>
                 </div>
               </div>
