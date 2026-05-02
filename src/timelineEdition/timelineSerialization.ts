@@ -37,6 +37,10 @@ export function cloneTimeline(timeline: Timeline): Timeline {
 }
 
 export function serializeTimeline(timeline: Timeline): string {
+  return JSON.stringify(timelineToJson(timeline));
+}
+
+export function timelineToJson(timeline: Timeline): JsonTimeline {
   const json: JsonTimeline = {
     periods: timeline.periods.map((p) => ({
       ...p,
@@ -48,24 +52,28 @@ export function serializeTimeline(timeline: Timeline): string {
       date: e.date.toISOString(),
     })),
   };
-  return JSON.stringify(json);
+  return json;
 }
 
 export function deserializeTimeline(raw: string): Timeline {
-  const json = JSON.parse(raw) as JsonTimeline;
-  if (!Array.isArray(json.periods) || !Array.isArray(json.events)) {
+  return timelineFromJson(JSON.parse(raw));
+}
+
+export function timelineFromJson(json: unknown): Timeline {
+  const payload = json as Partial<JsonTimeline>;
+  if (!Array.isArray(payload.periods) || !Array.isArray(payload.events)) {
     throw new Error("Invalid timeline payload");
   }
   const titleToId = new Map(
-    json.events.map((e) => [e.title, e.id ?? eventIdFromTitle(e.title)])
+    payload.events.map((e) => [e.title, e.id ?? eventIdFromTitle(e.title)])
   );
   return {
-    periods: json.periods.map((p) => ({
+    periods: payload.periods.map((p) => ({
       ...p,
       start: new Date(p.start),
       end: new Date(p.end),
     })),
-    events: json.events.map((e) => {
+    events: payload.events.map((e) => {
       const id = e.id ?? titleToId.get(e.title) ?? eventIdFromTitle(e.title);
       return {
         ...e,

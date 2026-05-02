@@ -26,7 +26,33 @@ export type TimelineEditionResult = {
   event?: TimelineEvent;
 };
 
+export type TimelineSummary = {
+  id: string;
+  title: string;
+  description: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type TimelineRecord = TimelineSummary & {
+  timeline: Timeline;
+};
+
+export type CreateTimelineInput = {
+  title: string;
+  description: string | null;
+  timeline: Timeline;
+};
+
+export type ReplaceTimelineInput = {
+  title: string;
+  description: string | null;
+  timeline: Timeline;
+};
+
 export interface TimelineRepo {
-  get(): Promise<Timeline>;
-  save(timeline: Timeline): Promise<void>;
+  list(): Promise<TimelineSummary[]>;
+  get(timelineId: string): Promise<TimelineRecord>;
+  create(input: CreateTimelineInput): Promise<TimelineRecord>;
+  replace(timelineId: string, input: ReplaceTimelineInput): Promise<TimelineRecord>;
 }

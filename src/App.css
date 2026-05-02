@@ -151,6 +151,41 @@
   gap: 0.3rem;
 }
 
+.viewer-timeline-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  min-width: min(100%, 14rem);
+}
+
+.viewer-timeline-picker-label {
+  font-size: 0.62rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.viewer-timeline-select {
+  min-width: 0;
+  max-width: 15rem;
+  height: 1.58rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0 1.6rem 0 0.48rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.viewer-timeline-select:disabled,
+.viewer-map-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .viewer-theme-menu,
 .viewer-study-menu {
   position: relative;

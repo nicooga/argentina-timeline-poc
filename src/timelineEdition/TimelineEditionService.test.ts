@@ -1,17 +1,61 @@
 import { describe, expect, it } from "vitest";
 import type { Timeline } from "../../types";
-import type { TimelineRepo } from "./TimelineRepo";
+import type {
+  CreateTimelineInput,
+  ReplaceTimelineInput,
+  TimelineRecord,
+  TimelineRepo,
+  TimelineSummary,
+} from "./TimelineRepo";
 import { TimelineEditionService } from "./TimelineEditionService";
 
 class MemoryTimelineRepo implements TimelineRepo {
   constructor(private timeline: Timeline) {}
 
-  async get(): Promise<Timeline> {
-    return this.timeline;
+  async list(): Promise<TimelineSummary[]> {
+    return [this.summary()];
   }
 
-  async save(timeline: Timeline): Promise<void> {
-    this.timeline = timeline;
+  async get(timelineId: string): Promise<TimelineRecord> {
+    if (timelineId !== "timeline-1") throw new Error("Timeline not found");
+    return {
+      ...this.summary(),
+      timeline: this.timeline,
+    };
+  }
+
+  async create(input: CreateTimelineInput): Promise<TimelineRecord> {
+    this.timeline = input.timeline;
+    return {
+      ...this.summary(input.title, input.description),
+      timeline: this.timeline,
+    };
+  }
+
+  async replace(
+    timelineId: string,
+    input: ReplaceTimelineInput
+  ): Promise<TimelineRecord> {
+    if (timelineId !== "timeline-1") throw new Error("Timeline not found");
+    this.timeline = input.timeline;
+    return {
+      ...this.summary(input.title, input.description),
+      timeline: this.timeline,
+    };
+  }
+
+  private summary(
+    title = "Historia",
+    description: string | null = null
+  ): TimelineSummary {
+    const now = new Date("2026-05-01T00:00:00.000Z");
+    return {
+      id: "timeline-1",
+      title,
+      description,
+      createdAt: now,
+      updatedAt: now,
+    };
   }
 }
 
@@ -48,7 +92,7 @@ describe("TimelineEditionService", () => {
     const repo = new MemoryTimelineRepo(timelineFixture());
     const service = new TimelineEditionService(repo);
 
-    const result = await service.createEvent({
+    const result = await service.createEvent("timeline-1", {
       title: "Nuevo evento",
       date: d(3),
       lanes: ["economico"],
@@ -63,7 +107,7 @@ describe("TimelineEditionService", () => {
     const service = new TimelineEditionService(new MemoryTimelineRepo(timelineFixture()));
 
     await expect(
-      service.createEvent({
+      service.createEvent("timeline-1", {
         title: " ",
         date: d(3),
         lanes: [],
@@ -82,7 +126,7 @@ describe("TimelineEditionService", () => {
     const repo = new MemoryTimelineRepo(timelineFixture());
     const service = new TimelineEditionService(repo);
 
-    const result = await service.updateEvent("causa", {
+    const result = await service.updateEvent("timeline-1", "causa", {
       title: "Causa renombrada",
     });
 
@@ -94,7 +138,7 @@ describe("TimelineEditionService", () => {
     const repo = new MemoryTimelineRepo(timelineFixture());
     const service = new TimelineEditionService(repo);
 
-    const result = await service.deleteEvent("causa");
+    const result = await service.deleteEvent("timeline-1", "causa");
 
     expect(result.timeline.events.map((e) => e.id)).toEqual(["efecto"]);
     expect(result.timeline.events[0]?.causes).toEqual([]);
@@ -104,7 +148,7 @@ describe("TimelineEditionService", () => {
     const service = new TimelineEditionService(new MemoryTimelineRepo(timelineFixture()));
 
     await expect(
-      service.updateEvent("causa", {
+      service.updateEvent("timeline-1", "causa", {
         causes: ["causa"],
       })
     ).rejects.toMatchObject({

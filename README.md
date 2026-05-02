@@ -23,6 +23,14 @@ npm run dev
 
 Vite sirve la aplicación en `http://localhost:5173` por defecto.
 
+El visor consume por defecto la API deployada en `https://ukpswhaxmg.us-east-1.awsapprunner.com`. Para apuntar a otro backend:
+
+```bash
+VITE_TIMELINES_API_BASE_URL=http://127.0.0.1:8000 npm run dev
+```
+
+Para forzar el repositorio local anterior, usar `VITE_TIMELINES_API_BASE_URL=local`.
+
 ## Scripts
 
 | Comando | Descripción |

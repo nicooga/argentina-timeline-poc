@@ -72,8 +72,12 @@ function applyDraft(
 export class TimelineEditionService {
   constructor(private readonly repo: TimelineRepo) {}
 
-  async createEvent(input: CreateTimelineEventInput): Promise<TimelineEditionResult> {
-    const timeline = await this.repo.get();
+  async createEvent(
+    timelineId: string,
+    input: CreateTimelineEventInput
+  ): Promise<TimelineEditionResult> {
+    const record = await this.repo.get(timelineId);
+    const timeline = record.timeline;
     this.assertValid(input);
     const existingIds = new Set(timeline.events.map((e) => e.id));
     const id = uniqueEventId(input.title, existingIds);
@@ -86,15 +90,21 @@ export class TimelineEditionService {
       ...timeline,
       events: [...timeline.events, event],
     });
-    await this.repo.save(next);
-    return { timeline: next, event: next.events.find((e) => e.id === id) };
+    const saved = await this.repo.replace(timelineId, {
+      title: record.title,
+      description: record.description,
+      timeline: next,
+    });
+    return { timeline: saved.timeline, event: saved.timeline.events.find((e) => e.id === id) };
   }
 
   async updateEvent(
+    timelineId: string,
     id: TimelineEventId,
     input: UpdateTimelineEventInput
   ): Promise<TimelineEditionResult> {
-    const timeline = await this.repo.get();
+    const record = await this.repo.get(timelineId);
+    const timeline = record.timeline;
     const current = timeline.events.find((e) => e.id === id);
     if (!current) throw new Error(`Event not found: ${id}`);
     const draft: TimelineEventDraft = {
@@ -118,12 +128,20 @@ export class TimelineEditionService {
       ...timeline,
       events: timeline.events.map((e) => (e.id === id ? event : e)),
     });
-    await this.repo.save(next);
-    return { timeline: next, event: next.events.find((e) => e.id === id) };
+    const saved = await this.repo.replace(timelineId, {
+      title: record.title,
+      description: record.description,
+      timeline: next,
+    });
+    return { timeline: saved.timeline, event: saved.timeline.events.find((e) => e.id === id) };
   }
 
-  async deleteEvent(id: TimelineEventId): Promise<TimelineEditionResult> {
-    const timeline = await this.repo.get();
+  async deleteEvent(
+    timelineId: string,
+    id: TimelineEventId
+  ): Promise<TimelineEditionResult> {
+    const record = await this.repo.get(timelineId);
+    const timeline = record.timeline;
     const next = cloneTimeline({
       ...timeline,
       events: timeline.events
@@ -134,8 +152,12 @@ export class TimelineEditionService {
           consequences: e.consequences?.filter((effectId) => effectId !== id),
         })),
     });
-    await this.repo.save(next);
-    return { timeline: next };
+    const saved = await this.repo.replace(timelineId, {
+      title: record.title,
+      description: record.description,
+      timeline: next,
+    });
+    return { timeline: saved.timeline };
   }
 
   private assertValid(input: TimelineEventDraft, ownId?: TimelineEventId): void {

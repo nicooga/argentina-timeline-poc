@@ -34,14 +34,15 @@ import {
 } from "./timeline";
 import { AxisTickMark } from "./AxisTickMark";
 import {
-  LocalStorageTimelineRepo,
   TimelineEditionService,
+  createTimelineRepo,
+  type TimelineSummary,
   type TimelineEventDraft,
 } from "./timelineEdition";
 import { useThemeMode, type ThemeMode } from "./shell/theme";
 import "./App.css";
 
-const timelineRepo = new LocalStorageTimelineRepo();
+const timelineRepo = createTimelineRepo();
 const timelineEditionService = new TimelineEditionService(timelineRepo);
 
 function formatDate(d: Date): string {
@@ -597,6 +598,13 @@ function formatApproxTimeSpan(ms: number): string {
 
 export default function App() {
   const [timeline, setTimeline] = useState(() => timelineHistoriaArgentina);
+  const [timelineSummaries, setTimelineSummaries] = useState<TimelineSummary[]>([]);
+  const [selectedTimelineId, setSelectedTimelineId] = useState<string | null>(null);
+  const [timelineTitle, setTimelineTitle] = useState("Historia Argentina");
+  const [timelineDescription, setTimelineDescription] = useState<string | null>(null);
+  const [timelineApiStatus, setTimelineApiStatus] = useState<
+    "loading" | "ready" | "error"
+  >("loading");
   const { periods, events } = timeline;
 
   const { min, max } = useMemo(() => {
@@ -699,13 +707,44 @@ export default function App() {
       window.matchMedia("(pointer: coarse)").matches
   );
 
+  const loadTimeline = useCallback(async (timelineId: string) => {
+    setTimelineApiStatus("loading");
+    const record = await timelineRepo.get(timelineId);
+    setSelectedTimelineId(record.id);
+    setTimelineTitle(record.title);
+    setTimelineDescription(record.description);
+    setTimeline(record.timeline);
+    setSel(defaultEventSelection(record.timeline.events));
+    setTimelineApiStatus("ready");
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
-    timelineRepo.get().then((loaded) => {
-      if (cancelled) return;
-      setTimeline(loaded);
-      setSel(defaultEventSelection(loaded.events));
-    });
+    async function loadInitialTimeline() {
+      try {
+        setTimelineApiStatus("loading");
+        const summaries = await timelineRepo.list();
+        if (cancelled) return;
+        setTimelineSummaries(summaries);
+        const first = summaries.find((item) => item.id === "argentina-history") ?? summaries[0];
+        if (!first) {
+          setTimelineApiStatus("error");
+          return;
+        }
+        const record = await timelineRepo.get(first.id);
+        if (cancelled) return;
+        setSelectedTimelineId(record.id);
+        setTimelineTitle(record.title);
+        setTimelineDescription(record.description);
+        setTimeline(record.timeline);
+        setSel(defaultEventSelection(record.timeline.events));
+        setTimelineApiStatus("ready");
+      } catch (error) {
+        console.error("Could not load timeline from API", error);
+        if (!cancelled) setTimelineApiStatus("error");
+      }
+    }
+    loadInitialTimeline();
     return () => {
       cancelled = true;
     };
@@ -928,29 +967,74 @@ export default function App() {
     });
   }, []);
 
+  const loadSelectedTimeline = useCallback(
+    async (event: ChangeEvent<HTMLSelectElement>) => {
+      const timelineId = event.target.value;
+      if (!timelineId) return;
+      try {
+        await loadTimeline(timelineId);
+      } catch (error) {
+        console.error("Could not switch timeline", error);
+        setTimelineApiStatus("error");
+      }
+    },
+    [loadTimeline]
+  );
+
+  const createTimelineCopy = useCallback(async () => {
+    try {
+      setTimelineApiStatus("loading");
+      const record = await timelineRepo.create({
+        title: `${timelineTitle} copia`,
+        description: timelineDescription,
+        timeline,
+      });
+      setTimelineSummaries(await timelineRepo.list());
+      setSelectedTimelineId(record.id);
+      setTimelineTitle(record.title);
+      setTimelineDescription(record.description);
+      setTimeline(record.timeline);
+      setSel(defaultEventSelection(record.timeline.events));
+      setTimelineApiStatus("ready");
+    } catch (error) {
+      console.error("Could not create timeline copy", error);
+      setTimelineApiStatus("error");
+    }
+  }, [timeline, timelineDescription, timelineTitle]);
+
   const saveNewEvent = useCallback(async (draft: TimelineEventDraft) => {
-    const result = await timelineEditionService.createEvent(draft);
+    if (!selectedTimelineId) return;
+    const result = await timelineEditionService.createEvent(selectedTimelineId, draft);
     setTimeline(result.timeline);
     if (result.event) setSel({ kind: "event", item: result.event });
     setEditorState(null);
     setDetailCollapsed(false);
-  }, []);
+  }, [selectedTimelineId]);
 
   const saveEditedEvent = useCallback(
     async (eventId: string, draft: TimelineEventDraft) => {
-      const result = await timelineEditionService.updateEvent(eventId, draft);
+      if (!selectedTimelineId) return;
+      const result = await timelineEditionService.updateEvent(
+        selectedTimelineId,
+        eventId,
+        draft
+      );
       setTimeline(result.timeline);
       if (result.event) setSel({ kind: "event", item: result.event });
       setEditorState(null);
       setDetailCollapsed(false);
     },
-    []
+    [selectedTimelineId]
   );
 
   const deleteSelectedEvent = useCallback(
     async (event: TimelineEvent) => {
+      if (!selectedTimelineId) return;
       if (!window.confirm(`¿Eliminar "${event.title}"?`)) return;
-      const result = await timelineEditionService.deleteEvent(event.id);
+      const result = await timelineEditionService.deleteEvent(
+        selectedTimelineId,
+        event.id
+      );
       setTimeline(result.timeline);
       const sorted = [...result.timeline.events].sort(
         (a, b) => a.date.getTime() - b.date.getTime()
@@ -962,7 +1046,7 @@ export default function App() {
       setSel(next ? { kind: "event", item: next } : null);
       setDetailCollapsed(next == null);
     },
-    []
+    [selectedTimelineId]
   );
 
   useLayoutEffect(() => {
@@ -1350,12 +1434,41 @@ export default function App() {
                 <div className="viewer-toolbar-top">
                 <div className="viewer-toolbar-text">
                   <h1 className="viewer-toolbar-title">
-                    Historia Argentina · línea de tiempo
+                    {timelineTitle} · línea de tiempo
                   </h1>
                   <p className="viewer-toolbar-range timeline-date">
                     {formatShortDate(new Date(min))} —{" "}
                     {formatShortDate(new Date(max))}
+                    {timelineApiStatus === "error" ? " · API no disponible" : ""}
                   </p>
+                </div>
+                <div className="viewer-timeline-picker">
+                  <label className="viewer-timeline-picker-label" htmlFor="viewer-timeline-select">
+                    Timeline
+                  </label>
+                  <select
+                    id="viewer-timeline-select"
+                    className="viewer-timeline-select"
+                    value={selectedTimelineId ?? ""}
+                    onChange={loadSelectedTimeline}
+                    disabled={timelineApiStatus === "loading" || timelineSummaries.length === 0}
+                  >
+                    {timelineSummaries.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.title}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="viewer-map-btn viewer-map-btn--with-label"
+                    onClick={createTimelineCopy}
+                    disabled={timelineApiStatus === "loading"}
+                    aria-label="Crear una copia editable del timeline actual"
+                    title="Crear copia"
+                  >
+                    <span>Copiar</span>
+                  </button>
                 </div>
                 <div className="viewer-toolbar-actions">
                   <div className="viewer-study-menu">

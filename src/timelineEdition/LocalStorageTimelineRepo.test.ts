@@ -48,9 +48,9 @@ describe("LocalStorageTimelineRepo", () => {
     vi.stubGlobal("window", { localStorage: storage });
     const repo = new LocalStorageTimelineRepo("test", timelineFixture());
 
-    const loaded = await repo.get();
+    const loaded = await repo.get("argentina-history");
 
-    expect(loaded.events[0]?.id).toBe("evento");
+    expect(loaded.timeline.events[0]?.id).toBe("evento");
     expect(storage.getItem).toHaveBeenCalledWith("test");
   });
 
@@ -61,12 +61,16 @@ describe("LocalStorageTimelineRepo", () => {
     const edited = timelineFixture();
     edited.events[0]!.title = "Editado";
 
-    await repo.save(edited);
-    const loaded = await repo.get();
+    await repo.replace("argentina-history", {
+      title: "Historia",
+      description: null,
+      timeline: edited,
+    });
+    const loaded = await repo.get("argentina-history");
 
-    expect(loaded.events[0]?.title).toBe("Editado");
-    expect(loaded.events[0]?.date).toBeInstanceOf(Date);
-    expect(loaded.periods[0]?.start).toBeInstanceOf(Date);
+    expect(loaded.timeline.events[0]?.title).toBe("Editado");
+    expect(loaded.timeline.events[0]?.date).toBeInstanceOf(Date);
+    expect(loaded.timeline.periods[0]?.start).toBeInstanceOf(Date);
   });
 
   it("falls back to seed timeline when stored JSON is invalid", async () => {
@@ -75,8 +79,8 @@ describe("LocalStorageTimelineRepo", () => {
     vi.stubGlobal("window", { localStorage: storage });
     const repo = new LocalStorageTimelineRepo("test", timelineFixture());
 
-    const loaded = await repo.get();
+    const loaded = await repo.get("argentina-history");
 
-    expect(loaded.events[0]?.title).toBe("Evento");
+    expect(loaded.timeline.events[0]?.title).toBe("Evento");
   });
 });
