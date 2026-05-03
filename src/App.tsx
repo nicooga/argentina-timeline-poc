@@ -443,6 +443,7 @@ function axisDecadeBands(
   widthPct: number;
   stripe: 0 | 1;
   decadeLabel: string;
+  bandStartYear: number;
 }[] {
   if (!Number.isFinite(minMs) || !Number.isFinite(maxMs) || maxMs <= minMs) {
     return [];
@@ -456,6 +457,7 @@ function axisDecadeBands(
     widthPct: number;
     stripe: 0 | 1;
     decadeLabel: string;
+    bandStartYear: number;
   }[] = [];
   for (let D = dStart; D <= yMax; D += bandYears) {
     const t0 = utcYearStartMs(D);
@@ -473,9 +475,27 @@ function axisDecadeBands(
       widthPct,
       stripe: axisBandStripeIndex(D, bandYears),
       decadeLabel: axisBandLabel(D, bandYears),
+      bandStartYear: D,
     });
   }
   return out;
+}
+
+function toRomanNumerals(n: number): string {
+  const vals = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1];
+  const syms = ["M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"];
+  let out = "";
+  for (let i = 0; i < vals.length; i++) {
+    while (n >= vals[i]!) { out += syms[i]; n -= vals[i]!; }
+  }
+  return out;
+}
+
+function formatCenturyLabel(bandStartYear: number): string {
+  if (bandStartYear >= 0) {
+    return `s. ${toRomanNumerals(Math.floor(bandStartYear / 100) + 1)}`;
+  }
+  return `s. ${toRomanNumerals(Math.floor(-bandStartYear / 100))} a.C.`;
 }
 
 /**
@@ -487,7 +507,7 @@ function yearAxisMicroTicks(
   maxMs: number,
   tickYears: number,
   bandYears: number
-): { t: number; major: boolean; stripe: 0 | 1 }[] {
+): { t: number; major: boolean; isCentury: boolean; stripe: 0 | 1 }[] {
   if (!Number.isFinite(minMs) || !Number.isFinite(maxMs) || maxMs <= minMs) {
     return [];
   }
@@ -496,7 +516,7 @@ function yearAxisMicroTicks(
   const firstJan = utcYearStartMs(yStart);
   if (firstJan < minMs) yStart += tickYears;
   const yEnd = new Date(maxMs).getUTCFullYear();
-  const out: { t: number; major: boolean; stripe: 0 | 1 }[] = [];
+  const out: { t: number; major: boolean; isCentury: boolean; stripe: 0 | 1 }[] = [];
   for (let y = yStart; y <= yEnd; y += tickYears) {
     const t = utcYearStartMs(y);
     if (t >= minMs && t <= maxMs) {
@@ -504,6 +524,7 @@ function yearAxisMicroTicks(
       out.push({
         t,
         major: y % bandYears === 0,
+        isCentury: bandYears < 100 && y % 100 === 0,
         stripe: axisBandStripeIndex(bandStart, bandYears),
       });
     }
@@ -714,6 +735,16 @@ export default function App() {
   );
   const axisDecadeBandRects = useMemo(
     () => axisDecadeBands(min, max, axisScaleDetail.bandYears),
+    [min, max, axisScaleDetail]
+  );
+  const axisCenturyBandRects = useMemo(
+    () =>
+      axisScaleDetail.bandYears < 100
+        ? axisDecadeBands(min, max, 100).map((b) => ({
+            ...b,
+            centuryLabel: formatCenturyLabel(b.bandStartYear),
+          }))
+        : [],
     [min, max, axisScaleDetail]
   );
   const [layoutProbe, setLayoutProbe] = useState(() => ({
@@ -1900,6 +1931,38 @@ export default function App() {
                 } as CSSProperties
               }
             >
+              {axisCenturyBandRects.length > 0 && (
+                <>
+                  <div className="axis-century-bands" aria-hidden>
+                    {axisCenturyBandRects.map(({ key, leftPct, widthPct, stripe }) => (
+                      <span
+                        key={`century-${key}`}
+                        className={
+                          stripe === 0
+                            ? "axis-century-band axis-century-band--a"
+                            : "axis-century-band axis-century-band--b"
+                        }
+                        style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
+                      />
+                    ))}
+                  </div>
+                  <div className="axis-century-labels" aria-hidden>
+                    {axisCenturyBandRects.map(({ key, leftPct, widthPct, stripe, centuryLabel }) => (
+                      <span
+                        key={`clbl-${key}`}
+                        className={
+                          stripe === 0
+                            ? "axis-century-label axis-century-label--a timeline-date"
+                            : "axis-century-label axis-century-label--b timeline-date"
+                        }
+                        style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
+                      >
+                        {centuryLabel}
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
               <div className="axis-decade-bands" aria-hidden>
                 {axisDecadeBandRects.map(({ key, leftPct, widthPct, stripe }) => (
                   <span
@@ -1931,13 +1994,13 @@ export default function App() {
                 )}
               </div>
               <div className="axis-micro-ticks" aria-hidden>
-                {axisYearMicroTicks.map(({ t, major, stripe }) => (
+                {axisYearMicroTicks.map(({ t, major, isCentury, stripe }) => (
                   <span
                     key={t}
                     className={[
                       "axis-micro-tick",
-                      major ? "axis-micro-tick--decade" : "",
-                      major
+                      isCentury ? "axis-micro-tick--century" : (major ? "axis-micro-tick--decade" : ""),
+                      major && !isCentury
                         ? stripe === 0
                           ? "axis-micro-tick--stripe-a"
                           : "axis-micro-tick--stripe-b"

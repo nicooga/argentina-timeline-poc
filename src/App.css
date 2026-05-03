@@ -1399,6 +1399,77 @@
   border-radius: 3px;
 }
 
+.axis-century-bands {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--axis-bar-h);
+  height: 10px;
+  z-index: 1;
+  pointer-events: none;
+  border-radius: 3px 3px 0 0;
+  overflow: hidden;
+}
+
+.axis-century-band {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.axis-century-band--a {
+  background: color-mix(in srgb, var(--accent) 52%, var(--border) 48%);
+}
+
+.axis-century-band--b {
+  background: color-mix(in srgb, var(--surface) 45%, var(--border) 55%);
+}
+
+.axis-century-labels {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--axis-bar-h);
+  height: 10px;
+  z-index: 3;
+  pointer-events: none;
+  border-radius: 3px 3px 0 0;
+  overflow: hidden;
+}
+
+.axis-century-label {
+  position: absolute;
+  bottom: 0;
+  height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  overflow: hidden;
+  font-size: 0.54rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.axis-century-label--a {
+  color: color-mix(in srgb, var(--text) 85%, var(--accent) 15%);
+  text-shadow:
+    0 0 4px color-mix(in srgb, var(--surface) 92%, var(--border) 8%),
+    0 0 2px var(--surface);
+}
+
+.axis-century-label--b {
+  color: color-mix(in srgb, var(--text) 80%, var(--muted) 20%);
+  text-shadow:
+    0 0 4px color-mix(in srgb, var(--surface) 92%, var(--border) 8%),
+    0 0 2px var(--surface);
+}
+
 .axis-decade-bands {
   position: absolute;
   left: 0;
@@ -1504,6 +1575,13 @@
 
 .axis-micro-tick--decade.axis-micro-tick--stripe-b {
   background: color-mix(in srgb, var(--muted) 70%, var(--text) 30%);
+}
+
+.axis-micro-tick--century {
+  height: 9px;
+  width: 2px;
+  opacity: 0.92;
+  background: var(--accent);
 }
 
 .tick {
