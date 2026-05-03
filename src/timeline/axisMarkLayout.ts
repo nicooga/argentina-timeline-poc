@@ -2,6 +2,12 @@
  * Marcas del eje temporal (fechas de períodos + eventos): fusión, deduplicación visual de año
  * y posición en pista. Las etiquetas del eje son siempre verticales (año + mes/día en lectura vertical).
  */
+import {
+  formatHistoricalDate,
+  formatHistoricalMonthDay,
+  formatHistoricalYearDate,
+} from "./historicalDateFormat";
+
 export type AxisMark = { t: number; year: string; monthDay: string };
 
 const AXIS_MARK_LANE_GAP_PCT = 0.32;
@@ -14,19 +20,12 @@ const AXIS_MARK_SHORT_DATE_HEIGHT_PX = 27;
 
 /** Línea superior del tick del eje (año). */
 export function formatAxisYear(d: Date): string {
-  return d.toLocaleDateString("es-AR", {
-    timeZone: "UTC",
-    year: "numeric",
-  });
+  return formatHistoricalYearDate(d);
 }
 
 /** Línea inferior: mes abreviado + día. */
 export function formatAxisMonthDay(d: Date): string {
-  return d.toLocaleDateString("es-AR", {
-    timeZone: "UTC",
-    month: "short",
-    day: "numeric",
-  });
+  return formatHistoricalMonthDay(d);
 }
 
 export function mergeAxisMarks(
@@ -142,10 +141,5 @@ export function assignAxisMarkLanes(
 
 /** Etiqueta accesible con fecha completa (UTC) para ticks del eje. */
 export function axisTickAriaLabel(mark: AxisMark): string {
-  return new Date(mark.t).toLocaleDateString("es-AR", {
-    timeZone: "UTC",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  return formatHistoricalDate(new Date(mark.t));
 }

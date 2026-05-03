@@ -5,6 +5,7 @@
 export * from "./eventLabelLayout";
 export * from "./axisMarkLayout";
 export * from "./axisScaleDetail";
+export * from "./historicalDateFormat";
 export {
   LaneGlyph,
   TimelineEventTitlesLane,

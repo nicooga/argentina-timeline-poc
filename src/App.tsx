@@ -30,6 +30,9 @@ import {
   chooseAxisScaleDetail,
   chooseTimelineZoomMax,
   computeAxisShowYearFlags,
+  formatHistoricalDate,
+  formatHistoricalYear,
+  formatHistoricalYearDate,
   mergeAxisMarks,
   TimelineSemanticEventLanes,
   TimelineEventTitlesLane,
@@ -49,19 +52,11 @@ const timelineRepo = createTimelineRepo();
 const timelineEditionService = new TimelineEditionService(timelineRepo);
 
 function formatDate(d: Date): string {
-  return d.toLocaleDateString("es-AR", {
-    timeZone: "UTC",
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  return formatHistoricalDate(d);
 }
 
 function formatShortDate(d: Date): string {
-  return d.toLocaleDateString("es-AR", {
-    timeZone: "UTC",
-    year: "numeric",
-  });
+  return formatHistoricalYearDate(d);
 }
 
 /**
@@ -477,7 +472,7 @@ function axisDecadeBands(
       leftPct,
       widthPct,
       stripe: axisBandStripeIndex(D, bandYears),
-      decadeLabel: axisBandLabel(D, bandYears),
+      decadeLabel: axisBandLabel(D),
     });
   }
   return out;
@@ -516,9 +511,8 @@ function yearAxisMicroTicks(
   return out;
 }
 
-function axisBandLabel(startYear: number, bandYears: number): string {
-  if (bandYears === 10) return String(startYear);
-  return `${startYear}`;
+function axisBandLabel(startYear: number): string {
+  return formatHistoricalYear(startYear);
 }
 
 /** Zoom horizontal del timeline (Ctrl + rueda). 1 = ancho base en CSS. */
