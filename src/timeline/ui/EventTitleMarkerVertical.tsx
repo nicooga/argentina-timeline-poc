@@ -7,6 +7,7 @@ export type EventTitleMarkerVerticalProps = {
   isEventActive: boolean;
   isRelated: boolean;
   lanesMuted: boolean;
+  clipWidthPx: number;
   eventPointerTitle: (e: TimelineEvent) => string;
   onSelectEvent: (e: TimelineEvent) => void;
   timelineSelectedEventDotRef: RefObject<HTMLButtonElement | null>;
@@ -22,11 +23,12 @@ export function EventTitleMarkerVertical({
   isEventActive,
   isRelated,
   lanesMuted,
+  clipWidthPx,
   eventPointerTitle,
   onSelectEvent,
   timelineSelectedEventDotRef,
 }: EventTitleMarkerVerticalProps) {
-  const clipStyle = {}
+  const clipStyle: CSSProperties = { width: clipWidthPx }
  
   return (
     <div
