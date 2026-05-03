@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   axisMarkLaneOffsetPx,
+  axisTickAriaLabel,
   assignAxisMarkLanes,
   computeAxisShowYearFlags,
+  formatAxisYear,
   type AxisMark,
 } from "./axisMarkLayout";
+import { utcYearStartMs } from "./axisScaleDetail";
 
 function mk(t: number, year: string, monthDay: string): AxisMark {
   return { t, year, monthDay };
@@ -26,6 +29,18 @@ describe("computeAxisShowYearFlags", () => {
       mk(2, "1991", "1 ene."),
     ];
     expect(computeAxisShowYearFlags(marks)).toEqual([true, true]);
+  });
+});
+
+describe("axis date formatting", () => {
+  it("uses compact BCE years in visible and accessible labels", () => {
+    const t = utcYearStartMs(-3000);
+    const date = new Date(t);
+
+    expect(formatAxisYear(date)).toBe("3000 a.C.");
+    expect(axisTickAriaLabel(mk(t, "3000 a.C.", "1 ene."))).toContain(
+      "3000 a.C."
+    );
   });
 });
 
