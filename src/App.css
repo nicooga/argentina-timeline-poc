@@ -578,18 +578,10 @@
   padding-bottom: clamp(0.42rem, 1.2vw, 0.72rem);
 }
 
-.chart.chart-bleed.chart--viewer.chart--timeline-chrome-collapsed {
-  padding-bottom: clamp(0.22rem, 0.7vw, 0.38rem);
-}
-
 @media (max-width: 90rem) {
   .chart.chart-bleed.chart--viewer {
     padding-top: clamp(0.26rem, 0.85vw, 0.44rem);
     padding-bottom: clamp(0.32rem, 1vw, 0.55rem);
-  }
-
-  .chart.chart-bleed.chart--viewer.chart--timeline-chrome-collapsed {
-    padding-bottom: 0.18rem;
   }
 }
 
@@ -1034,19 +1026,6 @@
   pointer-events: none;
 }
 
-.timeline-chrome--collapsed {
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-start;
-}
-
-.timeline-chrome-fab {
-  pointer-events: auto;
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--border) 65%, transparent),
-    0 2px 9px color-mix(in srgb, #000 34%, transparent);
-}
-
 .timeline-chrome--expanded {
   pointer-events: none;
 }
@@ -1061,45 +1040,6 @@
   gap: 0.22rem 0.38rem;
   pointer-events: none;
   overflow: visible;
-  /* Hueco para el botón absoluto (der.): evita que la escala quede debajo y robe clics. */
-  padding-right: calc(1.45rem + 0.42rem);
-}
-
-.timeline-chrome-collapse-btn {
-  position: absolute;
-  top: -0.02rem;
-  right: 0;
-  z-index: 30;
-  pointer-events: auto;
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  width: 1.45rem;
-  height: 1.45rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-  background: color-mix(in srgb, var(--surface) 94%, var(--bg));
-  color: var(--muted);
-  cursor: pointer;
-  line-height: 1;
-  -webkit-tap-highlight-color: transparent;
-  transition:
-    border-color 0.12s ease,
-    background-color 0.12s ease,
-    color 0.12s ease;
-}
-
-.timeline-chrome-collapse-btn:hover {
-  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
-  color: var(--text);
-  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
-}
-
-.timeline-chrome-collapse-btn:active {
-  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
 }
 
 .timeline-controls-left {
@@ -3276,7 +3216,6 @@
   justify-content: space-between;
   align-items: center;
   gap: 0.22rem 0.38rem;
-  padding-right: calc(1.45rem + 0.42rem);
   pointer-events: none;
 }
 
@@ -3305,30 +3244,6 @@
   inset: 0;
   z-index: 22;
   pointer-events: none;
-}
-
-.viewer-map-fab {
-  position: absolute;
-  left: clamp(0.55rem, 1.35vw, 0.9rem);
-  top: clamp(5rem, 13dvh, 7.6rem);
-  z-index: 24;
-  width: 2.25rem;
-  height: 2.25rem;
-  border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--surface) 94%, var(--bg));
-  color: var(--text);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: auto;
-  cursor: pointer;
-  box-shadow: 0 8px 22px color-mix(in srgb, #000 34%, transparent);
-}
-
-.viewer-map-fab:hover {
-  color: var(--accent);
-  border-color: color-mix(in srgb, var(--accent) 44%, var(--border));
 }
 
 @media (max-width: 70rem) {

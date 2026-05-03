@@ -472,7 +472,7 @@ function axisDecadeBands(
       leftPct,
       widthPct,
       stripe: axisBandStripeIndex(D, bandYears),
-      decadeLabel: axisBandLabel(D),
+      decadeLabel: axisBandLabel(D, bandYears),
     });
   }
   return out;
@@ -511,8 +511,9 @@ function yearAxisMicroTicks(
   return out;
 }
 
-function axisBandLabel(startYear: number): string {
-  return formatHistoricalYear(startYear);
+function axisBandLabel(startYear: number, bandYears: number): string {
+  const bandStartYear = Math.floor(startYear / bandYears) * bandYears;
+  return formatHistoricalYear(bandStartYear);
 }
 
 /** Zoom horizontal del timeline (Ctrl + rueda). 1 = ancho base en CSS. */
@@ -671,8 +672,6 @@ export default function App() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const [studyMenuOpen, setStudyMenuOpen] = useState(false);
-  /** Zoom, escala del eje y navegación de eventos (panel inferior del timeline). */
-  const [timelineChromeExpanded, setTimelineChromeExpanded] = useState(false);
   const [timelineZoom, setTimelineZoom] = useState(1);
   const [studyMode, setStudyMode] = useState<StudyMode>("normal");
   const [themeMode, setThemeMode] = useThemeMode();
@@ -917,7 +916,6 @@ export default function App() {
     setViewerHeaderCollapsed(false);
     setIndexOpen(false);
     setDetailCollapsed(tablet);
-    setTimelineChromeExpanded(!tablet);
   }, []);
 
   /** Sin esto, a veces `html:has(.app--viewer)` no aplica a tiempo; `viewer-phase` fija el layout al viewport sin scroll del documento. */
@@ -1470,6 +1468,38 @@ export default function App() {
                 aria-label="Barra del visor"
               >
                 <div className="viewer-toolbar-top">
+                  <button
+                    type="button"
+                    className="viewer-map-btn"
+                    onClick={() => {
+                      setIndexOpen((open) => {
+                        const next = !open;
+                        if (next) setDetailCollapsed(true);
+                        return next;
+                      });
+                    }}
+                    aria-expanded={indexOpen}
+                    aria-controls="viewer-index-panel"
+                    aria-label={indexOpen ? "Ocultar índice" : "Mostrar índice"}
+                    title={indexOpen ? "Ocultar índice" : "Índice"}
+                  >
+                    <svg
+                      className="viewer-header-icon-svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"
+                      />
+                    </svg>
+                  </button>
                 <div className="viewer-toolbar-text">
                   <h1 className="viewer-toolbar-title">
                     {timelineTitle} · línea de tiempo
@@ -1593,39 +1623,6 @@ export default function App() {
                       </div>
                     ) : null}
                   </div>
-                  <button
-                    type="button"
-                    className="viewer-map-btn viewer-map-btn--with-label"
-                    onClick={() => {
-                      setIndexOpen((open) => {
-                        const next = !open;
-                        if (next) setDetailCollapsed(true);
-                        return next;
-                      });
-                    }}
-                    aria-expanded={indexOpen}
-                    aria-controls="viewer-index-panel"
-                    aria-label={indexOpen ? "Ocultar índice" : "Mostrar índice"}
-                    title={indexOpen ? "Ocultar índice" : "Índice"}
-                  >
-                    <svg
-                      className="viewer-header-icon-svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      aria-hidden="true"
-                    >
-                      <path
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"
-                      />
-                    </svg>
-                    <span>Índice</span>
-                  </button>
                   {sel != null ? (
                     <button
                       type="button"
@@ -1873,7 +1870,7 @@ export default function App() {
           className={`viewer-chart-wrap ${sel != null ? "viewer-chart-wrap--pinned" : ""}`.trim()}
         >
       <section
-        className={`chart chart-bleed chart--viewer${timelineChromeExpanded ? "" : " chart--timeline-chrome-collapsed"}`.trim()}
+        className="chart chart-bleed chart--viewer"
         aria-label="Línea de tiempo"
       >
         <div
@@ -2109,66 +2106,11 @@ export default function App() {
           </div>
         </div>
 
-        <div
-          className={`timeline-chrome${timelineChromeExpanded ? " timeline-chrome--expanded" : " timeline-chrome--collapsed"}`.trim()}
-        >
-          {!timelineChromeExpanded ? (
-            <button
-              type="button"
-              className="viewer-header-peek-toggle timeline-chrome-fab"
-              onClick={() => setTimelineChromeExpanded(true)}
-              aria-expanded={false}
-              aria-controls="timeline-chrome-panel"
-              aria-label="Mostrar zoom, escala del eje y navegación de eventos"
-              title="Zoom y escala"
-            >
-              <svg
-                className="viewer-header-icon-svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4 21v-7m0-4V3m8 18v-9m0-4V3m8 18v-5m0-4V3M1 21h6m6-9h6m6 5h6"
-                />
-              </svg>
-            </button>
-          ) : (
-            <div
-              id="timeline-chrome-panel"
-              className="chart-bleed-overlays"
-            >
-              <button
-                type="button"
-                className="timeline-chrome-collapse-btn"
-                onClick={() => setTimelineChromeExpanded(false)}
-                aria-expanded={true}
-                aria-controls="timeline-chrome-panel"
-                aria-label="Ocultar zoom, escala del eje y navegación de eventos"
-                title="Ocultar controles"
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 9l6 6 6-6"
-                  />
-                </svg>
-              </button>
+        <div className="timeline-chrome timeline-chrome--expanded">
+          <div
+            id="timeline-chrome-panel"
+            className="chart-bleed-overlays"
+          >
               <div className="timeline-controls-left">
                 <div
                   className="timeline-zoom-panel"
@@ -2293,8 +2235,7 @@ export default function App() {
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+          </div>
         </div>
       </section>
         </div>
@@ -2316,31 +2257,7 @@ export default function App() {
               }}
               onClose={() => setIndexOpen(false)}
             />
-          ) : (
-            <button
-              type="button"
-              className="viewer-map-fab viewer-map-fab--index"
-              onClick={() => {
-                setIndexOpen(true);
-                setDetailCollapsed(true);
-              }}
-              aria-controls="viewer-index-panel"
-              aria-expanded={false}
-              aria-label="Mostrar índice de períodos y eventos"
-              title="Índice"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"
-                />
-              </svg>
-            </button>
-          )}
+          ) : null}
 
           <ViewerDetailPanel
             sel={sel}
