@@ -4,7 +4,7 @@ import { semanticConnectorLaneSpanCount } from "../../../eventLanes";
 import type { Selection, TimelineEvent } from "../../../types";
 import { EventTitleMarkerVertical } from "./EventTitleMarkerVertical";
 import type { EventLabelPlacement } from "../eventLabelLayout";
-import { verticalEventTitlesRowLayoutPx } from "../eventLabelLayout";
+import { verticalColumnWidthPx, verticalEventTitlesRowLayoutPx } from "../eventLabelLayout";
 
 export type TimelineCausalitySvgEdge = {
   from: TimelineEvent;
@@ -134,7 +134,8 @@ export function TimelineEventTitlesLane({
             );
           })}
         </div>
-        {eventsSorted.map((e) => {
+        {eventsSorted.map((e, idx) => {
+          const pl = eventLabelPlacements[idx];
           const isEventActive = sel?.kind === "event" && sel.item === e;
           const isRelated =
             studyMode !== "exam" &&
@@ -151,6 +152,7 @@ export function TimelineEventTitlesLane({
               isEventActive={isEventActive}
               isRelated={isRelated}
               lanesMuted={lanesMuted}
+              clipWidthPx={pl?.columnPx ?? verticalColumnWidthPx(pointerCoarse, 16)}
               eventPointerTitle={eventPointerTitle}
               onSelectEvent={onSelectEvent}
               timelineSelectedEventDotRef={timelineSelectedEventDotRef}

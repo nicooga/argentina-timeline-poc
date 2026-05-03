@@ -2517,6 +2517,7 @@
 }
 
 .evt-v-clip {
+  position: relative; /* containing block for .evt-v-caption (position: absolute) so overflow: hidden clips it */
   flex: 0 1 auto;
   min-width: 0;
   height: var(--evt-v-read-inner-max);
@@ -2526,14 +2527,13 @@
 }
 
 .evt-v-caption.timeline-event-title {
-  display: inline-flex;
+  display: block; /* block required for text-overflow: ellipsis; inline-flex breaks it */
   /* IMPORTANT: this is required for label to display correctly in Safari and iOS devices in general.
   Before removing this test, please check if the label is displayed correctly in Safari and iOS devices. */
   position: absolute;
   top: 0;
   left: 0;
   /* END IMPORTANT */
-  align-items: center;
   margin: 0;
   padding: 0;
   box-sizing: border-box;
