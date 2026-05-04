@@ -33,6 +33,7 @@ type ViewerDetailPanelProps = {
   studyMode: StudyMode;
   eventsById: Map<string, TimelineEvent>;
   activePeriodForTimeline: Period | null;
+  periodsForEvent: Period[];
   collapsed: boolean;
   onToggleCollapsed: () => void;
   onSelectEvent: (e: TimelineEvent) => void;
@@ -156,88 +157,88 @@ export function ViewerIndexPanel({
         </div>
         <div className="viewer-index-list-viewport">
           {activeTab === "periods" ? (
-          <div
-            id="viewer-lower-period-list"
-            role="tabpanel"
-            className="viewer-index-scroll-block"
-          >
-            <ul className="period-list">
-              {periods.map((p) => {
-                const periodExplicit = sel?.kind === "period" && sel.item === p;
-                const periodHighlighted = activePeriodForTimeline === p;
-                return (
-                  <li key={p.title}>
-                    <button
-                      type="button"
-                      className={`linkish period-link${periodHighlighted ? " linkish--selected" : ""}`}
-                      aria-current={periodExplicit ? "true" : undefined}
-                      style={
-                        periodHighlighted
-                          ? ({ "--sel-accent": p.color } as CSSProperties)
-                          : undefined
-                      }
-                      ref={(el) => {
-                        if (periodExplicit) {
-                          periodListSelectedRef.current = el;
-                        } else if (periodListSelectedRef.current === el) {
-                          periodListSelectedRef.current = null;
+            <div
+              id="viewer-lower-period-list"
+              role="tabpanel"
+              className="viewer-index-scroll-block"
+            >
+              <ul className="period-list">
+                {periods.map((p) => {
+                  const periodExplicit = sel?.kind === "period" && sel.item === p;
+                  const periodHighlighted = activePeriodForTimeline === p;
+                  return (
+                    <li key={p.title}>
+                      <button
+                        type="button"
+                        className={`linkish period-link${periodHighlighted ? " linkish--selected" : ""}`}
+                        aria-current={periodExplicit ? "true" : undefined}
+                        style={
+                          periodHighlighted
+                            ? ({ "--sel-accent": p.color } as CSSProperties)
+                            : undefined
                         }
-                      }}
-                      onClick={() => onSelectPeriod(p)}
-                    >
-                      <span
-                        className="period-swatch"
-                        style={{ backgroundColor: p.color }}
-                        aria-hidden
-                      />
-                      <span className="period-link__text">
-                        <strong className="timeline-event-title">{p.title}</strong>
-                        <span className="period-link__dates timeline-date">
-                          {formatDate(p.start)} - {formatDate(p.end)}
+                        ref={(el) => {
+                          if (periodExplicit) {
+                            periodListSelectedRef.current = el;
+                          } else if (periodListSelectedRef.current === el) {
+                            periodListSelectedRef.current = null;
+                          }
+                        }}
+                        onClick={() => onSelectPeriod(p)}
+                      >
+                        <span
+                          className="period-swatch"
+                          style={{ backgroundColor: p.color }}
+                          aria-hidden
+                        />
+                        <span className="period-link__text">
+                          <strong className="timeline-event-title">{p.title}</strong>
+                          <span className="period-link__dates timeline-date">
+                            {formatDate(p.start)} - {formatDate(p.end)}
+                          </span>
                         </span>
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           ) : (
-          <div
-            id="viewer-lower-event-list"
-            role="tabpanel"
-            className="viewer-index-scroll-block"
-          >
-            <ul className="event-list">
-              {events.map((e) => {
-                const eventSelected = sel?.kind === "event" && sel.item.id === e.id;
-                return (
-                  <li key={e.id}>
-                    <button
-                      type="button"
-                      className={`linkish${eventSelected ? " linkish--selected" : ""}`}
-                      aria-current={eventSelected ? "true" : undefined}
-                      ref={(el) => {
-                        if (eventSelected) {
-                          eventListSelectedRef.current = el;
-                        } else if (eventListSelectedRef.current === el) {
-                          eventListSelectedRef.current = null;
-                        }
-                      }}
-                      onClick={() => onSelectEvent(e)}
-                    >
-                      <span className="event-link__text">
-                        <strong className="timeline-event-title">{e.title}</strong>
-                        <span className="event-link__date timeline-date">
-                          {formatDate(e.date)}
+            <div
+              id="viewer-lower-event-list"
+              role="tabpanel"
+              className="viewer-index-scroll-block"
+            >
+              <ul className="event-list">
+                {events.map((e) => {
+                  const eventSelected = sel?.kind === "event" && sel.item.id === e.id;
+                  return (
+                    <li key={e.id}>
+                      <button
+                        type="button"
+                        className={`linkish${eventSelected ? " linkish--selected" : ""}`}
+                        aria-current={eventSelected ? "true" : undefined}
+                        ref={(el) => {
+                          if (eventSelected) {
+                            eventListSelectedRef.current = el;
+                          } else if (eventListSelectedRef.current === el) {
+                            eventListSelectedRef.current = null;
+                          }
+                        }}
+                        onClick={() => onSelectEvent(e)}
+                      >
+                        <span className="event-link__text">
+                          <strong className="timeline-event-title">{e.title}</strong>
+                          <span className="event-link__date timeline-date">
+                            {formatDate(e.date)}
+                          </span>
                         </span>
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           )}
         </div>
       </div>
@@ -338,7 +339,7 @@ export function EventEditorModal({
         .validationErrors;
       setError(
         validationErrors?.map((v) => v.message).join(" ") ??
-          "No se pudo guardar el evento."
+        "No se pudo guardar el evento."
       );
     } finally {
       setSaving(false);
@@ -467,31 +468,33 @@ export function ViewerDetailPanel({
   studyMode,
   eventsById,
   activePeriodForTimeline,
+  periodsForEvent,
   collapsed,
   onToggleCollapsed,
   onSelectEvent,
   onEditEvent,
   onDeleteEvent,
 }: ViewerDetailPanelProps) {
+  const isDesktop =
+    typeof window !== "undefined" &&
+    window.matchMedia("(min-width: 70rem)").matches;
+
   const title =
-    sel == null
-      ? "Sin selección"
-      : sel.kind === "period"
-        ? sel.item.title
-        : sel.item.title;
+    sel == null ? "Sin selección" : sel.item.title;
   const meta =
     sel == null
       ? "Elegí un período o evento"
       : sel.kind === "period"
-        ? `${formatDate(sel.item.start)} - ${formatDate(sel.item.end)}`
+        ? `${formatDate(sel.item.start)} – ${formatDate(sel.item.end)}`
         : formatDate(sel.item.date);
+  const kindLabel =
+    sel == null ? null : sel.kind === "period" ? "Período" : "Evento";
 
   return (
     <aside
       id="viewer-detail-panel"
-      className={`viewer-detail-panel${collapsed ? " viewer-detail-panel--collapsed" : ""}${
-        activePeriodForTimeline ? " viewer-detail-panel--period" : ""
-      }`.trim()}
+      className={`viewer-detail-panel${collapsed ? " viewer-detail-panel--collapsed" : ""}${activePeriodForTimeline ? " viewer-detail-panel--period" : ""
+        }`.trim()}
       aria-live="polite"
       style={
         activePeriodForTimeline
@@ -507,6 +510,9 @@ export function ViewerDetailPanel({
         aria-controls="viewer-detail-panel-body"
       >
         <span className="viewer-detail-panel__summary-text">
+          {kindLabel && (
+            <span className="viewer-detail-panel__summary-kind">{kindLabel}</span>
+          )}
           <strong className="timeline-event-title">{title}</strong>
           <span className="timeline-date">{meta}</span>
         </span>
@@ -531,53 +537,52 @@ export function ViewerDetailPanel({
               Elegí un período en la barra, un evento en la línea o abrí el índice.
             </p>
           ) : sel.kind === "period" ? (
-            <>
-              <h2 className="detail-title timeline-event-title">{sel.item.title}</h2>
-              <p className="detail-meta timeline-date">
-                {formatDate(sel.item.start)} - {formatDate(sel.item.end)}
-              </p>
-              <ul className="detail-items timeline-event-items">
-                {sel.item.items.map((text, i) => (
-                  <li key={i}>{text}</li>
-                ))}
-              </ul>
-            </>
+            <ul className="detail-items timeline-event-items">
+              {sel.item.items.map((text, i) => (
+                <li key={i}>{text}</li>
+              ))}
+            </ul>
           ) : (
             <>
-              <div className="viewer-detail-actions">
-                <button
-                  type="button"
-                  className="viewer-editor-btn"
-                  onClick={() => onEditEvent(sel.item)}
-                >
-                  Editar
-                </button>
-                <button
-                  type="button"
-                  className="viewer-editor-btn viewer-editor-btn--danger"
-                  onClick={() => onDeleteEvent(sel.item)}
-                >
-                  Eliminar
-                </button>
-              </div>
-              <h2 className="detail-title timeline-event-title">{sel.item.title}</h2>
-              <div className="detail-lane-icons" aria-label="Carriles del evento">
-                {lanesInDisplayOrder(sel.item.lanes).map((lane) => (
-                  <span
-                    key={lane}
-                    className="detail-lane-icon-wrap"
-                    title={LANE_UI[lane].label}
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <div className="viewer-detail-actions">
+                  <button
+                    type="button"
+                    className="viewer-editor-btn"
+                    onClick={() => onEditEvent(sel.item)}
                   >
-                    <LaneGlyph
-                      lane={lane}
-                      size={20}
-                      className="detail-lane-icon"
-                      style={{ color: LANE_UI[lane].color }}
-                    />
-                  </span>
-                ))}
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    className="viewer-editor-btn viewer-editor-btn--danger"
+                    onClick={() => onDeleteEvent(sel.item)}
+                  >
+                    Eliminar
+                  </button>
+                </div>
+                <div className="detail-lane-icons" aria-label="Carriles del evento">
+                  {lanesInDisplayOrder(sel.item.lanes).map((lane) => (
+                    <span
+                      key={lane}
+                      className="detail-lane-icon-wrap"
+                      title={LANE_UI[lane].label}
+                      style={
+                        {
+                          "--lane-color": LANE_UI[lane].color,
+                        } as CSSProperties
+                      }
+                    >
+                      <LaneGlyph
+                        lane={lane}
+                        size={20}
+                        className="detail-lane-icon"
+                        style={{ color: LANE_UI[lane].color }}
+                      />
+                    </span>
+                  ))}
+                </div>
               </div>
-              <p className="detail-meta timeline-date">{formatDate(sel.item.date)}</p>
               {studyMode !== "exam" && sel.item.importance ? (
                 <p className="detail-importance muted">
                   Peso:{" "}
@@ -668,6 +673,32 @@ export function ViewerDetailPanel({
                   ))}
                 </ul>
               ) : null}
+              {periodsForEvent.length > 0 && (
+                <section className="detail-period-context">
+                  <p className="detail-section-label">
+                    {periodsForEvent.length === 1 ? "Período" : "Períodos"}
+                  </p>
+                  {periodsForEvent.map((p) => (
+                    <details
+                      key={sel.item.id + p.title}
+                      open={isDesktop || periodsForEvent.length === 1}
+                      className="detail-period-item"
+                    >
+                      <summary className="detail-period-summary">
+                        <span className="timeline-event-title">{p.title}</span>
+                        <span className="timeline-date">
+                          {formatDate(p.start)} – {formatDate(p.end)}
+                        </span>
+                      </summary>
+                      <ul className="detail-items timeline-event-items">
+                        {p.items.map((text, i) => (
+                          <li key={i}>{text}</li>
+                        ))}
+                      </ul>
+                    </details>
+                  ))}
+                </section>
+              )}
             </>
           )}
         </div>

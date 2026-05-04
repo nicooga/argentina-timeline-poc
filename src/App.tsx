@@ -236,6 +236,11 @@ function firstPeriodContainingDate(
   return null;
 }
 
+function allPeriodsContainingDate(periods: Period[], date: Date): Period[] {
+  const t = date.getTime();
+  return periods.filter((p) => t >= p.start.getTime() && t <= p.end.getTime());
+}
+
 /** Último evento en orden cronológico con fecha estrictamente anterior a `tMs`. */
 function lastEventBeforeSorted(
   eventsSorted: TimelineEvent[],
@@ -905,6 +910,11 @@ export default function App() {
     if (sel == null) return null;
     if (sel.kind === "period") return sel.item;
     return firstPeriodContainingDate(periods, sel.item.date);
+  }, [sel, periods]);
+
+  const periodsForEvent = useMemo((): Period[] => {
+    if (sel == null || sel.kind !== "event") return [];
+    return allPeriodsContainingDate(periods, sel.item.date);
   }, [sel, periods]);
 
   const eventStepAvailability = useMemo(() => {
@@ -2435,6 +2445,7 @@ export default function App() {
             studyMode={studyMode}
             eventsById={eventsById}
             activePeriodForTimeline={activePeriodForTimeline}
+            periodsForEvent={periodsForEvent}
             collapsed={detailCollapsed}
             onToggleCollapsed={() =>
               setDetailCollapsed((collapsed) => !collapsed)

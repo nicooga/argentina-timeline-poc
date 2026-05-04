@@ -558,29 +558,44 @@
   width: 100%;
   padding: 0.5rem 0.58rem;
   border: none;
-  background: transparent;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
+  background: color-mix(in srgb, var(--surface) 60%, var(--bg));
   color: inherit;
   text-align: left;
   font: inherit;
   cursor: pointer;
 }
 
+.viewer-detail-panel--collapsed .viewer-detail-panel__summary {
+  border-bottom: none;
+}
+
 .viewer-detail-panel__summary-text {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.04rem;
+  gap: 0.1rem;
+}
+
+.viewer-detail-panel__summary-kind {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  line-height: 1;
 }
 
 .viewer-detail-panel__summary-text strong {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.86rem;
+  font-size: 0.9rem;
   line-height: 1.18;
 }
 
-.viewer-detail-panel__summary-text span {
+.viewer-detail-panel__summary-text span.timeline-date {
   color: color-mix(in srgb, var(--muted) 18%, var(--text) 82%);
   font-size: 0.68rem;
   line-height: 1.2;
@@ -598,7 +613,7 @@
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
-  padding: 0 0.7rem 0.75rem;
+  padding: 0.7rem;
 }
 
 .viewer-detail-panel--collapsed {
@@ -653,6 +668,9 @@
 .viewer-detail-panel .detail-lane-icon-wrap {
   display: inline-flex;
   line-height: 0;
+  padding: 0.26rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--lane-color) 14%, transparent);
 }
 
 .viewer-detail-panel .detail-importance,
@@ -798,7 +816,7 @@
   top: auto;
   bottom: clamp(3.45rem, 7dvh, 4.8rem);
   width: min(25rem, calc(100vw - 1.1rem));
-  max-height: min(43dvh, 26rem);
+  max-height: min(72dvh, 46rem);
 }
 
 .viewer-detail-panel--collapsed {
@@ -807,10 +825,6 @@
 
 .viewer-detail-panel__summary {
   padding: 0.42rem 0.56rem;
-}
-
-.viewer-detail-panel__body {
-  padding: 0 0.68rem 0.68rem;
 }
 
 .viewer-detail-panel .detail-meta.timeline-date,
@@ -832,6 +846,67 @@
     bottom: clamp(3.6rem, 8dvh, 4.7rem);
     max-height: min(38dvh, 22rem);
   }
+}
+
+.detail-section-label {
+  margin: 0 0 0.38rem;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  line-height: 1;
+}
+
+.detail-period-context {
+  margin-top: 0.72rem;
+  padding-top: 0.62rem;
+  border-top: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
+}
+
+.detail-period-item {
+  margin-bottom: 0.28rem;
+}
+
+.detail-period-item:last-child {
+  margin-bottom: 0;
+}
+
+.detail-period-summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.06rem;
+  padding: 0.24rem 0.16rem;
+  border-radius: 5px;
+  user-select: none;
+}
+
+.detail-period-summary::-webkit-details-marker {
+  display: none;
+}
+
+.detail-period-summary:hover {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+
+.detail-period-summary .timeline-event-title {
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.detail-period-summary .timeline-date {
+  font-size: 0.68rem;
+  line-height: 1.25;
+  color: color-mix(in srgb, var(--muted) 18%, var(--text) 82%);
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.detail-period-item .detail-items.timeline-event-items {
+  margin-top: 0.32rem;
 }
 
 .viewer-detail-actions {
