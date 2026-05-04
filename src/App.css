@@ -820,6 +820,7 @@
 }
 
 .timeline-stack {
+  position: relative;
   /* Aire lateral: evita que bordes redondeados / última barra de período rocen el clip del visor */
   padding-left: 0.42rem;
   padding-right: 0.55rem;
@@ -1885,6 +1886,27 @@
 .track-wrap {
   position: relative;
   overflow: visible;
+}
+
+.timeline-cursor {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1px dashed color-mix(in srgb, currentColor 35%, transparent);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.timeline-cursor__label {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  font-size: 0.68rem;
+  color: color-mix(in srgb, currentColor 50%, transparent);
+  white-space: nowrap;
+  user-select: none;
+  font-variant-numeric: tabular-nums;
 }
 
 .period-connectors {

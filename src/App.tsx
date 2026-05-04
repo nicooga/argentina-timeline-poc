@@ -699,6 +699,7 @@ export default function App() {
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const [studyMenuOpen, setStudyMenuOpen] = useState(false);
   const [timelineZoom, setTimelineZoom] = useState(1);
+  const [cursorPct, setCursorPct] = useState<number | null>(null);
   const [studyMode, setStudyMode] = useState<StudyMode>("normal");
   const [themeMode, setThemeMode] = useThemeMode();
   const [laneVisibility, setLaneVisibility] = useState<
@@ -1987,6 +1988,14 @@ export default function App() {
           ref={timelineScrollRef}
           className="timeline-scroll"
           onPointerDown={onTimelinePointerDown}
+          onMouseMove={(e) => {
+            const stack = timelineStackRef.current;
+            if (!stack) return;
+            const rect = stack.getBoundingClientRect();
+            const pct = ((e.clientX - rect.left) / stack.offsetWidth) * 100;
+            setCursorPct(Math.max(0, Math.min(100, pct)));
+          }}
+          onMouseLeave={() => setCursorPct(null)}
         >
           <div
             ref={timelineStackRef}
@@ -2247,6 +2256,24 @@ export default function App() {
                 />
               </div>
             </div>
+
+            {cursorPct !== null && (() => {
+              const span = 100 - TIMELINE_TRACK_INSET_LEFT_PCT - TIMELINE_TRACK_INSET_RIGHT_PCT;
+              const u = (cursorPct - TIMELINE_TRACK_INSET_LEFT_PCT) / span;
+              const timeMs = min + Math.max(0, Math.min(1, u)) * (max - min);
+              const year = new Date(timeMs).getUTCFullYear();
+              return (
+                <div
+                  className="timeline-cursor"
+                  style={{ left: `${cursorPct}%` }}
+                  aria-hidden
+                >
+                  <span className="timeline-cursor__label">
+                    {formatHistoricalYear(year)}
+                  </span>
+                </div>
+              );
+            })()}
           </div>
         </div>
 
