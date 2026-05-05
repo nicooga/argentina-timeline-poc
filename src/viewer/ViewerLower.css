@@ -587,6 +587,10 @@
   line-height: 1;
 }
 
+.viewer-detail-panel--period .viewer-detail-panel__summary-kind {
+  color: var(--period-accent, var(--accent));
+}
+
 .viewer-detail-panel__summary-text strong {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -878,7 +882,7 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 0.06rem;
+  gap: 0.14rem;
   padding: 0.24rem 0.16rem;
   border-radius: 5px;
   user-select: none;
@@ -889,7 +893,20 @@
 }
 
 .detail-period-summary:hover {
-  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  background: color-mix(in srgb, var(--period-item-color, var(--accent)) 8%, transparent);
+}
+
+.detail-period-summary__header {
+  display: flex;
+  align-items: center;
+  gap: 0.38rem;
+}
+
+.detail-period-swatch {
+  flex-shrink: 0;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
 }
 
 .detail-period-summary .timeline-event-title {
@@ -903,6 +920,7 @@
   line-height: 1.25;
   color: color-mix(in srgb, var(--muted) 18%, var(--text) 82%);
   font-family: Inter, system-ui, sans-serif;
+  padding-left: calc(0.55rem + 0.38rem);
 }
 
 .detail-period-item .detail-items.timeline-event-items {
