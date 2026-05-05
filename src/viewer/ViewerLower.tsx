@@ -683,9 +683,17 @@ export function ViewerDetailPanel({
                       key={sel.item.id + p.title}
                       open={isDesktop || periodsForEvent.length === 1}
                       className="detail-period-item"
+                      style={{ "--period-item-color": p.color } as CSSProperties}
                     >
                       <summary className="detail-period-summary">
-                        <span className="timeline-event-title">{p.title}</span>
+                        <span className="detail-period-summary__header">
+                          <span
+                            className="period-swatch detail-period-swatch"
+                            style={{ backgroundColor: p.color }}
+                            aria-hidden
+                          />
+                          <span className="timeline-event-title">{p.title}</span>
+                        </span>
                         <span className="timeline-date">
                           {formatDate(p.start)} – {formatDate(p.end)}
                         </span>
