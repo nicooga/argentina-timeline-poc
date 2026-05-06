@@ -3,6 +3,8 @@ export { LocalStorageTimelineRepo } from "./LocalStorageTimelineRepo";
 export { TimelineEditionService } from "./TimelineEditionService";
 export { createTimelineRepo } from "./createTimelineRepo";
 export { HttpAiService, AiApiError } from "./HttpAiService";
+export { applyChangesLocally } from "./applyChangesLocally";
+export type { PreviewChangeSet } from "./applyChangesLocally";
 export type {
   CreateTimelineInput,
   CreateTimelineEventInput,

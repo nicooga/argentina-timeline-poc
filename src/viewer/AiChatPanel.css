@@ -280,3 +280,51 @@
   opacity: 0.3;
   cursor: not-allowed;
 }
+
+/* Preview button */
+.ai-chat-changes__preview-btn {
+  font-size: 0.68rem;
+}
+
+.ai-chat-changes__preview-btn--active {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+}
+
+/* Keyboard shortcut labels */
+.ai-shortcut {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 0.05rem 0.28rem;
+  border: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--bg) 55%, var(--surface));
+  color: var(--muted);
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+}
+
+.ai-shortcut--send {
+  margin-left: 0.1rem;
+}
+
+/* Preview badge in tab */
+.ai-chat-widget__preview-badge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.08rem 0.35rem;
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--border));
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--accent);
+  vertical-align: middle;
+  line-height: 1.4;
+}
+
+/* Previewing state: accent tab border */
+.ai-chat-widget--previewing .ai-chat-widget__tab {
+  border-bottom-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+}

@@ -25,6 +25,7 @@ import {
   type EventLaneId,
 } from "../../../eventLanes";
 import type { Selection, TimelineEvent } from "../../../types";
+import type { PreviewChangeSet } from "../../timelineEdition/applyChangesLocally";
 
 function eventPointerTitle(e: TimelineEvent, mode: StudyMode): string {
   if (mode === "exam") return e.title;
@@ -41,6 +42,7 @@ export type TimelineSemanticEventLanesProps = {
   studyMode: StudyMode;
   causalHighlight: ReadonlySet<TimelineEvent>;
   onSelectEvent: (item: TimelineEvent) => void;
+  previewHighlight?: PreviewChangeSet;
 };
 
 export function TimelineSemanticEventLanes({
@@ -51,6 +53,7 @@ export function TimelineSemanticEventLanes({
   studyMode,
   causalHighlight,
   onSelectEvent,
+  previewHighlight,
 }: TimelineSemanticEventLanesProps) {
   return (
     <>
@@ -83,11 +86,20 @@ export function TimelineSemanticEventLanes({
                     selection?.kind === "event" &&
                     causalHighlight.has(ev) &&
                     selection.item !== ev;
+                  const isPreviewAdded = previewHighlight?.added.has(ev.id) ?? false;
+                  const isPreviewUpdated = previewHighlight?.updated.has(ev.id) ?? false;
                   const p = trackPct(ev.date.getTime());
                   return (
                     <div
                       key={`${laneId}-${ev.title}-${ev.date.toISOString()}`}
-                      className={`event-marker event-marker--lane-dot ${isEventActive ? "event-marker--selected" : ""}${isRelated ? " event-marker--related" : ""}`.trim()}
+                      className={[
+                        "event-marker",
+                        "event-marker--lane-dot",
+                        isEventActive ? "event-marker--selected" : "",
+                        isRelated ? "event-marker--related" : "",
+                        isPreviewAdded ? "event-marker--preview-added" : "",
+                        isPreviewUpdated ? "event-marker--preview-updated" : "",
+                      ].filter(Boolean).join(" ")}
                       style={
                         {
                           left: `${p}%`,

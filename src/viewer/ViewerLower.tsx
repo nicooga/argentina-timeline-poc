@@ -35,6 +35,7 @@ type ViewerDetailPanelProps = {
   activePeriodForTimeline: Period | null;
   periodsForEvent: Period[];
   collapsed: boolean;
+  previewMode: boolean;
   onToggleCollapsed: () => void;
   onSelectEvent: (e: TimelineEvent) => void;
   onEditEvent: (e: TimelineEvent) => void;
@@ -470,6 +471,7 @@ export function ViewerDetailPanel({
   activePeriodForTimeline,
   periodsForEvent,
   collapsed,
+  previewMode,
   onToggleCollapsed,
   onSelectEvent,
   onEditEvent,
@@ -549,6 +551,8 @@ export function ViewerDetailPanel({
                   <button
                     type="button"
                     className="viewer-editor-btn"
+                    disabled={previewMode}
+                    title={previewMode ? "No disponible en modo vista previa" : undefined}
                     onClick={() => onEditEvent(sel.item)}
                   >
                     Editar
@@ -556,6 +560,8 @@ export function ViewerDetailPanel({
                   <button
                     type="button"
                     className="viewer-editor-btn viewer-editor-btn--danger"
+                    disabled={previewMode}
+                    title={previewMode ? "No disponible en modo vista previa" : undefined}
                     onClick={() => onDeleteEvent(sel.item)}
                   >
                     Eliminar

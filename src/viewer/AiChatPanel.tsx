@@ -21,11 +21,14 @@ type Props = {
   sending: boolean;
   applyingMessageId: string | null;
   dismissedMessageIds: ReadonlySet<string>;
+  previewedMessageId: string | null;
   error: AiChatError | null;
   onToggleCollapsed: () => void;
   onSend: (content: string) => void;
   onApply: (changes: TimelineChange[], messageId: string) => void;
   onDismiss: (messageId: string) => void;
+  onPreview: (changes: TimelineChange[], messageId: string) => void;
+  onCancelPreview: () => void;
 };
 
 const CHANGE_TYPE_LABELS: Record<string, string> = {
@@ -48,14 +51,20 @@ function ProposedChanges({
   message,
   applyingMessageId,
   dismissed,
+  previewing,
   onApply,
   onDismiss,
+  onPreview,
+  onCancelPreview,
 }: {
   message: AiMessage;
   applyingMessageId: string | null;
   dismissed: boolean;
+  previewing: boolean;
   onApply: (changes: TimelineChange[], messageId: string) => void;
   onDismiss: (messageId: string) => void;
+  onPreview: (changes: TimelineChange[], messageId: string) => void;
+  onCancelPreview: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const { proposedChanges, id } = message;
@@ -123,6 +132,25 @@ function ProposedChanges({
       )}
 
       <div className="ai-chat-changes__actions">
+        {previewing ? (
+          <button
+            type="button"
+            className="viewer-editor-btn ai-chat-changes__preview-btn ai-chat-changes__preview-btn--active"
+            onClick={onCancelPreview}
+          >
+            Cancelar vista previa
+            <kbd className="ai-shortcut">Ctrl+⌫</kbd>
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="viewer-editor-btn ai-chat-changes__preview-btn"
+            disabled={busy}
+            onClick={() => onPreview(proposedChanges, id)}
+          >
+            Vista previa
+          </button>
+        )}
         <button
           type="button"
           className="viewer-editor-btn ai-chat-changes__apply-btn"
@@ -148,14 +176,20 @@ function MessageBubble({
   message,
   applyingMessageId,
   dismissedMessageIds,
+  previewedMessageId,
   onApply,
   onDismiss,
+  onPreview,
+  onCancelPreview,
 }: {
   message: AiMessage;
   applyingMessageId: string | null;
   dismissedMessageIds: ReadonlySet<string>;
+  previewedMessageId: string | null;
   onApply: (changes: TimelineChange[], messageId: string) => void;
   onDismiss: (messageId: string) => void;
+  onPreview: (changes: TimelineChange[], messageId: string) => void;
+  onCancelPreview: () => void;
 }) {
   return (
     <div className={`ai-chat-bubble ai-chat-bubble--${message.role}`}>
@@ -165,8 +199,11 @@ function MessageBubble({
           message={message}
           applyingMessageId={applyingMessageId}
           dismissed={dismissedMessageIds.has(message.id)}
+          previewing={previewedMessageId === message.id}
           onApply={onApply}
           onDismiss={onDismiss}
+          onPreview={onPreview}
+          onCancelPreview={onCancelPreview}
         />
       )}
     </div>
@@ -180,11 +217,14 @@ export function AiChatPanel({
   sending,
   applyingMessageId,
   dismissedMessageIds,
+  previewedMessageId,
   error,
   onToggleCollapsed,
   onSend,
   onApply,
   onDismiss,
+  onPreview,
+  onCancelPreview,
 }: Props) {
   const [draft, setDraft] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -208,15 +248,19 @@ export function AiChatPanel({
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && e.ctrlKey) {
       e.preventDefault();
       submit();
+    }
+    if (e.key === "Backspace" && e.ctrlKey && previewedMessageId != null) {
+      e.preventDefault();
+      onCancelPreview();
     }
   };
 
   return (
     <section
-      className={`ai-chat-widget${collapsed ? " ai-chat-widget--collapsed" : ""}`}
+      className={`ai-chat-widget${collapsed ? " ai-chat-widget--collapsed" : ""}${previewedMessageId != null ? " ai-chat-widget--previewing" : ""}`}
       aria-label="Asistente IA"
     >
       <button
@@ -235,7 +279,12 @@ export function AiChatPanel({
             d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
           />
         </svg>
-        <span className="ai-chat-widget__tab-label">Asistente IA</span>
+        <span className="ai-chat-widget__tab-label">
+          Asistente IA
+          {previewedMessageId != null && (
+            <span className="ai-chat-widget__preview-badge">Vista previa</span>
+          )}
+        </span>
         <svg
           width="11"
           height="11"
@@ -271,8 +320,11 @@ export function AiChatPanel({
                   message={msg}
                   applyingMessageId={applyingMessageId}
                   dismissedMessageIds={dismissedMessageIds}
+                  previewedMessageId={previewedMessageId}
                   onApply={onApply}
                   onDismiss={onDismiss}
+                  onPreview={onPreview}
+                  onCancelPreview={onCancelPreview}
                 />
               ))
             )}
@@ -302,7 +354,7 @@ export function AiChatPanel({
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Escribí tu pedido… (Enter para enviar)"
+              placeholder="Escribí tu pedido…"
               rows={2}
               disabled={sending}
               aria-label="Mensaje al asistente"
@@ -312,6 +364,7 @@ export function AiChatPanel({
               className="ai-chat-panel__send-btn"
               disabled={!draft.trim() || sending}
               aria-label="Enviar"
+              title="Enviar (Ctrl+↵)"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
                 <path
@@ -323,6 +376,7 @@ export function AiChatPanel({
                   d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"
                 />
               </svg>
+              <kbd className="ai-shortcut ai-shortcut--send">Ctrl+↵</kbd>
             </button>
           </form>
         </>
