@@ -932,7 +932,6 @@ export default function App() {
     setPreviewedMessageId(messageId);
   }, [timeline]);
 
-
   const axisShowYearFlags = useMemo(
     () => computeAxisShowYearFlags(axisMarks),
     [axisMarks]
