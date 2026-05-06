@@ -38,16 +38,16 @@ export function WelcomeScreen({ timelines, onSelectTimeline, onCreateTimeline }:
   return (
     <div className="welcome-screen">
       <div className="welcome-screen-inner">
-        <h1 className="welcome-title">Historia Argentina en el tiempo</h1>
+        <h1 className="welcome-title">Historias en el Tiempo</h1>
         <p className="welcome-lead">
-          Este proyecto es un visor interactivo de la historia argentina: períodos
-          como franjas en una línea temporal y eventos puntuales enlazados al
-          eje. Podés explorar por toque o teclado, ampliar el eje y leer el
-          detalle de cada período o evento.
+          Explorá, creá y compartí líneas del tiempo sobre cualquier tema.
+          Cada línea muestra períodos y eventos en un eje interactivo: podés
+          hacer zoom, filtrar por categoría y estudiar relaciones causales entre
+          eventos.
         </p>
         <p className="welcome-note">
-          Pensado para usarse en escritorio y en tablet: el visor ocupa toda la
-          pantalla y adapta el espacio cuando elegís un elemento.
+          Pensado para estudiantes y docentes. Funciona mejor en escritorio y
+          tablet.
         </p>
         <p className="welcome-instagram">
           <a
@@ -56,7 +56,7 @@ export function WelcomeScreen({ timelines, onSelectTimeline, onCreateTimeline }:
             target="_blank"
             rel="noopener noreferrer"
           >
-            Instagram: @hisctorictimelines
+            Instagram: @historic.timelines
           </a>
         </p>
 

@@ -1,15 +1,26 @@
-# Master Documentation — Historia Argentina Timeline
+# Master Documentation — Historias en el Tiempo (HT)
 
 > **For AI agents and maintainers.** Read this before touching anything.  
-> Last updated: 2026-04-22.
+> Last updated: 2026-05-06.
+
+---
+
+## 0. Mission (read first)
+
+See [`MISION.md`](../MISION.md) for the full product vision. Summary:
+
+- **Name:** Historias en el Tiempo (HT / *Historic Timelines*). Instagram: @historic.timelines.
+- **What:** A web platform to create, share, explore, and AI-enrich timelines on any topic.
+- **Who:** Students, teachers, and anyone needing to understand or communicate historical/sequential processes.
+- **Dataset:** The Argentine history timeline (1810–1916) is the **seed dataset**, not the product's scope. Avoid hardcoding Argentina-specific assumptions into the platform code.
 
 ---
 
 ## 1. What this project is
 
-An interactive, browser-based **timeline of Argentine history (1810–1916)** built as a proof-of-concept. Users can explore historical periods and point events, zoom and pan the timeline axis, filter by semantic category (political, military, economic, social, diplomatic), and study causal relationships between events.
+An interactive, browser-based **timeline platform**. Users can explore historical periods and point events on a zoomable, pannable axis, filter by semantic category, and study causal relationships between events.
 
-The project is evolving from a pure frontend to a **full-stack app** with a backend that introduces AI-assisted features (see §8).
+The current implementation ships with a single dataset (Argentine history, 1810–1916) as a proof-of-concept. The project is evolving toward a **multi-timeline platform** where any author can publish a timeline, and a **full-stack app** with a backend that introduces AI-assisted features (see §11).
 
 ---
 

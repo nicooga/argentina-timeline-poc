@@ -634,7 +634,7 @@ export default function App() {
   const { timelineSlug } = useParams<{ timelineSlug: string }>();
   const [timeline, setTimeline] = useState(() => timelineHistoriaArgentina);
   const [selectedTimelineId, setSelectedTimelineId] = useState<string | null>(null);
-  const [timelineTitle, setTimelineTitle] = useState("Historia Argentina");
+  const [timelineTitle, setTimelineTitle] = useState("Cargando…");
   const [timelineDescription, setTimelineDescription] = useState<string | null>(null);
   const [timelineApiStatus, setTimelineApiStatus] = useState<
     "loading" | "ready" | "error"
