@@ -278,6 +278,10 @@ export function AiChatPanel({
       e.preventDefault();
       onDismiss(previewedMessageId);
     }
+    if (e.key === "Backspace" && e.ctrlKey && previewedMessageId != null) {
+      e.preventDefault();
+      onDismiss(previewedMessageId);
+    }
   };
 
   const hasDraft = draft.trim().length > 0;

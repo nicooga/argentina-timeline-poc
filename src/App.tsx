@@ -2075,22 +2075,8 @@ export default function App() {
 
         <div className="viewer-main">
         <div
-          className={`viewer-chart-wrap ${sel != null ? "viewer-chart-wrap--pinned" : ""}${previewMode ? " viewer-chart-wrap--preview" : ""}`.trim()}
+          className={`viewer-chart-wrap ${sel != null ? "viewer-chart-wrap--pinned" : ""}`.trim()}
         >
-          {previewMode && (
-            <div className="timeline-preview-banner">
-              <span className="timeline-preview-banner__label">
-                Vista previa de cambios sugeridos
-              </span>
-              <button
-                type="button"
-                className="timeline-preview-banner__cancel"
-                onClick={cancelPreview}
-              >
-                Cancelar <kbd>Ctrl+⌫</kbd>
-              </button>
-            </div>
-          )}
       <section
         className="chart chart-bleed chart--viewer"
         aria-label="Línea de tiempo"
@@ -2583,6 +2569,7 @@ export default function App() {
           />
         ) : null}
         <KeyboardHelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
+        {previewMode && <div className="preview-viewport-ring" aria-hidden />}
         {selectedTimelineId ? (
           <AiChatPanel
             collapsed={!aiChatOpen}
