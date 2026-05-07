@@ -32,7 +32,7 @@ export type TimelineEventTitlesLaneProps = {
   /** Para alinear alto del visor de título vertical con TS (`verticalEventTitlesRowLayoutPx`). */
   viewportInnerHeightPx: number;
   clusters?: EventCluster[];
-  onClusterClick?: (cluster: EventCluster) => void;
+  onClusterClick?: (cluster: EventCluster, e: React.MouseEvent) => void;
   previewHighlight?: PreviewChangeSet;
 };
 

@@ -3740,3 +3740,43 @@
   color: #d97706;
   font-weight: 600;
 }
+
+/* ── Animaciones de entrada al descolapsar eventos ── */
+
+@keyframes evt-lane-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) scaleY(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) scaleY(1);
+  }
+}
+
+.events-lane--semantic .event-marker--lane-dot {
+  animation: evt-lane-enter 0.2s ease;
+}
+
+@keyframes evt-title-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.evt-v-marker {
+  animation: evt-title-enter 0.22s ease;
+}
+
+/* El cluster disc tiene transición suave para su propio cambio de escala/opacidad */
+.evt-cluster-disc {
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    opacity 0.18s ease;
+}

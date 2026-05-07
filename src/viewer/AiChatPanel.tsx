@@ -19,7 +19,7 @@ type Props = {
   loading: boolean;
   sending: boolean;
   applyingMessageId: string | null;
-  dismissedMessageIds: ReadonlySet<string>;
+  appliedMessageIds: ReadonlySet<string>;
   previewedMessageId: string | null;
   error: AiChatError | null;
   onToggleCollapsed: () => void;
@@ -53,19 +53,17 @@ function ShortcutHint({ children }: { children: string }) {
 function ProposedChanges({
   message,
   applyingMessageId,
-  dismissed,
+  applied,
   previewing,
   onApply,
-  onDismiss,
   onPreview,
   onCancelPreview,
 }: {
   message: AiMessage;
   applyingMessageId: string | null;
-  dismissed: boolean;
+  applied: boolean;
   previewing: boolean;
   onApply: (changes: TimelineChange[], messageId: string) => void;
-  onDismiss: (messageId: string) => void;
   onPreview: (changes: TimelineChange[], messageId: string) => void;
   onCancelPreview: () => void;
 }) {
@@ -82,11 +80,11 @@ function ProposedChanges({
       ? "1 cambio propuesto"
       : `${proposedChanges.length} cambios propuestos`;
 
-  if (dismissed) {
+  if (applied) {
     return (
-      <div className="ai-chat-changes ai-chat-changes--dismissed">
-        <span className="ai-chat-changes__dismissed-label">
-          {countLabel} — descartados
+      <div className="ai-chat-changes ai-chat-changes--applied">
+        <span className="ai-chat-changes__applied-label">
+          {countLabel} — aplicados ✓
         </span>
       </div>
     );
@@ -168,17 +166,19 @@ function ProposedChanges({
           </button>
           {previewing && <ShortcutHint>Ctrl+↵</ShortcutHint>}
         </div>
-        <div className="ai-btn-wrap">
-          <button
-            type="button"
-            className="viewer-editor-btn viewer-editor-btn--danger"
-            disabled={busy}
-            onClick={() => onDismiss(id)}
-          >
-            Rechazar
-          </button>
-          {previewing && <ShortcutHint>Ctrl+⌫</ShortcutHint>}
-        </div>
+        {previewing && (
+          <div className="ai-btn-wrap">
+            <button
+              type="button"
+              className="viewer-editor-btn viewer-editor-btn--danger"
+              disabled={busy}
+              onClick={onCancelPreview}
+            >
+              Cancelar preview
+            </button>
+            <ShortcutHint>Esc</ShortcutHint>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -187,19 +187,17 @@ function ProposedChanges({
 function MessageBubble({
   message,
   applyingMessageId,
-  dismissedMessageIds,
+  appliedMessageIds,
   previewedMessageId,
   onApply,
-  onDismiss,
   onPreview,
   onCancelPreview,
 }: {
   message: AiMessage;
   applyingMessageId: string | null;
-  dismissedMessageIds: ReadonlySet<string>;
+  appliedMessageIds: ReadonlySet<string>;
   previewedMessageId: string | null;
   onApply: (changes: TimelineChange[], messageId: string) => void;
-  onDismiss: (messageId: string) => void;
   onPreview: (changes: TimelineChange[], messageId: string) => void;
   onCancelPreview: () => void;
 }) {
@@ -210,10 +208,9 @@ function MessageBubble({
         <ProposedChanges
           message={message}
           applyingMessageId={applyingMessageId}
-          dismissed={dismissedMessageIds.has(message.id)}
+          applied={appliedMessageIds.has(message.id)}
           previewing={previewedMessageId === message.id}
           onApply={onApply}
-          onDismiss={onDismiss}
           onPreview={onPreview}
           onCancelPreview={onCancelPreview}
         />
@@ -228,13 +225,12 @@ export function AiChatPanel({
   loading,
   sending,
   applyingMessageId,
-  dismissedMessageIds,
+  appliedMessageIds,
   previewedMessageId,
   error,
   onToggleCollapsed,
   onSend,
   onApply,
-  onDismiss,
   onPreview,
   onCancelPreview,
 }: Props) {
@@ -263,10 +259,8 @@ export function AiChatPanel({
     if (e.key === "Enter" && e.ctrlKey) {
       e.preventDefault();
       if (draft.trim()) {
-        // Send if there's text
         submit();
       } else if (previewedMessageId != null) {
-        // Accept previewed changes if input is empty
         const msg = conversation?.messages.find((m) => m.id === previewedMessageId);
         if (msg && applyingMessageId == null) {
           onApply(msg.proposedChanges, msg.id);
@@ -274,13 +268,9 @@ export function AiChatPanel({
       }
       return;
     }
-    if (e.key === "Backspace" && e.ctrlKey && previewedMessageId != null) {
+    if (e.key === "Escape" && previewedMessageId != null) {
       e.preventDefault();
-      onDismiss(previewedMessageId);
-    }
-    if (e.key === "Backspace" && e.ctrlKey && previewedMessageId != null) {
-      e.preventDefault();
-      onDismiss(previewedMessageId);
+      onCancelPreview();
     }
   };
 
@@ -347,10 +337,9 @@ export function AiChatPanel({
                   key={msg.id}
                   message={msg}
                   applyingMessageId={applyingMessageId}
-                  dismissedMessageIds={dismissedMessageIds}
+                  appliedMessageIds={appliedMessageIds}
                   previewedMessageId={previewedMessageId}
                   onApply={onApply}
-                  onDismiss={onDismiss}
                   onPreview={onPreview}
                   onCancelPreview={onCancelPreview}
                 />

@@ -1,9 +1,9 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, MouseEvent } from "react";
 import type { EventCluster } from "../eventClusterLayout";
 
 export type EventClusterMarkerProps = {
   cluster: EventCluster;
-  onClick: (cluster: EventCluster) => void;
+  onClick: (cluster: EventCluster, e: MouseEvent) => void;
 };
 
 export function EventClusterMarker({ cluster, onClick }: EventClusterMarkerProps) {
@@ -15,7 +15,7 @@ export function EventClusterMarker({ cluster, onClick }: EventClusterMarkerProps
       <button
         type="button"
         className="evt-cluster-hit"
-        onClick={() => onClick(cluster)}
+        onClick={(e) => onClick(cluster, e)}
         title={`${cluster.rangeLabel} · ${cluster.events.length} eventos — clic para acercar`}
         aria-label={`${cluster.events.length} eventos agrupados, ${cluster.rangeLabel}`}
       >

@@ -210,6 +210,17 @@
   font-style: italic;
 }
 
+.ai-chat-changes--applied {
+  padding-top: 0.4rem;
+  border-top: 1px solid color-mix(in srgb, var(--border) 48%, transparent);
+}
+
+.ai-chat-changes__applied-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--accent) 80%, #22c55e);
+}
+
 /* Error */
 .ai-chat-error {
   flex-shrink: 0;

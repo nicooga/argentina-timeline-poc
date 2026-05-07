@@ -722,7 +722,7 @@ export default function App() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiSending, setAiSending] = useState(false);
   const [aiApplyingMessageId, setAiApplyingMessageId] = useState<string | null>(null);
-  const [aiDismissedIds, setAiDismissedIds] = useState<ReadonlySet<string>>(new Set());
+  const [aiAppliedIds, setAiAppliedIds] = useState<ReadonlySet<string>>(new Set());
   const [aiError, setAiError] = useState<AiChatError | null>(null);
   const [viewerHeaderCollapsed, setViewerHeaderCollapsed] = useState(false);
   const [indexOpen, setIndexOpen] = useState(false);
@@ -898,7 +898,7 @@ export default function App() {
     try {
       const record = await aiService.applyOperations(selectedTimelineId, changes);
       setTimeline(record.timeline);
-      setAiDismissedIds((prev) => new Set([...prev, messageId]));
+      setAiAppliedIds((prev) => new Set([...prev, messageId]));
       setPreviewedMessageId(null);
       setPreviewTimeline(null);
       setPreviewChangeSet(null);
@@ -910,20 +910,15 @@ export default function App() {
     }
   }, [selectedTimelineId]);
 
-  const dismissAiChanges = useCallback((messageId: string) => {
-    setAiDismissedIds((prev) => new Set([...prev, messageId]));
-    if (previewedMessageId === messageId) {
-      setPreviewedMessageId(null);
-      setPreviewTimeline(null);
-      setPreviewChangeSet(null);
-    }
-  }, [previewedMessageId]);
-
   const cancelPreview = useCallback(() => {
     setPreviewedMessageId(null);
     setPreviewTimeline(null);
     setPreviewChangeSet(null);
   }, []);
+
+  const dismissAiChanges = useCallback(() => {
+    cancelPreview();
+  }, [cancelPreview]);
 
   const startPreview = useCallback((changes: TimelineChange[], messageId: string) => {
     const { timeline: preview, changeSet } = applyChangesLocally(timeline, changes);
@@ -1318,7 +1313,7 @@ export default function App() {
   }, [timelineZoomMax]);
 
   const onClusterClick = useCallback(
-    (cluster: EventCluster) => {
+    (cluster: EventCluster, e: React.MouseEvent) => {
       const scrollEl = timelineScrollRef.current;
       if (!scrollEl || stackWidthPx == null || stackWidthPx <= 0) return;
 
@@ -1328,7 +1323,7 @@ export default function App() {
 
       // Porcentaje mínimo entre eventos adyacentes del cluster (escala-invariante)
       const pcts = cluster.events
-        .map((e) => pctOnTrack(e.date.getTime(), min, max))
+        .map((ev) => pctOnTrack(ev.date.getTime(), min, max))
         .sort((a, b) => a - b);
       let pctDiffMin = Infinity;
       for (let i = 1; i < pcts.length; i++) {
@@ -1350,9 +1345,13 @@ export default function App() {
         newZoom = clamp(requiredStackPx / baseContainerPx, TIMELINE_ZOOM_MIN, timelineZoomMax);
       }
 
+      // Centrar el zoom en la posición del cursor (no en el centro del cluster)
+      const rect = scrollEl.getBoundingClientRect();
+      const viewportX = e.clientX - rect.left;
+
       pendingZoomAnchorRef.current = {
         frac: cluster.centerPct / 100,
-        viewportX: scrollEl.clientWidth / 2,
+        viewportX,
       };
       setTimelineZoom(newZoom);
     },
@@ -1552,7 +1551,7 @@ export default function App() {
       if (e.defaultPrevented) return;
       if (isTypingTarget(e.target)) return;
 
-      if (e.key === "Backspace" && e.ctrlKey && previewedMessageId != null) {
+      if (e.key === "Escape" && previewedMessageId != null) {
         e.preventDefault();
         cancelPreview();
         return;
@@ -2577,7 +2576,7 @@ export default function App() {
             loading={aiLoading}
             sending={aiSending}
             applyingMessageId={aiApplyingMessageId}
-            dismissedMessageIds={aiDismissedIds}
+            appliedMessageIds={aiAppliedIds}
             previewedMessageId={previewedMessageId}
             error={aiError}
             onToggleCollapsed={() => setAiChatOpen((open) => !open)}
