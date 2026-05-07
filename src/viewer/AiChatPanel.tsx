@@ -278,10 +278,8 @@ export function AiChatPanel({
     if (e.key === "Enter" && e.ctrlKey) {
       e.preventDefault();
       if (draft.trim()) {
-        // Send if there's text
         submit();
       } else if (previewedMessageId != null) {
-        // Accept previewed changes if input is empty
         const msg = conversation?.messages.find((m) => m.id === previewedMessageId);
         if (msg && applyingMessageId == null) {
           onApply(msg.proposedChanges, msg.id);
@@ -291,11 +289,7 @@ export function AiChatPanel({
     }
     if (e.key === "Escape" && previewedMessageId != null) {
       e.preventDefault();
-      onDismiss(previewedMessageId);
-    }
-    if (e.key === "Backspace" && e.ctrlKey && previewedMessageId != null) {
-      e.preventDefault();
-      onDismiss(previewedMessageId);
+      onCancelPreview();
     }
   };
 
