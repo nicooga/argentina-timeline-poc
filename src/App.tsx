@@ -723,6 +723,7 @@ export default function App() {
   const [aiSending, setAiSending] = useState(false);
   const [aiApplyingMessageId, setAiApplyingMessageId] = useState<string | null>(null);
   const [aiAppliedIds, setAiAppliedIds] = useState<ReadonlySet<string>>(new Set());
+  const [aiNoEffectIds, setAiNoEffectIds] = useState<ReadonlySet<string>>(new Set());
   const [aiError, setAiError] = useState<AiChatError | null>(null);
   const [viewerHeaderCollapsed, setViewerHeaderCollapsed] = useState(false);
   const [indexOpen, setIndexOpen] = useState(false);
@@ -873,9 +874,13 @@ export default function App() {
           timelineRef.current,
           lastMsg.proposedChanges
         );
-        setPreviewTimeline(preview);
-        setPreviewChangeSet(changeSet);
-        setPreviewedMessageId(lastMsg.id);
+        if (changeSet.added.size === 0 && changeSet.updated.size === 0) {
+          setAiNoEffectIds((prev) => new Set([...prev, lastMsg.id]));
+        } else {
+          setPreviewTimeline(preview);
+          setPreviewChangeSet(changeSet);
+          setPreviewedMessageId(lastMsg.id);
+        }
       }
     } catch (error) {
       console.error("AI message failed", error);
@@ -922,6 +927,10 @@ export default function App() {
 
   const startPreview = useCallback((changes: TimelineChange[], messageId: string) => {
     const { timeline: preview, changeSet } = applyChangesLocally(timeline, changes);
+    if (changeSet.added.size === 0 && changeSet.updated.size === 0) {
+      setAiNoEffectIds((prev) => new Set([...prev, messageId]));
+      return;
+    }
     setPreviewTimeline(preview);
     setPreviewChangeSet(changeSet);
     setPreviewedMessageId(messageId);
@@ -2577,6 +2586,7 @@ export default function App() {
             sending={aiSending}
             applyingMessageId={aiApplyingMessageId}
             appliedMessageIds={aiAppliedIds}
+            noEffectMessageIds={aiNoEffectIds}
             previewedMessageId={previewedMessageId}
             error={aiError}
             onToggleCollapsed={() => setAiChatOpen((open) => !open)}

@@ -458,6 +458,14 @@
   overflow: auto;
 }
 
+/* El eje queda fijo en la parte superior al hacer scroll vertical en modo selección */
+.viewer-shell--has-selection .chart--viewer .timeline-scroll .axis {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  background: var(--bg);
+}
+
 /*
  * Controles absolutos respecto al section: con poco alto (compacto + selección) el flex
  * del overlay (zoom | escala) se envuelve mal y parece “flotar” mal.

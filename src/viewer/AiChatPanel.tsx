@@ -20,6 +20,7 @@ type Props = {
   sending: boolean;
   applyingMessageId: string | null;
   appliedMessageIds: ReadonlySet<string>;
+  noEffectMessageIds: ReadonlySet<string>;
   previewedMessageId: string | null;
   error: AiChatError | null;
   onToggleCollapsed: () => void;
@@ -54,6 +55,7 @@ function ProposedChanges({
   message,
   applyingMessageId,
   applied,
+  noEffect,
   previewing,
   onApply,
   onPreview,
@@ -62,6 +64,7 @@ function ProposedChanges({
   message: AiMessage;
   applyingMessageId: string | null;
   applied: boolean;
+  noEffect: boolean;
   previewing: boolean;
   onApply: (changes: TimelineChange[], messageId: string) => void;
   onPreview: (changes: TimelineChange[], messageId: string) => void;
@@ -133,7 +136,18 @@ function ProposedChanges({
       )}
 
       <div className="ai-chat-changes__actions">
-        {previewing ? (
+        {noEffect ? (
+          <div className="ai-btn-wrap">
+            <button
+              type="button"
+              className="viewer-editor-btn ai-chat-changes__preview-btn"
+              disabled
+              title="Sin cambios detectables en el timeline"
+            >
+              Sin efecto
+            </button>
+          </div>
+        ) : previewing ? (
           <div className="ai-btn-wrap">
             <button
               type="button"
@@ -159,7 +173,8 @@ function ProposedChanges({
           <button
             type="button"
             className="viewer-editor-btn"
-            disabled={busy}
+            disabled={busy || noEffect}
+            title={noEffect ? "Sin cambios detectables en el timeline" : undefined}
             onClick={() => onApply(proposedChanges, id)}
           >
             {applying ? "Aplicando…" : "Aceptar"}
@@ -188,6 +203,7 @@ function MessageBubble({
   message,
   applyingMessageId,
   appliedMessageIds,
+  noEffectMessageIds,
   previewedMessageId,
   onApply,
   onPreview,
@@ -196,6 +212,7 @@ function MessageBubble({
   message: AiMessage;
   applyingMessageId: string | null;
   appliedMessageIds: ReadonlySet<string>;
+  noEffectMessageIds: ReadonlySet<string>;
   previewedMessageId: string | null;
   onApply: (changes: TimelineChange[], messageId: string) => void;
   onPreview: (changes: TimelineChange[], messageId: string) => void;
@@ -209,6 +226,7 @@ function MessageBubble({
           message={message}
           applyingMessageId={applyingMessageId}
           applied={appliedMessageIds.has(message.id)}
+          noEffect={noEffectMessageIds.has(message.id)}
           previewing={previewedMessageId === message.id}
           onApply={onApply}
           onPreview={onPreview}
@@ -226,6 +244,7 @@ export function AiChatPanel({
   sending,
   applyingMessageId,
   appliedMessageIds,
+  noEffectMessageIds,
   previewedMessageId,
   error,
   onToggleCollapsed,
@@ -338,6 +357,7 @@ export function AiChatPanel({
                   message={msg}
                   applyingMessageId={applyingMessageId}
                   appliedMessageIds={appliedMessageIds}
+                  noEffectMessageIds={noEffectMessageIds}
                   previewedMessageId={previewedMessageId}
                   onApply={onApply}
                   onPreview={onPreview}
