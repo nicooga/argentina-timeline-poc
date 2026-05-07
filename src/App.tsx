@@ -916,7 +916,7 @@ export default function App() {
     setPreviewChangeSet(null);
   }, []);
 
-  const dismissAiChanges = useCallback((_messageId: string) => {
+  const dismissAiChanges = useCallback(() => {
     cancelPreview();
   }, [cancelPreview]);
 
