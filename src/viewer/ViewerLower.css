@@ -405,9 +405,9 @@
 
 .viewer-floating-panel {
   left: clamp(0.55rem, 1.35vw, 0.9rem);
-  top: 3rem;
+  top: clamp(0.55rem, 1.35vw, 0.9rem);
   width: min(24rem, calc(100vw - 1.1rem));
-  max-height: calc(100dvh - 3.5rem);
+  max-height: calc(100dvh - clamp(1.1rem, 2.7vw, 1.8rem));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -753,7 +753,7 @@
 }
 
 .viewer-floating-panel {
-  top: 3rem;
+  top: clamp(0.55rem, 1.35vw, 0.9rem);
   width: min(21rem, calc(100vw - 1.1rem));
   max-height: min(42dvh, 25rem);
 }
@@ -866,7 +866,7 @@
 
 @media (max-width: 70rem) {
   .viewer-floating-panel {
-    top: clamp(4.75rem, 10dvh, 6.2rem);
+    top: clamp(0.5rem, 1.2vw, 0.8rem);
     max-height: min(38dvh, 22rem);
   }
 
