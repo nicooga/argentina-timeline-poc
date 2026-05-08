@@ -1857,32 +1857,39 @@ export default function App() {
                 ) : null}
               </div>
 
-              {sel != null ? (
-                <button
-                  type="button"
-                  className="viewer-toolbar-btn"
-                  onClick={() => setDetailCollapsed((collapsed) => !collapsed)}
-                  aria-expanded={!detailCollapsed}
-                  aria-controls="viewer-detail-panel"
-                  aria-label={
-                    detailCollapsed
-                      ? "Expandir detalle seleccionado"
-                      : "Contraer detalle seleccionado"
-                  }
-                  title={detailCollapsed ? "Expandir detalle" : "Contraer detalle"}
-                >
-                  <svg className="viewer-header-icon-svg" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-                    <path
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d={detailCollapsed ? "M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" : "M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"}
-                    />
-                  </svg>
-                </button>
-              ) : null}
+              {(() => {
+                const allPanelsCollapsed = detailCollapsed && !aiChatOpen && !indexOpen;
+                return (
+                  <button
+                    type="button"
+                    className="viewer-toolbar-btn"
+                    onClick={() => {
+                      if (allPanelsCollapsed) {
+                        setIndexOpen(true);
+                        setAiChatOpen(true);
+                        if (sel != null) setDetailCollapsed(false);
+                      } else {
+                        setDetailCollapsed(true);
+                        setAiChatOpen(false);
+                        setIndexOpen(false);
+                      }
+                    }}
+                    aria-label={allPanelsCollapsed ? "Expandir paneles" : "Contraer paneles"}
+                    title={allPanelsCollapsed ? "Expandir paneles" : "Contraer paneles"}
+                  >
+                    <svg className="viewer-header-icon-svg" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d={allPanelsCollapsed ? "M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" : "M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"}
+                      />
+                    </svg>
+                  </button>
+                );
+              })()}
             </div>
         </header>
 
