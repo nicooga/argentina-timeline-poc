@@ -45,6 +45,8 @@ export function verticalColumnWidthPx(
 
 /** Padding unificado del wrap vertical (par con CSS `calc(... - 24px)`). Ver `EventTitleMarkerVertical`. */
 export const EVENT_TITLE_VROT_WRAP_PAD_PX = 24;
+/** Banda superior fija para rutas datePct→displayPct; par con `--event-displacement-route-h`. */
+const EVENT_DISPLACEMENT_ROUTE_H_REM = 0.85;
 
 /**
  * Altura (eje de lectura en pantalla) reservada para el título + padding unificado del wrap (modo horizontal o tests).
@@ -174,6 +176,7 @@ export function verticalEventTitlesRowLayoutPx(
   /** Visor táctil: alto fijo según viewport (par con CSS); el título recorta con ellipsis si excede. */
   const readAxisSlotPx = verticalReadAxisTotalPx(viewportHeightPx);
   const eventsDotHalfPx = (pointerCoarse ? 1.32 : 1.22) / 2 * rootRemPx;
+  const routeHeightPx = EVENT_DISPLACEMENT_ROUTE_H_REM * rootRemPx;
   const gapPx = 0.38 * rootRemPx;
   const naturalHitH = EVENT_DOT_PX + gapPx + readAxisSlotPx;
   const hitBlockPx = pointerCoarse
@@ -182,11 +185,11 @@ export function verticalEventTitlesRowLayoutPx(
   const vPadPx = 0;
   const padBottomPx = (pointerCoarse ? 0.32 : 0.28) * rootRemPx;
   const sizerContentMinPx = Math.ceil(
-    eventsDotHalfPx + hitBlockPx / 2 + padBottomPx + 2
+    routeHeightPx + eventsDotHalfPx + hitBlockPx / 2 + padBottomPx + 2
   );
   const connectorBottomInsetPx = Math.max(
     0,
-    Math.ceil(sizerContentMinPx - eventsDotHalfPx)
+    Math.ceil(sizerContentMinPx - routeHeightPx - eventsDotHalfPx)
   );
   return {
     vPadPx,

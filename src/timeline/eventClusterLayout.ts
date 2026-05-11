@@ -2,60 +2,94 @@ import type { TimelineEvent } from "../../types";
 import type { EventLabelPlacement } from "./eventLabelLayout";
 import { readRootRemPx, verticalColumnWidthPx } from "./eventLabelLayout";
 
-export interface EventCluster {
-  events: TimelineEvent[];
-  minPct: number;
-  maxPct: number;
-  centerPct: number;
-  minMs: number;
-  maxMs: number;
-  rangeLabel: string;
+const DISPLACED_EVENT_GAP_PX = 4;
+const DISPLACEMENT_CONNECTOR_MIN_PX = 1;
+
+export interface DisplacedEventPlacement {
+  event: TimelineEvent;
+  datePct: number;
+  displayPct: number;
+  offsetPx: number;
+  needsConnector: boolean;
 }
 
-function clusterRangeLabel(minMs: number, maxMs: number): string {
-  const y0 = new Date(minMs).getUTCFullYear();
-  const y1 = new Date(maxMs).getUTCFullYear();
-  if (y0 === y1) return String(y0);
-  const sameHundred = Math.floor(y0 / 100) === Math.floor(y1 / 100);
-  return sameHundred ? `${y0}–${String(y1).slice(-2)}` : `${y0}–${y1}`;
+function clamp(n: number, lo: number, hi: number): number {
+  return Math.min(hi, Math.max(lo, n));
+}
+
+type LayoutItem = { event: TimelineEvent; index: number; datePct: number };
+
+type RenderCluster = {
+  items: LayoutItem[];
+  startPct: number;
+  endPct: number;
+  displayPcts: number[];
+};
+
+function placeCluster(
+  items: LayoutItem[],
+  separationPct: number
+): RenderCluster {
+  const sorted = [...items].sort(
+    (a, b) => a.datePct - b.datePct || a.index - b.index
+  );
+  if (sorted.length === 1) {
+    const pct = clamp(sorted[0]!.datePct, 0, 100);
+    return {
+      items: sorted,
+      startPct: pct,
+      endPct: pct,
+      displayPcts: [pct],
+    };
+  }
+
+  const displaySpanPct = separationPct * (sorted.length - 1);
+  const minDatePct = sorted[0]!.datePct;
+  const maxDatePct = sorted[sorted.length - 1]!.datePct;
+  const centerPct = (minDatePct + maxDatePct) / 2;
+  const startPct = clamp(centerPct - displaySpanPct / 2, 0, 100 - displaySpanPct);
+  const displayPcts = sorted.map((_item, i) => startPct + i * separationPct);
+  return {
+    items: sorted,
+    startPct,
+    endPct: startPct + displaySpanPct,
+    displayPcts,
+  };
 }
 
 /**
- * Agrupa eventos cuyos footprints de columna vertical se solapan en el eje X.
- * Dos eventos se solapan si la distancia en píxeles entre sus centros es menor que
- * `columnPx + gapPx` (mismo umbral que `assignEventLabelLanes`).
+ * Coloca eventos visualmente separados cuando sus columnas verticales se pisan.
+ * La fecha real queda en `datePct`; `displayPct` es solo la posición de lectura.
  */
-export function groupOverlappingEvents(
+export function layoutDisplacedEventPlacements(
   eventsSorted: TimelineEvent[],
   placements: EventLabelPlacement[],
   trackPct: (ms: number) => number,
   stackWidthPx: number
-): { clusteredEventSet: ReadonlySet<TimelineEvent>; clusters: EventCluster[] } {
-  if (eventsSorted.length === 0 || stackWidthPx <= 0) {
-    return { clusteredEventSet: new Set(), clusters: [] };
-  }
+): DisplacedEventPlacement[] {
+  if (eventsSorted.length === 0) return [];
 
+  const safeStackWidthPx = stackWidthPx > 0 ? stackWidthPx : 520;
   const columnPx =
     placements[0]?.columnPx ?? verticalColumnWidthPx(false, readRootRemPx());
-  // Umbral basado en solapamiento físico de columnas: umbral decrece con zoom,
-  // a diferencia del gapPct de assignEventLabelLanes que tiene piso fijo de 1.35%
-  // y sería demasiado grande a zoom alto.
-  const CLUSTER_GAP_PX = 4;
-  const thresholdPct = ((columnPx + CLUSTER_GAP_PX) / stackWidthPx) * 100;
+  const separationPct = ((columnPx + DISPLACED_EVENT_GAP_PX) / safeStackWidthPx) * 100;
+  const effectiveSeparationPct =
+    eventsSorted.length > 1
+      ? Math.min(separationPct, 100 / (eventsSorted.length - 1))
+      : separationPct;
 
-  type Item = { event: TimelineEvent; pct: number };
-  const items: Item[] = eventsSorted.map((event) => ({
+  const items: LayoutItem[] = eventsSorted.map((event, index) => ({
     event,
-    pct: trackPct(event.date.getTime()),
+    index,
+    datePct: trackPct(event.date.getTime()),
   }));
 
-  const groups: Item[][] = [];
-  let current: Item[] = [items[0]!];
-
+  let groups: LayoutItem[][] = [];
+  let current: LayoutItem[] = [items[0]!];
   for (let i = 1; i < items.length; i++) {
     const item = items[i]!;
     const last = current[current.length - 1]!;
-    if (item.pct - last.pct < thresholdPct) {
+    if (item.datePct - last.datePct < effectiveSeparationPct) {
       current.push(item);
     } else {
       groups.push(current);
@@ -64,29 +98,73 @@ export function groupOverlappingEvents(
   }
   groups.push(current);
 
-  const clusters: EventCluster[] = [];
-  const clusteredEventSet = new Set<TimelineEvent>();
+  let placedClusters: RenderCluster[] = [];
+  for (let pass = 0; pass < eventsSorted.length; pass++) {
+    placedClusters = groups
+      .map((group) => placeCluster(group, effectiveSeparationPct))
+      .sort((a, b) => a.startPct - b.startPct);
 
-  for (const group of groups) {
-    if (group.length >= 2) {
-      const minPct = group[0]!.pct;
-      const maxPct = group[group.length - 1]!.pct;
-      const minMs = group[0]!.event.date.getTime();
-      const maxMs = group[group.length - 1]!.event.date.getTime();
-      clusters.push({
-        events: group.map((g) => g.event),
-        minPct,
-        maxPct,
-        centerPct: (minPct + maxPct) / 2,
-        minMs,
-        maxMs,
-        rangeLabel: clusterRangeLabel(minMs, maxMs),
-      });
-      for (const { event } of group) {
-        clusteredEventSet.add(event);
+    const nextGroups: LayoutItem[][] = [];
+    let mergedCurrent = [...placedClusters[0]!.items];
+    let currentEnd = placedClusters[0]!.endPct;
+    let didMerge = false;
+
+    for (let i = 1; i < placedClusters.length; i++) {
+      const cluster = placedClusters[i]!;
+      if (cluster.startPct - currentEnd < effectiveSeparationPct) {
+        mergedCurrent.push(...cluster.items);
+        currentEnd = Math.max(currentEnd, cluster.endPct);
+        didMerge = true;
+      } else {
+        nextGroups.push(mergedCurrent);
+        mergedCurrent = [...cluster.items];
+        currentEnd = cluster.endPct;
       }
     }
+    nextGroups.push(mergedCurrent);
+
+    if (!didMerge) break;
+    groups = nextGroups;
   }
 
-  return { clusteredEventSet, clusters };
+  const out: DisplacedEventPlacement[] = eventsSorted.map((event) => ({
+    event,
+    datePct: trackPct(event.date.getTime()),
+    displayPct: trackPct(event.date.getTime()),
+    offsetPx: 0,
+    needsConnector: false,
+  }));
+
+  for (const cluster of placedClusters) {
+    cluster.items.forEach((item, i) => {
+      const displayPct = cluster.displayPcts[i]!;
+      const offsetPx = ((displayPct - item.datePct) / 100) * safeStackWidthPx;
+      out[item.index] = {
+        event: item.event,
+        datePct: item.datePct,
+        displayPct,
+        offsetPx,
+        needsConnector: Math.abs(offsetPx) >= DISPLACEMENT_CONNECTOR_MIN_PX,
+      };
+    });
+  }
+
+  return out;
+}
+
+export function minEventSeparationPct(
+  eventsSorted: TimelineEvent[],
+  trackPct: (ms: number) => number
+): number | null {
+  let minDiff = Infinity;
+  let prevPct: number | null = null;
+  for (const event of eventsSorted) {
+    const pct = trackPct(event.date.getTime());
+    if (prevPct != null) {
+      const diff = pct - prevPct;
+      if (diff > 0) minDiff = Math.min(minDiff, diff);
+    }
+    prevPct = pct;
+  }
+  return Number.isFinite(minDiff) ? minDiff : null;
 }

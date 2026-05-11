@@ -32,7 +32,8 @@ import {
   axisMarkLaneOffsetPx,
   assignAxisMarkLanes,
   assignEventLabelLanes,
-  groupOverlappingEvents,
+  layoutDisplacedEventPlacements,
+  minEventSeparationPct,
   readRootRemPx,
   verticalColumnWidthPx,
   axisTickAriaLabel,
@@ -46,8 +47,6 @@ import {
   TimelineSemanticEventLanes,
   TimelineEventTitlesLane,
   utcYearStartMs,
-  type EventCluster,
-  type AxisMark,
 } from "./timeline";
 import { AxisTickMark } from "./AxisTickMark";
 import {
@@ -836,6 +835,11 @@ export default function App() {
   const [cursorPct, setCursorPct] = useState<number | null>(null);
   const [studyMode, setStudyMode] = useState<StudyMode>("normal");
   const [themeMode, setThemeMode] = useThemeMode();
+  const [pointerCoarse, setPointerCoarse] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(pointer: coarse)").matches
+  );
   const [laneVisibility, setLaneVisibility] = useState<
     Record<EventLaneId, boolean>
   >(
@@ -849,15 +853,33 @@ export default function App() {
     null
   );
   const timelineZoomMax = useMemo(
-    () =>
-      chooseTimelineZoomMax(
+    () => {
+      const baseStackWidthPx =
+        stackWidthPx == null ? null : stackWidthPx / timelineZoom;
+      const minGapPct = minEventSeparationPct(eventsSorted, (tMs) =>
+        pctOnTrack(tMs, min, max)
+      );
+      const targetEventGapPx =
+        verticalColumnWidthPx(pointerCoarse, readRootRemPx()) + 4;
+      return chooseTimelineZoomMax(
         min,
         max,
-        stackWidthPx == null ? null : stackWidthPx / timelineZoom,
+        baseStackWidthPx,
         scrollViewportWidthPx,
-        TIMELINE_ZOOM_DEFAULT_MAX
-      ),
-    [min, max, stackWidthPx, timelineZoom, scrollViewportWidthPx]
+        TIMELINE_ZOOM_DEFAULT_MAX,
+        minGapPct,
+        targetEventGapPx
+      );
+    },
+    [
+      min,
+      max,
+      stackWidthPx,
+      timelineZoom,
+      scrollViewportWidthPx,
+      eventsSorted,
+      pointerCoarse,
+    ]
   );
   const axisScaleDetail = useMemo(
     () => chooseAxisScaleDetail(min, max, stackWidthPx),
@@ -896,12 +918,6 @@ export default function App() {
       typeof window !== "undefined" ? window.innerHeight : 800,
     rootPx: 16,
   }));
-  const [pointerCoarse, setPointerCoarse] = useState(
-    () =>
-      typeof window !== "undefined" &&
-      window.matchMedia("(pointer: coarse)").matches
-  );
-
   useEffect(() => {
     if (!timelineSlug) return;
     let cancelled = false;
@@ -1348,40 +1364,22 @@ export default function App() {
     return m;
   }, [axisMarks, axisShowYearFlags]);
 
-  const eventClusters = useMemo((): EventCluster[] => {
+  const displacedEventPlacements = useMemo(() => {
     if (!stackWidthPx || stackWidthPx <= 0) return [];
     const trackPct = (tMs: number) => pctOnTrack(tMs, min, max);
     const colPx = verticalColumnWidthPx(pointerCoarse, readRootRemPx());
-    return groupOverlappingEvents(
+    return layoutDisplacedEventPlacements(
       eventsSorted,
       [{ lane: 0, anchor: "center", maxWidthPx: 160, columnPx: colPx }],
       trackPct,
       stackWidthPx
-    ).clusters;
+    );
   }, [eventsSorted, min, max, stackWidthPx, pointerCoarse]);
 
   const axisMarksPlaced = useMemo(() => {
     const tPct = (tMs: number) => pctOnTrack(tMs, min, max);
-
-    const clusteredTs = new Set(
-      eventClusters.flatMap((c) => c.events.map((e) => e.date.getTime()))
-    );
-    const filtered = axisMarks.filter((m) => !clusteredTs.has(m.t));
-
-    const rangeMarks: AxisMark[] = eventClusters.map((c) => ({
-      t: Math.round((c.minMs + c.maxMs) / 2),
-      year: c.rangeLabel,
-      monthDay: "",
-      rangeLabel: c.rangeLabel,
-    }));
-
-    const augmented = [...filtered, ...rangeMarks].sort((a, b) => a.t - b.t);
-
-    const showYear = new Map<number, boolean>(axisShowYearByT);
-    for (const rm of rangeMarks) showYear.set(rm.t, true);
-
-    return assignAxisMarkLanes(augmented, tPct, showYear, stackWidthPx);
-  }, [axisMarks, min, max, axisShowYearByT, stackWidthPx, eventClusters]);
+    return assignAxisMarkLanes(axisMarks, tPct, axisShowYearByT, stackWidthPx);
+  }, [axisMarks, min, max, axisShowYearByT, stackWidthPx]);
 
   const axisMarkMaxLaneOffsetPx = useMemo(
     () =>
@@ -1710,60 +1708,6 @@ export default function App() {
     }
     setTimelineZoom(z1);
   }, [timelineZoomMax]);
-
-  const onClusterClick = useCallback(
-    (cluster: EventCluster, e: React.MouseEvent) => {
-      const scrollEl = timelineScrollRef.current;
-      if (!scrollEl || stackWidthPx == null || stackWidthPx <= 0) return;
-
-      const colPx =
-        eventLabelPlacements[0]?.columnPx ??
-        verticalColumnWidthPx(pointerCoarse, readRootRemPx());
-
-      // Porcentaje mínimo entre eventos adyacentes del cluster (escala-invariante)
-      const pcts = cluster.events
-        .map((ev) => pctOnTrack(ev.date.getTime(), min, max))
-        .sort((a, b) => a - b);
-      let pctDiffMin = Infinity;
-      for (let i = 1; i < pcts.length; i++) {
-        pctDiffMin = Math.min(pctDiffMin, pcts[i]! - pcts[i - 1]!);
-      }
-
-      // Threshold consistente con groupOverlappingEvents: (col + gap) / stackPx * 100
-      // Necesitamos stackPx_new tal que (col+gap)/stackPx_new*100 < pctDiffMin / safety
-      const CLUSTER_GAP_PX = 4;
-      const SAFETY = 1.5;
-
-      let newZoom: number;
-      if (pctDiffMin <= 0) {
-        // Misma fecha: no se pueden separar, ir al máximo
-        newZoom = timelineZoomMax;
-      } else {
-        const requiredStackPx = ((colPx + CLUSTER_GAP_PX) * 100 * SAFETY) / pctDiffMin;
-        const baseContainerPx = stackWidthPx / timelineZoom;
-        newZoom = clamp(requiredStackPx / baseContainerPx, TIMELINE_ZOOM_MIN, timelineZoomMax);
-      }
-
-      // Centrar el zoom en la posición del cursor (no en el centro del cluster)
-      const rect = scrollEl.getBoundingClientRect();
-      const viewportX = e.clientX - rect.left;
-
-      pendingZoomAnchorRef.current = {
-        frac: cluster.centerPct / 100,
-        viewportX,
-      };
-      setTimelineZoom(newZoom);
-    },
-    [
-      timelineZoom,
-      timelineZoomMax,
-      stackWidthPx,
-      pointerCoarse,
-      eventLabelPlacements,
-      min,
-      max,
-    ]
-  );
 
   const onZoomSliderChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
@@ -2606,8 +2550,7 @@ export default function App() {
                     setSel({ kind: "event", item: e })
                   }
                   timelineSelectedEventDotRef={timelineSelectedEventDotRef}
-                  clusters={eventClusters}
-                  onClusterClick={onClusterClick}
+                  displacedEventPlacements={displacedEventPlacements}
                   previewHighlight={previewChangeSet ?? undefined}
                 />
               </div>

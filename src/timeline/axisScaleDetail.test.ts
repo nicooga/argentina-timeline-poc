@@ -61,4 +61,32 @@ describe("chooseTimelineZoomMax", () => {
 
     expect(maxZoom).toBeGreaterThan(14);
   });
+
+  it("raises the cap when event density needs more pixels", () => {
+    const maxZoom = chooseTimelineZoomMax(
+      utcYearStartMs(1800),
+      utcYearStartMs(1900),
+      1000,
+      1200,
+      14,
+      0.05,
+      24
+    );
+
+    expect(maxZoom).toBeGreaterThan(14);
+  });
+
+  it("does not raise the cap for identical-date events alone", () => {
+    const maxZoom = chooseTimelineZoomMax(
+      utcYearStartMs(1800),
+      utcYearStartMs(1900),
+      4200,
+      1200,
+      14,
+      null,
+      24
+    );
+
+    expect(maxZoom).toBe(14);
+  });
 });

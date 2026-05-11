@@ -50,7 +50,9 @@ export function chooseTimelineZoomMax(
   maxMs: number,
   baseStackWidthPx: number | null,
   viewportWidthPx: number | null,
-  defaultMaxZoom: number
+  defaultMaxZoom: number,
+  minEventGapPct: number | null = null,
+  targetEventGapPx: number | null = null
 ): number {
   if (
     !Number.isFinite(minMs) ||
@@ -69,7 +71,19 @@ export function chooseTimelineZoomMax(
     (yearSpan * viewportWidthPx) /
     (baseStackWidthPx * TARGET_MAX_ZOOM_VISIBLE_YEARS);
 
-  return Math.max(defaultMaxZoom, Math.ceil(zoomForFewDecades));
+  const zoomForEventDensity =
+    minEventGapPct != null &&
+    minEventGapPct > 0 &&
+    targetEventGapPx != null &&
+    targetEventGapPx > 0
+      ? targetEventGapPx / (baseStackWidthPx * (minEventGapPct / 100))
+      : defaultMaxZoom;
+
+  return Math.max(
+    defaultMaxZoom,
+    Math.ceil(zoomForFewDecades),
+    Math.ceil(zoomForEventDensity)
+  );
 }
 
 function firstStepAtLeast<const T extends readonly number[]>(

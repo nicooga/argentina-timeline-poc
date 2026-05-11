@@ -1737,29 +1737,30 @@
 }
 
 .event-connector {
+  --event-connector-color: color-mix(
+    in srgb,
+    var(--event-connector-stroke, var(--muted)) 68%,
+    transparent
+  );
+  --event-connector-width: 1px;
+  --event-connector-opacity: 0.78;
   top: 0;
   /* Tope en el borde inferior del disco (::after 14px), no en el centro del área táctil 44px. */
   bottom: calc(
     var(--event-conn-end-adjust, 1rem) -
       var(--event-conn-lane, 0) * var(--event-label-lane-nudge, 0.96rem)
   );
-  opacity: 0.28;
-  border-left-color: color-mix(
-    in srgb,
-    var(--event-connector-stroke, var(--muted)) 62%,
-    transparent
-  );
+  opacity: var(--event-connector-opacity);
+  width: var(--event-connector-width);
+  border-left: 0;
+  background: var(--event-connector-color);
 }
 
 .event-connector--selected {
-  opacity: 0.72;
-  border-left-width: 1.5px;
-  border-left-color: color-mix(
-    in srgb,
-    var(--event-connector-stroke, var(--accent)) 78%,
-    var(--accent)
-  );
-  transition: opacity 0.15s, border-color 0.15s;
+  --event-connector-color: var(--event-connector-stroke, var(--accent));
+  --event-connector-width: 1.5px;
+  --event-connector-opacity: 0.96;
+  transition: opacity 0.15s, background-image 0.15s;
 }
 
 .period-connector {
@@ -1795,8 +1796,8 @@
 
 .events-stack {
   position: relative;
-  /* Por encima de `.bar.active` (z-index 4): conectores que suben deben verse sobre la barra de período */
-  z-index: 6;
+  /* Debajo de períodos; dentro del stack los carriles quedan por encima de los conectores. */
+  z-index: 0;
   /* El aire para etiquetas vive en `.events-titles-lane__row`; respiro para no pegar al borde del scroll */
   padding-bottom: 0.28rem;
 }
@@ -1992,9 +1993,12 @@
  */
 .events-titles-lane--labels-vertical {
   --evt-v-lane-shell-h: 300px;
+  --event-displacement-route-h: 0.85rem;
   height: var(--evt-v-lane-shell-h);
   --evt-v-read-axis-max: var(--evt-v-lane-shell-h);
-  --evt-v-read-inner-max: calc(var(--evt-v-read-axis-max) - 24px);
+  --evt-v-read-inner-max: calc(
+    var(--evt-v-read-axis-max) - var(--event-displacement-route-h) - 24px
+  );
 }
 
 /*
@@ -2062,7 +2066,7 @@
 
 .events-titles-lane .evt-v-marker {
   top: calc(
-    var(--v-pad, 0px) + var(--events-dot-half) +
+    var(--v-pad, 0px) + var(--event-displacement-route-h, 0px) +
       var(--event-label-lane, 0) * var(--event-label-lane-nudge, 0.96rem)
   );
 }
@@ -2134,7 +2138,9 @@
  */
 .events-titles-lane--labels-vertical .events-titles-lane__connectors .event-connector {
   bottom: calc(
-    var(--ev-titles-v-connector-btm) + var(--events-titles-connector-trim, 0.38rem)
+    var(--ev-titles-v-connector-btm) +
+      var(--event-displacement-route-h, 0px) +
+      var(--events-titles-connector-trim, 0.38rem)
   );
 }
 
@@ -2142,9 +2148,9 @@
   .events-titles-lane__connectors
   .event-connector--selected {
   bottom: calc(
-    var(--ev-titles-v-connector-btm) + var(--events-titles-connector-trim, 0.38rem) +
-      var(--events-titles-connector-selected-breather, 0.58rem) +
-      calc(var(--event-conn-lane, 0) * 0.15rem)
+    var(--ev-titles-v-connector-btm) +
+      var(--event-displacement-route-h, 0px) +
+      var(--events-titles-connector-trim, 0.38rem)
   );
 }
 
@@ -2385,7 +2391,9 @@
   width: max-content;
   max-width: none;
   min-height: 0;
-  height: calc(var(--evt-v-lane-shell-h) - 24px);
+  height: calc(
+    var(--evt-v-lane-shell-h) - var(--event-displacement-route-h, 0px) - 24px
+  );
 }
 
 .evt-v-marker.evt-v-marker--selected .evt-v-hit {
@@ -3132,96 +3140,40 @@
   border: 1px solid color-mix(in srgb, var(--border) 48%, transparent);
 }
 
-/* ─── Tick de rango para clusters ────────────────────────────────────────── */
-
-.tick--range-label {
-  font-style: italic;
-  opacity: 0.82;
-}
-
-/* ─── Cluster de eventos ──────────────────────────────────────────────────── */
-
-.evt-cluster-marker {
-  position: absolute;
-  width: 0;
-  height: 0;
-  transform: translateX(-50%);
-  pointer-events: none;
-  z-index: 3;
-}
-
-.events-titles-lane .evt-cluster-marker {
-  top: calc(var(--evt-v-lane-shell-h, 200px) / 2);
-}
-
-.evt-cluster-hit {
+.events-titles-lane__displacement-routes {
   position: absolute;
   left: 0;
-  top: 0;
-  transform: translate(-50%, -50%);
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0;
-  padding: 0;
-  border: none;
-  background: transparent;
-  font: inherit;
-  cursor: pointer;
-  pointer-events: auto;
-  -webkit-tap-highlight-color: transparent;
-  isolation: isolate;
+  right: 0;
+  top: var(--v-pad, 0px);
+  z-index: 1;
+  width: 100%;
+  height: var(--event-displacement-route-h, 0.85rem);
+  overflow: visible;
+  pointer-events: none;
 }
 
-.evt-cluster-hit:focus {
-  outline: none;
+.event-displacement-route {
+  --event-connector-color: color-mix(
+    in srgb,
+    var(--event-connector-stroke, var(--muted)) 68%,
+    transparent
+  );
+  --event-connector-width: 1px;
+  --event-connector-opacity: 0.78;
+  fill: none;
+  stroke: var(--event-connector-color);
+  stroke-width: var(--event-connector-width);
+  stroke-dasharray: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  opacity: var(--event-connector-opacity);
 }
 
-.evt-cluster-hit:focus-visible .evt-cluster-disc {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.evt-cluster-disc {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 50%;
-  background: color-mix(in srgb, var(--accent) 18%, var(--surface, #fff));
-  color: var(--text);
-  border: 2px solid var(--accent);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent);
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
-  line-height: 1;
-  gap: 0;
-}
-
-.evt-cluster-hit:hover .evt-cluster-disc {
-  transform: scale(1.1);
-  background: color-mix(in srgb, var(--accent) 30%, var(--surface, #fff));
-  box-shadow: 0 0 0 2px var(--accent), 0 2px 6px color-mix(in srgb, var(--accent) 35%, transparent);
-}
-
-.evt-cluster-hit:active .evt-cluster-disc {
-  transform: scale(0.96);
-}
-
-.evt-cluster-count {
-  font-size: 0.65rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-.evt-cluster-unit {
-  font-size: 0.42rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  opacity: 0.88;
-  line-height: 1;
+.event-displacement-route--selected {
+  --event-connector-color: var(--event-connector-stroke, var(--accent));
+  --event-connector-width: 1.5px;
+  --event-connector-opacity: 0.96;
 }
 
 /* ── Preview mode: viewport ring ── */
@@ -3411,12 +3363,4 @@
 
 .evt-v-marker {
   animation: evt-title-enter 0.22s ease;
-}
-
-/* El cluster disc tiene transición suave para su propio cambio de escala/opacidad */
-.evt-cluster-disc {
-  transition:
-    transform 0.18s ease,
-    box-shadow 0.18s ease,
-    opacity 0.18s ease;
 }
