@@ -20,6 +20,14 @@ export type {
 export type {
   AiConversation,
   AiMessage,
+  AiMessageType,
+  ExecutionPlan,
+  ExecutionPlanStatus,
+  ExecutionPlanStep,
+  ExecutionPlanStepStatus,
+  ExecutionPlanStepType,
+  ExecutionPlanSummary,
+  PlanProposedChanges,
   TimelineChange,
   TimelineChangeType,
 } from "./aiConversation";

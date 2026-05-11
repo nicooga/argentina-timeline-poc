@@ -41,6 +41,7 @@ Para forzar el repositorio local anterior, usar `VITE_TIMELINES_API_BASE_URL=loc
 | `npm run lint` | Ejecuta ESLint sobre el proyecto. |
 | `npm run test` | Ejecuta Vitest en modo interactivo/watch. |
 | `npm run test:ci` | Ejecuta la suite de tests una vez, pensado para CI. |
+| `npm run test:e2e` | Ejecuta el smoke E2E de Execution Plans si `TIMELINES_E2E_API_BASE_URL` apunta a un backend real. |
 
 ## Rutas
 
@@ -104,12 +105,13 @@ Los eventos pueden pertenecer a uno o más carriles:
 
 La configuración visual y el orden de los carriles están en [`eventLanes.ts`](./eventLanes.ts).
 
-## Specs de layout
+## Specs
 
 Este repo usa specs en `docs/<NOMBRE>.SPEC.md`. Antes de tocar layout del visor o del timeline, leer:
 
 - [`docs/VIEWER_LAYOUT.SPEC.md`](./docs/VIEWER_LAYOUT.SPEC.md): viewport, grid, overflow y scroll.
 - [`docs/TIMELINE_LAYOUT.SPEC.md`](./docs/TIMELINE_LAYOUT.SPEC.md): eje, etiquetas, carriles, conectores y pruebas.
+- [`docs/AI_EXECUTION_PLAN_UI.SPEC.md`](./docs/AI_EXECUTION_PLAN_UI.SPEC.md): contraparte UI de Execution Plans; referencia el spec/plan backend.
 - [`docs/TEMPLATE.SPEC.md`](./docs/TEMPLATE.SPEC.md): plantilla para specs nuevas.
 - [`docs/MASTER.md`](./docs/MASTER.md): documentación de contexto para mantenedores y agentes.
 
@@ -124,6 +126,12 @@ npm run test:ci
 ```
 
 Vitest busca tests con el patrón `src/**/*.test.ts`, definido en [`vite.config.ts`](./vite.config.ts).
+
+El smoke E2E de Execution Plans vive en [`src/timelineEdition/executionPlan.e2e.test.ts`](./src/timelineEdition/executionPlan.e2e.test.ts). Está skippeado por defecto porque usa backend real y puede disparar llamadas Bedrock. Para correrlo:
+
+```bash
+TIMELINES_E2E_API_BASE_URL=http://127.0.0.1:8000 npm run test:e2e
+```
 
 ## Calidad
 

@@ -13,15 +13,69 @@ export type TimelineChange = {
   rationale: string;
 };
 
+export type AiMessageType = "response" | "plan_proposal";
+
 export type AiMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
   createdAt: Date;
   proposedChanges: TimelineChange[];
+  messageType: AiMessageType;
 };
 
 export type AiConversation = {
   timelineId: string;
   messages: AiMessage[];
+};
+
+export type ExecutionPlanStatus =
+  | "draft"
+  | "executing"
+  | "completed"
+  | "refining"
+  | "failed";
+
+export type ExecutionPlanStepStatus =
+  | "pending"
+  | "executing"
+  | "completed"
+  | "failed";
+
+export type ExecutionPlanStepType =
+  | "generate_periods"
+  | "review_periods"
+  | "generate_events_by_category"
+  | "review_events";
+
+export type ExecutionPlanStep = {
+  id: string;
+  order: number;
+  stepType: ExecutionPlanStepType;
+  description: string;
+  status: ExecutionPlanStepStatus;
+  attemptCount: number;
+  proposedChanges: TimelineChange[];
+};
+
+export type ExecutionPlan = {
+  id: string;
+  timelineId: string;
+  status: ExecutionPlanStatus;
+  steps: ExecutionPlanStep[];
+  createdAt: Date;
+};
+
+export type ExecutionPlanSummary = {
+  id: string;
+  timelineId: string;
+  status: ExecutionPlanStatus;
+  sourceMessageId: string;
+  createdAt: Date;
+};
+
+export type PlanProposedChanges = {
+  planId: string;
+  status: ExecutionPlanStatus;
+  operations: TimelineChange[];
 };

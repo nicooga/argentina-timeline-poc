@@ -5,13 +5,21 @@ import { timelineToJson, timelineFromJson } from "./timelineSerialization";
 export type PreviewChangeSet = {
   added: ReadonlySet<string>;
   updated: ReadonlySet<string>;
+  removed: ReadonlySet<string>;
 };
+
+export class TimelineChangeApplyError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TimelineChangeApplyError";
+  }
+}
 
 function slugify(text: string): string {
   return (
     text
       .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "")
+      .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "") || "item"
@@ -24,9 +32,29 @@ function mergeInto(target: JsonItem, data: Record<string, unknown> | null): Json
   if (!data) return target;
   const result = { ...target };
   for (const [k, v] of Object.entries(data)) {
-    if (v !== null && v !== undefined) result[k] = v;
+    if (v !== null && v !== undefined) {
+      result[k] = k === "lanes" ? normalizeLanes(v) : v;
+    }
   }
   return result;
+}
+
+function normalizeLanes(value: unknown): unknown {
+  if (!Array.isArray(value)) return value;
+  return value.map((lane) => {
+    if (lane === "political") return "politico";
+    if (lane === "military") return "militar";
+    if (lane === "economic") return "economico";
+    if (lane === "cultural") return "social";
+    return lane;
+  });
+}
+
+function requireTargetId(change: TimelineChange): string {
+  if (change.target_id == null || change.target_id.trim() === "") {
+    throw new TimelineChangeApplyError(`${change.type} requires target_id`);
+  }
+  return change.target_id;
 }
 
 export function applyChangesLocally(
@@ -39,6 +67,7 @@ export function applyChangesLocally(
 
   const added = new Set<string>();
   const updated = new Set<string>();
+  const removed = new Set<string>();
 
   for (const change of changes) {
     switch (change.type) {
@@ -50,21 +79,28 @@ export function applyChangesLocally(
         break;
       }
       case "update_event": {
+        const targetId = requireTargetId(change);
         let found = false;
         events = events.map((ev) => {
-          if (ev["id"] === change.target_id) {
+          if (ev["id"] === targetId) {
             found = true;
             const next = mergeInto(ev, change.data);
-            updated.add(String(next["id"] ?? change.target_id));
+            updated.add(String(next["id"] ?? targetId));
             return next;
           }
           return ev;
         });
-        if (!found && change.target_id) updated.add(change.target_id);
+        if (!found) throw new TimelineChangeApplyError(`event ${targetId} not found`);
         break;
       }
       case "delete_event": {
-        events = events.filter((ev) => ev["id"] !== change.target_id);
+        const targetId = requireTargetId(change);
+        const before = events.length;
+        events = events.filter((ev) => ev["id"] !== targetId);
+        if (events.length === before) {
+          throw new TimelineChangeApplyError(`event ${targetId} not found`);
+        }
+        removed.add(targetId);
         break;
       }
       case "create_period": {
@@ -75,36 +111,37 @@ export function applyChangesLocally(
         break;
       }
       case "update_period": {
+        const targetId = requireTargetId(change);
         let found = false;
         periods = periods.map((p) => {
-          if (p["id"] === change.target_id) {
+          if (p["id"] === targetId) {
             found = true;
             const next = mergeInto(p, change.data);
-            updated.add(String(next["id"] ?? change.target_id));
+            updated.add(String(next["id"] ?? targetId));
             return next;
           }
           return p;
         });
-        if (!found && change.target_id) updated.add(change.target_id);
+        if (!found) throw new TimelineChangeApplyError(`period ${targetId} not found`);
         break;
       }
       case "delete_period": {
-        periods = periods.filter((p) => p["id"] !== change.target_id);
+        const targetId = requireTargetId(change);
+        const before = periods.length;
+        periods = periods.filter((p) => p["id"] !== targetId);
+        if (periods.length === before) {
+          throw new TimelineChangeApplyError(`period ${targetId} not found`);
+        }
+        removed.add(targetId);
         break;
       }
     }
   }
 
   const previewJson = { events, periods };
-  let previewTimeline: Timeline;
-  try {
-    previewTimeline = timelineFromJson(previewJson);
-  } catch {
-    previewTimeline = timeline;
-  }
 
   return {
-    timeline: previewTimeline,
-    changeSet: { added, updated },
+    timeline: timelineFromJson(previewJson),
+    changeSet: { added, updated, removed },
   };
 }

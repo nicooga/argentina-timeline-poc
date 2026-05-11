@@ -319,6 +319,119 @@
   border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
 }
 
+/* Execution plans */
+.ai-plan-card {
+  margin-top: 0.48rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid color-mix(in srgb, var(--border) 48%, transparent);
+}
+
+.ai-plan-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+}
+
+.ai-plan-card__head strong {
+  font-weight: 800;
+}
+
+.ai-plan-card__head span {
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.ai-plan-card__meta,
+.ai-plan-card__ops,
+.ai-plan-card__error {
+  margin: 0.25rem 0 0;
+  font-size: 0.66rem;
+  line-height: 1.4;
+}
+
+.ai-plan-card__meta {
+  color: var(--muted);
+}
+
+.ai-plan-card__ops {
+  color: color-mix(in srgb, var(--text) 82%, var(--accent));
+  font-weight: 700;
+}
+
+.ai-plan-card__error {
+  color: #e5a39b;
+}
+
+.ai-plan-steps {
+  list-style: none;
+  margin: 0.42rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.24rem;
+}
+
+.ai-plan-step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+  padding: 0.24rem 0.36rem;
+  border: 1px solid color-mix(in srgb, var(--border) 44%, transparent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--bg) 36%, var(--surface));
+  color: var(--muted);
+  font-size: 0.62rem;
+  line-height: 1.3;
+}
+
+.ai-plan-step span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.ai-plan-step--executing {
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--border));
+}
+
+.ai-plan-step--completed {
+  color: color-mix(in srgb, var(--accent) 78%, #22c55e);
+}
+
+.ai-plan-step--failed {
+  color: #e5a39b;
+  border-color: color-mix(in srgb, #d98b82 40%, var(--border));
+}
+
+.ai-plan-card__actions {
+  flex-wrap: wrap;
+}
+
+.ai-plan-refine {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.42rem;
+}
+
+.ai-plan-refine input {
+  min-width: 0;
+  flex: 1;
+  border: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
+  border-radius: 5px;
+  padding: 0.28rem 0.42rem;
+  background: color-mix(in srgb, var(--bg) 48%, var(--surface));
+  color: var(--text);
+  font: inherit;
+  font-size: 0.66rem;
+}
+
 /* Keyboard shortcut labels */
 .ai-shortcut {
   font-family: Inter, system-ui, sans-serif;

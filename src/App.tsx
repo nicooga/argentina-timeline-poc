@@ -57,18 +57,146 @@ import {
   createTimelineRepo,
   type TimelineEventDraft,
   type AiConversation,
+  type ExecutionPlan,
+  type ExecutionPlanStatus,
   type TimelineChange,
   type PreviewChangeSet,
 } from "./timelineEdition";
+import { timelineToJson } from "./timelineEdition/timelineSerialization";
 import { useThemeMode, type ThemeMode } from "./shell/theme";
 import "./App.css";
 
 const timelineRepo = createTimelineRepo();
 const timelineEditionService = new TimelineEditionService(timelineRepo);
-const aiService = new HttpAiService(
-  (import.meta.env.VITE_TIMELINES_API_BASE_URL as string | undefined) ??
-    "https://ukpswhaxmg.us-east-1.awsapprunner.com"
-);
+const DEFAULT_API_BASE_URL = "https://ukpswhaxmg.us-east-1.awsapprunner.com";
+const apiBaseUrl = import.meta.env.VITE_TIMELINES_API_BASE_URL as string | undefined;
+const aiService =
+  apiBaseUrl === "local" ? null : new HttpAiService(apiBaseUrl ?? DEFAULT_API_BASE_URL);
+
+type PlanUiState = {
+  sourceMessageId: string;
+  plan: ExecutionPlan;
+  operations: TimelineChange[];
+  operationsStatus: ExecutionPlanStatus | null;
+  loading: boolean;
+  error: string | null;
+};
+
+function planPreviewId(planId: string): string {
+  return `plan:${planId}`;
+}
+
+function hasVisibleChangeSet(changeSet: PreviewChangeSet): boolean {
+  return (
+    changeSet.added.size > 0 ||
+    changeSet.updated.size > 0 ||
+    changeSet.removed.size > 0
+  );
+}
+
+type TimelineJsonItem = Record<string, unknown>;
+
+function slugifyTimelineId(text: string): string {
+  return (
+    text
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "item"
+  );
+}
+
+function normalizedComparable(field: string, value: unknown): unknown {
+  if (field === "lanes" && Array.isArray(value)) {
+    return value.map((lane) => {
+      if (lane === "political") return "politico";
+      if (lane === "military") return "militar";
+      if (lane === "economic") return "economico";
+      if (lane === "cultural") return "social";
+      return lane;
+    });
+  }
+  if (
+    (field === "date" || field === "start" || field === "end") &&
+    typeof value === "string"
+  ) {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+  }
+  return value;
+}
+
+function matchesData(item: TimelineJsonItem, data: Record<string, unknown> | null): boolean {
+  if (!data) return true;
+  return Object.entries(data).every(([field, value]) => {
+    if (value == null) return true;
+    return (
+      JSON.stringify(normalizedComparable(field, item[field])) ===
+      JSON.stringify(normalizedComparable(field, value))
+    );
+  });
+}
+
+function periodId(period: TimelineJsonItem): string {
+  return String(period["id"] ?? period["title"] ?? "");
+}
+
+function findPeriod(periods: TimelineJsonItem[], idOrTitle: string): TimelineJsonItem | undefined {
+  return periods.find(
+    (item) => periodId(item) === idOrTitle || item["title"] === idOrTitle
+  );
+}
+
+function operationAppliedToTimeline(
+  events: TimelineJsonItem[],
+  periods: TimelineJsonItem[],
+  change: TimelineChange
+): boolean {
+  if (change.type === "create_event") {
+    const id = String(
+      change.data?.id ?? slugifyTimelineId(String(change.data?.title ?? "evento"))
+    );
+    const event = events.find((item) => item["id"] === id);
+    return event != null && matchesData(event, change.data);
+  }
+  if (change.type === "update_event") {
+    const event = events.find((item) => item["id"] === change.target_id);
+    return event != null && matchesData(event, change.data);
+  }
+  if (change.type === "delete_event") {
+    return !events.some((item) => item["id"] === change.target_id);
+  }
+  if (change.type === "create_period") {
+    const id = String(
+      change.data?.id ??
+        slugifyTimelineId(String(change.data?.title ?? "periodo"))
+    );
+    const period = findPeriod(periods, id);
+    return period != null && matchesData(period, change.data);
+  }
+  if (change.type === "update_period") {
+    const period = findPeriod(periods, String(change.target_id ?? ""));
+    return period != null && matchesData(period, change.data);
+  }
+  if (change.type === "delete_period") {
+    return findPeriod(periods, String(change.target_id ?? "")) == null;
+  }
+  return false;
+}
+
+function operationsAppliedToTimeline(
+  timeline: Timeline,
+  changes: readonly TimelineChange[]
+): boolean {
+  if (changes.length === 0) return false;
+  const snapshot = timelineToJson(timeline);
+  const events = snapshot.events as TimelineJsonItem[];
+  const periods = snapshot.periods as TimelineJsonItem[];
+  return changes.every((change) =>
+    operationAppliedToTimeline(events, periods, change)
+  );
+}
 
 function formatDate(d: Date): string {
   return formatHistoricalDate(d);
@@ -695,6 +823,9 @@ export default function App() {
   const [aiAppliedIds, setAiAppliedIds] = useState<ReadonlySet<string>>(new Set());
   const [aiNoEffectIds, setAiNoEffectIds] = useState<ReadonlySet<string>>(new Set());
   const [aiError, setAiError] = useState<AiChatError | null>(null);
+  const [aiPlansByMessageId, setAiPlansByMessageId] = useState<
+    Record<string, PlanUiState>
+  >({});
 
   const [indexOpen, setIndexOpen] = useState(false);
   const [detailCollapsed, setDetailCollapsed] = useState(false);
@@ -784,6 +915,11 @@ export default function App() {
         setTimelineDescription(record.description);
         setTimeline(record.timeline);
         setSel(defaultEventSelection(record.timeline.events));
+        setAiConversation(null);
+        setAiPlansByMessageId({});
+        setPreviewedMessageId(null);
+        setPreviewTimeline(null);
+        setPreviewChangeSet(null);
         setTimelineApiStatus("ready");
       } catch (error) {
         console.error("Could not load timeline from API", error);
@@ -797,15 +933,68 @@ export default function App() {
   }, [timelineSlug]);
 
   useEffect(() => {
-    if (!aiChatOpen || !selectedTimelineId) return;
+    if (!aiChatOpen || !selectedTimelineId || !aiService) return;
     let cancelled = false;
     async function loadConversation() {
       setAiLoading(true);
       try {
-        const conv = await aiService.getConversation(selectedTimelineId!);
-        if (!cancelled) setAiConversation(conv);
-      } catch {
-        // No conversation yet is fine; leave as null
+        const conv = await aiService!.getConversation(selectedTimelineId!);
+        const planSummaries = await aiService!.listPlans(selectedTimelineId!);
+        const planEntries = await Promise.all(
+          planSummaries.map(async (summary) => {
+            const plan = await aiService!.getPlan(selectedTimelineId!, summary.id);
+            let operations: TimelineChange[] = [];
+            let operationsStatus: ExecutionPlanStatus | null = null;
+            if (plan.status === "completed" || plan.status === "failed") {
+              const proposed = await aiService!.getProposedChanges(
+                selectedTimelineId!,
+                plan.id
+              );
+              operations = proposed.operations;
+              operationsStatus = proposed.status;
+            }
+            return {
+              sourceMessageId: summary.sourceMessageId,
+              state: {
+                sourceMessageId: summary.sourceMessageId,
+                plan,
+                operations,
+                operationsStatus,
+                loading: false,
+                error: null,
+              } satisfies PlanUiState,
+            };
+          })
+        );
+        if (cancelled) return;
+
+        const loadedPlans = Object.fromEntries(
+          planEntries.map((entry) => [entry.sourceMessageId, entry.state])
+        );
+        const appliedIds = new Set<string>();
+        for (const message of conv.messages) {
+          if (
+            message.proposedChanges.length > 0 &&
+            operationsAppliedToTimeline(timelineRef.current, message.proposedChanges)
+          ) {
+            appliedIds.add(message.id);
+          }
+        }
+        for (const entry of planEntries) {
+          if (
+            entry.state.operations.length > 0 &&
+            operationsAppliedToTimeline(timelineRef.current, entry.state.operations)
+          ) {
+            appliedIds.add(planPreviewId(entry.state.plan.id));
+          }
+        }
+
+        setAiConversation(conv);
+        setAiPlansByMessageId(loadedPlans);
+        setAiAppliedIds(appliedIds);
+      } catch (error) {
+        console.error("Could not load AI state", error);
+        if (!cancelled) setAiError({ kind: "send", message: String(error) });
       } finally {
         if (!cancelled) setAiLoading(false);
       }
@@ -815,7 +1004,7 @@ export default function App() {
   }, [aiChatOpen, selectedTimelineId]);
 
   const sendAiMessage = useCallback(async (content: string) => {
-    if (!selectedTimelineId) return;
+    if (!selectedTimelineId || !aiService) return;
     setAiSending(true);
     setAiError(null);
 
@@ -826,6 +1015,7 @@ export default function App() {
       content,
       createdAt: new Date(),
       proposedChanges: [] as TimelineChange[],
+      messageType: "response" as const,
     };
     setAiConversation((prev) =>
       prev
@@ -839,17 +1029,26 @@ export default function App() {
 
       // Auto-preview: activar si el último mensaje del asistente tiene cambios
       const lastMsg = conv.messages[conv.messages.length - 1];
-      if (lastMsg?.role === "assistant" && lastMsg.proposedChanges.length > 0) {
-        const { timeline: preview, changeSet } = applyChangesLocally(
-          timelineRef.current,
-          lastMsg.proposedChanges
-        );
-        if (changeSet.added.size === 0 && changeSet.updated.size === 0) {
-          setAiNoEffectIds((prev) => new Set([...prev, lastMsg.id]));
-        } else {
-          setPreviewTimeline(preview);
-          setPreviewChangeSet(changeSet);
-          setPreviewedMessageId(lastMsg.id);
+      if (
+        lastMsg?.role === "assistant" &&
+        lastMsg.messageType === "response" &&
+        lastMsg.proposedChanges.length > 0
+      ) {
+        try {
+          const { timeline: preview, changeSet } = applyChangesLocally(
+            timelineRef.current,
+            lastMsg.proposedChanges
+          );
+          if (!hasVisibleChangeSet(changeSet)) {
+            setAiNoEffectIds((prev) => new Set([...prev, lastMsg.id]));
+          } else {
+            setPreviewTimeline(preview);
+            setPreviewChangeSet(changeSet);
+            setPreviewedMessageId(lastMsg.id);
+          }
+        } catch (error) {
+          console.error("AI preview failed", error);
+          setAiError({ kind: "preview", message: String(error) });
         }
       }
     } catch (error) {
@@ -867,7 +1066,7 @@ export default function App() {
   }, [selectedTimelineId]);
 
   const applyAiChanges = useCallback(async (changes: TimelineChange[], messageId: string) => {
-    if (!selectedTimelineId) return;
+    if (!selectedTimelineId || !aiService) return;
     setAiApplyingMessageId(messageId);
     setAiError(null);
     try {
@@ -896,15 +1095,245 @@ export default function App() {
   }, [cancelPreview]);
 
   const startPreview = useCallback((changes: TimelineChange[], messageId: string) => {
-    const { timeline: preview, changeSet } = applyChangesLocally(timeline, changes);
-    if (changeSet.added.size === 0 && changeSet.updated.size === 0) {
-      setAiNoEffectIds((prev) => new Set([...prev, messageId]));
-      return;
+    try {
+      const { timeline: preview, changeSet } = applyChangesLocally(timeline, changes);
+      if (!hasVisibleChangeSet(changeSet)) {
+        setAiNoEffectIds((prev) => new Set([...prev, messageId]));
+        return;
+      }
+      setPreviewTimeline(preview);
+      setPreviewChangeSet(changeSet);
+      setPreviewedMessageId(messageId);
+    } catch (error) {
+      console.error("AI preview failed", error);
+      setAiError({ kind: "preview", message: String(error) });
     }
-    setPreviewTimeline(preview);
-    setPreviewChangeSet(changeSet);
-    setPreviewedMessageId(messageId);
   }, [timeline]);
+
+  const refreshPlan = useCallback(
+    async (planId: string) => {
+      if (!selectedTimelineId || !aiService) return null;
+      const plan = await aiService.getPlan(selectedTimelineId, planId);
+      let operations: TimelineChange[] | null = null;
+      let operationsStatus: ExecutionPlanStatus | null = null;
+      if (plan.status === "completed" || plan.status === "failed") {
+        const proposed = await aiService.getProposedChanges(selectedTimelineId, plan.id);
+        operations = proposed.operations;
+        operationsStatus = proposed.status;
+      }
+      if (
+        operations != null &&
+        operationsAppliedToTimeline(timelineRef.current, operations)
+      ) {
+        setAiAppliedIds((prev) => new Set([...prev, planPreviewId(plan.id)]));
+      }
+      setAiPlansByMessageId((prev) => {
+        const entry = Object.values(prev).find((item) => item.plan.id === plan.id);
+        if (!entry) return prev;
+        return {
+          ...prev,
+          [entry.sourceMessageId]: {
+            ...entry,
+            plan,
+            operations: operations ?? entry.operations,
+            operationsStatus: operationsStatus ?? entry.operationsStatus,
+            loading: false,
+            error: null,
+          },
+        };
+      });
+      return plan;
+    },
+    [selectedTimelineId]
+  );
+
+  const startAiPlan = useCallback(
+    async (messageId: string) => {
+      if (!selectedTimelineId || !aiService) return;
+      setAiPlansByMessageId((prev) => {
+        const current = prev[messageId];
+        return {
+          ...prev,
+          [messageId]: current
+            ? { ...current, loading: true, error: null }
+            : {
+                sourceMessageId: messageId,
+                plan: {
+                  id: `pending-${messageId}`,
+                  timelineId: selectedTimelineId,
+                  status: "draft",
+                  steps: [],
+                  createdAt: new Date(),
+                },
+                operations: [],
+                operationsStatus: null,
+                loading: true,
+                error: null,
+              },
+        };
+      });
+      try {
+        const plan = await aiService.startPlan(selectedTimelineId, messageId);
+        setAiPlansByMessageId((prev) => ({
+          ...prev,
+          [messageId]: {
+            sourceMessageId: messageId,
+            plan,
+            operations: [],
+            operationsStatus: null,
+            loading: false,
+            error: null,
+          },
+        }));
+      } catch (error) {
+        console.error("Start plan failed", error);
+        setAiPlansByMessageId((prev) => {
+          const current = prev[messageId];
+          if (!current) return prev;
+          return {
+            ...prev,
+            [messageId]: { ...current, loading: false, error: String(error) },
+          };
+        });
+      }
+    },
+    [selectedTimelineId]
+  );
+
+  const executeAiPlan = useCallback(
+    async (planId: string) => {
+      if (!selectedTimelineId || !aiService) return;
+      const entry = Object.values(aiPlansByMessageId).find(
+        (item) => item.plan.id === planId
+      );
+      if (!entry) return;
+      setAiPlansByMessageId((prev) => ({
+        ...prev,
+        [entry.sourceMessageId]: { ...entry, loading: true, error: null },
+      }));
+      try {
+        await aiService.executePlan(selectedTimelineId, planId);
+        await refreshPlan(planId);
+      } catch (error) {
+        console.error("Execute plan failed", error);
+        setAiPlansByMessageId((prev) => ({
+          ...prev,
+          [entry.sourceMessageId]: {
+            ...prev[entry.sourceMessageId]!,
+            loading: false,
+            error: String(error),
+          },
+        }));
+      }
+    },
+    [aiPlansByMessageId, refreshPlan, selectedTimelineId]
+  );
+
+  const previewAiPlan = useCallback(
+    (planId: string) => {
+      const entry = Object.values(aiPlansByMessageId).find(
+        (item) => item.plan.id === planId
+      );
+      if (!entry || entry.operations.length === 0) return;
+      const sourceId = planPreviewId(planId);
+      try {
+        const { timeline: preview, changeSet } = applyChangesLocally(
+          timeline,
+          entry.operations
+        );
+        if (!hasVisibleChangeSet(changeSet)) return;
+        setPreviewTimeline(preview);
+        setPreviewChangeSet(changeSet);
+        setPreviewedMessageId(sourceId);
+      } catch (error) {
+        console.error("Plan preview failed", error);
+        setAiError({ kind: "preview", message: String(error) });
+      }
+    },
+    [aiPlansByMessageId, timeline]
+  );
+
+  const applyAiPlan = useCallback(
+    async (planId: string) => {
+      if (!selectedTimelineId || !aiService) return;
+      const entry = Object.values(aiPlansByMessageId).find(
+        (item) => item.plan.id === planId
+      );
+      if (!entry || entry.operations.length === 0) return;
+      setAiApplyingMessageId(planPreviewId(planId));
+      setAiError(null);
+      try {
+        const record = await aiService.applyOperations(
+          selectedTimelineId,
+          entry.operations
+        );
+        setTimeline(record.timeline);
+        setAiAppliedIds((prev) => new Set([...prev, planPreviewId(planId)]));
+        setPreviewedMessageId(null);
+        setPreviewTimeline(null);
+        setPreviewChangeSet(null);
+      } catch (error) {
+        console.error("Apply plan operations failed", error);
+        setAiError({ kind: "apply", message: String(error) });
+      } finally {
+        setAiApplyingMessageId(null);
+      }
+    },
+    [aiPlansByMessageId, selectedTimelineId]
+  );
+
+  const refineAiPlan = useCallback(
+    async (planId: string, prompt: string) => {
+      if (!selectedTimelineId || !aiService) return;
+      const entry = Object.values(aiPlansByMessageId).find(
+        (item) => item.plan.id === planId
+      );
+      if (!entry) return;
+      setAiPlansByMessageId((prev) => ({
+        ...prev,
+        [entry.sourceMessageId]: { ...entry, loading: true, error: null },
+      }));
+      try {
+        await aiService.refinePlan(selectedTimelineId, planId, prompt.trim() || null);
+        await refreshPlan(planId);
+      } catch (error) {
+        console.error("Refine plan failed", error);
+        setAiPlansByMessageId((prev) => ({
+          ...prev,
+          [entry.sourceMessageId]: {
+            ...prev[entry.sourceMessageId]!,
+            loading: false,
+            error: String(error),
+          },
+        }));
+      }
+    },
+    [aiPlansByMessageId, refreshPlan, selectedTimelineId]
+  );
+
+  useEffect(() => {
+    if (!selectedTimelineId || !aiService) return;
+    const activePlanIds = Object.values(aiPlansByMessageId)
+      .map((entry) => entry.plan)
+      .filter((plan) => plan.status === "executing" || plan.status === "refining")
+      .map((plan) => plan.id);
+    if (activePlanIds.length === 0) return;
+
+    let cancelled = false;
+    const poll = () => {
+      for (const planId of activePlanIds) {
+        void refreshPlan(planId).catch((error) => {
+          if (!cancelled) console.error("Plan polling failed", error);
+        });
+      }
+    };
+    const intervalId = window.setInterval(poll, 2000);
+    poll();
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
+  }, [aiPlansByMessageId, refreshPlan, selectedTimelineId]);
 
   const axisShowYearFlags = useMemo(
     () => computeAxisShowYearFlags(axisMarks),
@@ -2368,8 +2797,17 @@ export default function App() {
           />
         ) : null}
         <KeyboardHelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
-        {previewMode && <div className="preview-viewport-ring" aria-hidden />}
-        {selectedTimelineId ? (
+        {previewMode && (
+          <>
+            <div className="preview-viewport-ring" aria-hidden />
+            <div className="preview-mode-banner" role="status">
+              {previewedMessageId?.startsWith("plan:")
+                ? "Preview de plan AI"
+                : "Preview de cambios del agente"}
+            </div>
+          </>
+        )}
+        {selectedTimelineId && aiService ? (
           <AiChatPanel
             collapsed={!aiChatOpen}
             conversation={aiConversation}
@@ -2379,6 +2817,7 @@ export default function App() {
             appliedMessageIds={aiAppliedIds}
             noEffectMessageIds={aiNoEffectIds}
             previewedMessageId={previewedMessageId}
+            planStates={aiPlansByMessageId}
             error={aiError}
             onToggleCollapsed={() => setAiChatOpen((open) => !open)}
             onSend={sendAiMessage}
@@ -2386,6 +2825,11 @@ export default function App() {
             onDismiss={dismissAiChanges}
             onPreview={startPreview}
             onCancelPreview={cancelPreview}
+            onStartPlan={startAiPlan}
+            onExecutePlan={executeAiPlan}
+            onPreviewPlan={previewAiPlan}
+            onApplyPlan={applyAiPlan}
+            onRefinePlan={refineAiPlan}
           />
         ) : null}
       </div>

@@ -7,11 +7,22 @@ import React, {
 import type {
   AiConversation,
   AiMessage,
+  ExecutionPlan,
+  ExecutionPlanStep,
   TimelineChange,
 } from "../timelineEdition/aiConversation";
 import "./AiChatPanel.css";
 
-export type AiChatError = { kind: "send" | "apply"; message: string };
+export type AiChatError = { kind: "send" | "apply" | "preview"; message: string };
+
+export type AiPlanPanelState = {
+  sourceMessageId: string;
+  plan: ExecutionPlan;
+  operations: TimelineChange[];
+  operationsStatus: ExecutionPlan["status"] | null;
+  loading: boolean;
+  error: string | null;
+};
 
 type Props = {
   collapsed: boolean;
@@ -22,6 +33,7 @@ type Props = {
   appliedMessageIds: ReadonlySet<string>;
   noEffectMessageIds: ReadonlySet<string>;
   previewedMessageId: string | null;
+  planStates: Readonly<Record<string, AiPlanPanelState>>;
   error: AiChatError | null;
   onToggleCollapsed: () => void;
   onSend: (content: string) => void;
@@ -29,6 +41,11 @@ type Props = {
   onDismiss: (messageId: string) => void;
   onPreview: (changes: TimelineChange[], messageId: string) => void;
   onCancelPreview: () => void;
+  onStartPlan: (messageId: string) => void;
+  onExecutePlan: (planId: string) => void;
+  onPreviewPlan: (planId: string) => void;
+  onApplyPlan: (planId: string) => void;
+  onRefinePlan: (planId: string, prompt: string) => void;
 };
 
 const CHANGE_TYPE_LABELS: Record<string, string> = {
@@ -199,6 +216,179 @@ function ProposedChanges({
   );
 }
 
+const STEP_LABELS: Record<string, string> = {
+  generate_periods: "Períodos",
+  review_periods: "Revisión de períodos",
+  generate_events_by_category: "Eventos",
+  review_events: "Revisión de eventos",
+};
+
+const PLAN_STATUS_LABELS: Record<string, string> = {
+  draft: "Borrador",
+  executing: "Ejecutando",
+  completed: "Completado",
+  refining: "Refinando",
+  failed: "Falló",
+};
+
+function countOperations(changes: readonly TimelineChange[]): string {
+  const parts = [
+    compactCount(changes, "create_period", "período nuevo", "períodos nuevos"),
+    compactCount(changes, "create_event", "evento nuevo", "eventos nuevos"),
+    compactCount(changes, "update_period", "período actualizado", "períodos actualizados"),
+    compactCount(changes, "update_event", "evento actualizado", "eventos actualizados"),
+    compactCount(changes, "delete_period", "período removido", "períodos removidos"),
+    compactCount(changes, "delete_event", "evento removido", "eventos removidos"),
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(" · ") : "Sin operaciones listas";
+}
+
+function compactCount(
+  changes: readonly TimelineChange[],
+  type: TimelineChange["type"],
+  singular: string,
+  plural: string
+): string | null {
+  const count = changes.filter((change) => change.type === type).length;
+  if (count === 0) return null;
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function PlanStepSummary({ steps }: { steps: ExecutionPlanStep[] }) {
+  const eventSteps = steps.filter((step) => step.stepType === "generate_events_by_category");
+  const otherSteps = steps.filter((step) => step.stepType !== "generate_events_by_category");
+  const eventCompleted = eventSteps.filter((step) => step.status === "completed").length;
+  const eventExecuting = eventSteps.filter((step) => step.status === "executing").length;
+  const eventFailed = eventSteps.filter((step) => step.status === "failed").length;
+
+  return (
+    <ul className="ai-plan-steps">
+      {otherSteps.map((step) => (
+        <li key={step.id} className={`ai-plan-step ai-plan-step--${step.status}`}>
+          <span>{STEP_LABELS[step.stepType] ?? step.description}</span>
+          <span>
+            {step.status}
+            {step.attemptCount > 0 ? ` · ${step.attemptCount}` : ""}
+          </span>
+        </li>
+      ))}
+      {eventSteps.length > 0 ? (
+        <li className={`ai-plan-step${eventFailed > 0 ? " ai-plan-step--failed" : ""}`}>
+          <span>Eventos por categoría</span>
+          <span>
+            {eventCompleted}/{eventSteps.length}
+            {eventExecuting > 0 ? ` · ${eventExecuting} activo` : ""}
+            {eventFailed > 0 ? ` · ${eventFailed} falló` : ""}
+          </span>
+        </li>
+      ) : null}
+    </ul>
+  );
+}
+
+function PlanCard({
+  state,
+  previewing,
+  applying,
+  applied,
+  onExecutePlan,
+  onPreviewPlan,
+  onApplyPlan,
+  onRefinePlan,
+}: {
+  state: AiPlanPanelState;
+  previewing: boolean;
+  applying: boolean;
+  applied: boolean;
+  onExecutePlan: (planId: string) => void;
+  onPreviewPlan: (planId: string) => void;
+  onApplyPlan: (planId: string) => void;
+  onRefinePlan: (planId: string, prompt: string) => void;
+}) {
+  const [refinePrompt, setRefinePrompt] = useState("");
+  const { plan, operations, loading, error } = state;
+  const completed = plan.steps.filter((step) => step.status === "completed").length;
+  const hasOperations = operations.length > 0;
+  const active = plan.status === "executing" || plan.status === "refining";
+  const partial = plan.status === "failed" && hasOperations;
+
+  return (
+    <div className={`ai-plan-card ai-plan-card--${plan.status}`}>
+      <div className="ai-plan-card__head">
+        <strong>Plan de ejecución</strong>
+        <span>{PLAN_STATUS_LABELS[plan.status] ?? plan.status}</span>
+      </div>
+      <p className="ai-plan-card__meta">
+        {completed}/{plan.steps.length} pasos completados
+        {loading || active ? " · actualizando" : ""}
+      </p>
+      {plan.steps.length > 0 ? <PlanStepSummary steps={plan.steps} /> : null}
+      {hasOperations ? (
+        <p className="ai-plan-card__ops">
+          {applied ? "Aplicado: " : partial ? "Preview parcial: " : ""}
+          {countOperations(operations)}
+        </p>
+      ) : null}
+      {error ? <p className="ai-plan-card__error">{error}</p> : null}
+      <div className="ai-chat-changes__actions ai-plan-card__actions">
+        {plan.status === "draft" ? (
+          <button
+            type="button"
+            className="viewer-editor-btn"
+            disabled={loading}
+            onClick={() => onExecutePlan(plan.id)}
+          >
+            {loading ? "Preparando…" : "Ejecutar plan"}
+          </button>
+        ) : null}
+        {(plan.status === "completed" || partial) && hasOperations && !applied ? (
+          <>
+            <button
+              type="button"
+              className={`viewer-editor-btn ai-chat-changes__preview-btn${previewing ? " ai-chat-changes__preview-btn--active" : ""}`}
+              onClick={() => onPreviewPlan(plan.id)}
+            >
+              {previewing ? "Preview activo" : partial ? "Ver preview parcial" : "Ver preview"}
+            </button>
+            <button
+              type="button"
+              className="viewer-editor-btn"
+              disabled={applying}
+              onClick={() => onApplyPlan(plan.id)}
+            >
+              {applying ? "Aplicando…" : "Aplicar cambios"}
+            </button>
+          </>
+        ) : null}
+      </div>
+      {plan.status === "completed" ? (
+        <form
+          className="ai-plan-refine"
+          onSubmit={(event) => {
+            event.preventDefault();
+            onRefinePlan(plan.id, refinePrompt);
+            setRefinePrompt("");
+          }}
+        >
+          <input
+            value={refinePrompt}
+            onChange={(event) => setRefinePrompt(event.target.value)}
+            placeholder="Refinar con una indicación opcional"
+            aria-label="Indicación para refinar el plan"
+          />
+          <button type="submit" className="viewer-editor-btn" disabled={loading}>
+            Refinar
+          </button>
+        </form>
+      ) : null}
+    </div>
+  );
+}
+
+function planPreviewId(planId: string): string {
+  return `plan:${planId}`;
+}
+
 function MessageBubble({
   message,
   applyingMessageId,
@@ -208,20 +398,34 @@ function MessageBubble({
   onApply,
   onPreview,
   onCancelPreview,
+  planState,
+  onStartPlan,
+  onExecutePlan,
+  onPreviewPlan,
+  onApplyPlan,
+  onRefinePlan,
 }: {
   message: AiMessage;
   applyingMessageId: string | null;
   appliedMessageIds: ReadonlySet<string>;
   noEffectMessageIds: ReadonlySet<string>;
   previewedMessageId: string | null;
+  planState: AiPlanPanelState | null;
   onApply: (changes: TimelineChange[], messageId: string) => void;
   onPreview: (changes: TimelineChange[], messageId: string) => void;
   onCancelPreview: () => void;
+  onStartPlan: (messageId: string) => void;
+  onExecutePlan: (planId: string) => void;
+  onPreviewPlan: (planId: string) => void;
+  onApplyPlan: (planId: string) => void;
+  onRefinePlan: (planId: string, prompt: string) => void;
 }) {
+  const isPlanProposal =
+    message.role === "assistant" && message.messageType === "plan_proposal";
   return (
     <div className={`ai-chat-bubble ai-chat-bubble--${message.role}`}>
       <p className="ai-chat-bubble__content">{message.content}</p>
-      {message.role === "assistant" && (
+      {message.role === "assistant" && message.messageType === "response" && (
         <ProposedChanges
           message={message}
           applyingMessageId={applyingMessageId}
@@ -233,6 +437,29 @@ function MessageBubble({
           onCancelPreview={onCancelPreview}
         />
       )}
+      {isPlanProposal && !planState ? (
+        <div className="ai-plan-card">
+          <button
+            type="button"
+            className="viewer-editor-btn"
+            onClick={() => onStartPlan(message.id)}
+          >
+            Crear plan
+          </button>
+        </div>
+      ) : null}
+      {planState ? (
+        <PlanCard
+          state={planState}
+          previewing={previewedMessageId === planPreviewId(planState.plan.id)}
+          applying={applyingMessageId === planPreviewId(planState.plan.id)}
+          applied={appliedMessageIds.has(planPreviewId(planState.plan.id))}
+          onExecutePlan={onExecutePlan}
+          onPreviewPlan={onPreviewPlan}
+          onApplyPlan={onApplyPlan}
+          onRefinePlan={onRefinePlan}
+        />
+      ) : null}
     </div>
   );
 }
@@ -246,12 +473,18 @@ export function AiChatPanel({
   appliedMessageIds,
   noEffectMessageIds,
   previewedMessageId,
+  planStates,
   error,
   onToggleCollapsed,
   onSend,
   onApply,
   onPreview,
   onCancelPreview,
+  onStartPlan,
+  onExecutePlan,
+  onPreviewPlan,
+  onApplyPlan,
+  onRefinePlan,
 }: Props) {
   const [draft, setDraft] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -359,9 +592,15 @@ export function AiChatPanel({
                   appliedMessageIds={appliedMessageIds}
                   noEffectMessageIds={noEffectMessageIds}
                   previewedMessageId={previewedMessageId}
+                  planState={planStates[msg.id] ?? null}
                   onApply={onApply}
                   onPreview={onPreview}
                   onCancelPreview={onCancelPreview}
+                  onStartPlan={onStartPlan}
+                  onExecutePlan={onExecutePlan}
+                  onPreviewPlan={onPreviewPlan}
+                  onApplyPlan={onApplyPlan}
+                  onRefinePlan={onRefinePlan}
                 />
               ))
             )}
@@ -381,7 +620,9 @@ export function AiChatPanel({
             <div className="ai-chat-error" role="alert">
               {error.kind === "send"
                 ? "No se pudo enviar el mensaje. Intentá de nuevo."
-                : "No se pudieron aplicar los cambios. Intentá de nuevo."}
+                : error.kind === "preview"
+                  ? "No se pudo generar la vista previa."
+                  : "No se pudieron aplicar los cambios. Intentá de nuevo."}
             </div>
           )}
 
