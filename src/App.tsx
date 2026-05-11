@@ -62,6 +62,7 @@ import {
   type TimelineChange,
   type PreviewChangeSet,
 } from "./timelineEdition";
+import { timelineToJson } from "./timelineEdition/timelineSerialization";
 import { useThemeMode, type ThemeMode } from "./shell/theme";
 import "./App.css";
 
@@ -90,6 +91,110 @@ function hasVisibleChangeSet(changeSet: PreviewChangeSet): boolean {
     changeSet.added.size > 0 ||
     changeSet.updated.size > 0 ||
     changeSet.removed.size > 0
+  );
+}
+
+type TimelineJsonItem = Record<string, unknown>;
+
+function slugifyTimelineId(text: string): string {
+  return (
+    text
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "item"
+  );
+}
+
+function normalizedComparable(field: string, value: unknown): unknown {
+  if (field === "lanes" && Array.isArray(value)) {
+    return value.map((lane) => {
+      if (lane === "political") return "politico";
+      if (lane === "military") return "militar";
+      if (lane === "economic") return "economico";
+      if (lane === "cultural") return "social";
+      return lane;
+    });
+  }
+  if (
+    (field === "date" || field === "start" || field === "end") &&
+    typeof value === "string"
+  ) {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+  }
+  return value;
+}
+
+function matchesData(item: TimelineJsonItem, data: Record<string, unknown> | null): boolean {
+  if (!data) return true;
+  return Object.entries(data).every(([field, value]) => {
+    if (value == null) return true;
+    return (
+      JSON.stringify(normalizedComparable(field, item[field])) ===
+      JSON.stringify(normalizedComparable(field, value))
+    );
+  });
+}
+
+function periodId(period: TimelineJsonItem): string {
+  return String(period["id"] ?? period["title"] ?? "");
+}
+
+function findPeriod(periods: TimelineJsonItem[], idOrTitle: string): TimelineJsonItem | undefined {
+  return periods.find(
+    (item) => periodId(item) === idOrTitle || item["title"] === idOrTitle
+  );
+}
+
+function operationAppliedToTimeline(
+  events: TimelineJsonItem[],
+  periods: TimelineJsonItem[],
+  change: TimelineChange
+): boolean {
+  if (change.type === "create_event") {
+    const id = String(
+      change.data?.id ?? slugifyTimelineId(String(change.data?.title ?? "evento"))
+    );
+    const event = events.find((item) => item["id"] === id);
+    return event != null && matchesData(event, change.data);
+  }
+  if (change.type === "update_event") {
+    const event = events.find((item) => item["id"] === change.target_id);
+    return event != null && matchesData(event, change.data);
+  }
+  if (change.type === "delete_event") {
+    return !events.some((item) => item["id"] === change.target_id);
+  }
+  if (change.type === "create_period") {
+    const id = String(
+      change.data?.id ??
+        slugifyTimelineId(String(change.data?.title ?? "periodo"))
+    );
+    const period = findPeriod(periods, id);
+    return period != null && matchesData(period, change.data);
+  }
+  if (change.type === "update_period") {
+    const period = findPeriod(periods, String(change.target_id ?? ""));
+    return period != null && matchesData(period, change.data);
+  }
+  if (change.type === "delete_period") {
+    return findPeriod(periods, String(change.target_id ?? "")) == null;
+  }
+  return false;
+}
+
+function operationsAppliedToTimeline(
+  timeline: Timeline,
+  changes: readonly TimelineChange[]
+): boolean {
+  if (changes.length === 0) return false;
+  const snapshot = timelineToJson(timeline);
+  const events = snapshot.events as TimelineJsonItem[];
+  const periods = snapshot.periods as TimelineJsonItem[];
+  return changes.every((change) =>
+    operationAppliedToTimeline(events, periods, change)
   );
 }
 
@@ -834,9 +939,62 @@ export default function App() {
       setAiLoading(true);
       try {
         const conv = await aiService!.getConversation(selectedTimelineId!);
-        if (!cancelled) setAiConversation(conv);
-      } catch {
-        // No conversation yet is fine; leave as null
+        const planSummaries = await aiService!.listPlans(selectedTimelineId!);
+        const planEntries = await Promise.all(
+          planSummaries.map(async (summary) => {
+            const plan = await aiService!.getPlan(selectedTimelineId!, summary.id);
+            let operations: TimelineChange[] = [];
+            let operationsStatus: ExecutionPlanStatus | null = null;
+            if (plan.status === "completed" || plan.status === "failed") {
+              const proposed = await aiService!.getProposedChanges(
+                selectedTimelineId!,
+                plan.id
+              );
+              operations = proposed.operations;
+              operationsStatus = proposed.status;
+            }
+            return {
+              sourceMessageId: summary.sourceMessageId,
+              state: {
+                sourceMessageId: summary.sourceMessageId,
+                plan,
+                operations,
+                operationsStatus,
+                loading: false,
+                error: null,
+              } satisfies PlanUiState,
+            };
+          })
+        );
+        if (cancelled) return;
+
+        const loadedPlans = Object.fromEntries(
+          planEntries.map((entry) => [entry.sourceMessageId, entry.state])
+        );
+        const appliedIds = new Set<string>();
+        for (const message of conv.messages) {
+          if (
+            message.proposedChanges.length > 0 &&
+            operationsAppliedToTimeline(timelineRef.current, message.proposedChanges)
+          ) {
+            appliedIds.add(message.id);
+          }
+        }
+        for (const entry of planEntries) {
+          if (
+            entry.state.operations.length > 0 &&
+            operationsAppliedToTimeline(timelineRef.current, entry.state.operations)
+          ) {
+            appliedIds.add(planPreviewId(entry.state.plan.id));
+          }
+        }
+
+        setAiConversation(conv);
+        setAiPlansByMessageId(loadedPlans);
+        setAiAppliedIds(appliedIds);
+      } catch (error) {
+        console.error("Could not load AI state", error);
+        if (!cancelled) setAiError({ kind: "send", message: String(error) });
       } finally {
         if (!cancelled) setAiLoading(false);
       }
@@ -962,6 +1120,12 @@ export default function App() {
         const proposed = await aiService.getProposedChanges(selectedTimelineId, plan.id);
         operations = proposed.operations;
         operationsStatus = proposed.status;
+      }
+      if (
+        operations != null &&
+        operationsAppliedToTimeline(timelineRef.current, operations)
+      ) {
+        setAiAppliedIds((prev) => new Set([...prev, planPreviewId(plan.id)]));
       }
       setAiPlansByMessageId((prev) => {
         const entry = Object.values(prev).find((item) => item.plan.id === plan.id);
