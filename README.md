@@ -40,21 +40,35 @@ VITE_TIMELINES_API_BASE_URL=local npm run dev
 
 ## Storybook
 
+<<<<<<< HEAD
 The repo includes [Storybook](https://storybook.js.org/) for reviewing isolated UI components
 without starting the full viewer.
+=======
+The repo includes [Storybook](https://storybook.js.org/) for isolating and reviewing UI components
+without starting the full viewer. Configuration lives in [`.storybook/`](./.storybook/).
+>>>>>>> 6034c84 (chore: Add storybook)
 
 ```bash
 npm run storybook
 ```
 
+<<<<<<< HEAD
 Storybook serves the UI at `http://localhost:6006` by default. Static Storybook output is generated
 with:
+=======
+Storybook serves the UI at `http://localhost:6006` by default. Build the static site with:
+>>>>>>> 6034c84 (chore: Add storybook)
 
 ```bash
 npm run build-storybook
 ```
 
+<<<<<<< HEAD
 Stories follow the `src/**/*.stories.@(ts|tsx)` pattern. Files named `*.story.*` are not loaded.
+=======
+Stories follow the `src/**/*.stories.@(ts|tsx)` pattern, for example
+`src/shell/KeyboardHelpModal.stories.tsx`. Files named `*.story.*` are not loaded.
+>>>>>>> 6034c84 (chore: Add storybook)
 
 ## Scripts
 
@@ -124,6 +138,8 @@ src/
 Root-level domain/data files include `types.ts`, `eventLanes.ts`, `causality.ts`, and
 `timelineHistoriaArgentina.ts`.
 
+Storybook stories live next to the component as `*.stories.tsx` files inside `src/`.
+
 ## Naming Rules
 
 ESLint enforces source naming conventions:
@@ -159,7 +175,11 @@ Events can belong to one or more semantic lanes:
 - `social`
 - `diplomatico`
 
+<<<<<<< HEAD
 Visual configuration and lane order live in [`eventLanes.ts`](./eventLanes.ts).
+=======
+The lane display configuration and order live in [`eventLanes.ts`](./eventLanes.ts).
+>>>>>>> 6034c84 (chore: Add storybook)
 
 ## Specs
 
@@ -202,17 +222,35 @@ npm run test:ci
 npm run build
 ```
 
+Vitest looks for tests matching `src/**/*.test.ts`, as configured in [`vite.config.ts`](./vite.config.ts).
+
+The execution-plan E2E smoke test lives in
+[`src/timelineEdition/executionPlan.e2e.test.ts`](./src/timelineEdition/executionPlan.e2e.test.ts).
+It is skipped by default because it uses a real backend and can trigger Bedrock calls. Run it with:
+
+```bash
+TIMELINES_E2E_API_BASE_URL=http://127.0.0.1:8000 npm run test:e2e
+```
+
 If CSS touches the viewer, manually verify wide and narrow viewports, with and without an active
 selection, and confirm there is no global vertical scroll or phantom scrollbar in the chart.
 
 ## Deployment
 
+<<<<<<< HEAD
 GitHub Actions workflows handle CI and deploy:
+=======
+GitHub Actions workflows handle CI and deployment:
+>>>>>>> 6034c84 (chore: Add storybook)
 
 - [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)
 - [`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml)
 
+<<<<<<< HEAD
 The build uses `GITHUB_REPOSITORY` to configure `base` as `/<repo>/` during GitHub Pages deploys.
+=======
+The build uses `GITHUB_REPOSITORY` to configure `base` as `/<repo>/` for GitHub Pages deployment.
+>>>>>>> 6034c84 (chore: Add storybook)
 Local builds use `/`.
 
 ## Agent Guide

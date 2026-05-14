@@ -10,7 +10,9 @@
     "lint": "eslint .",
     "test": "vitest",
     "test:ci": "vitest run",
-    "test:e2e": "vitest run src/timelineEdition/executionPlan.e2e.test.ts"
+    "test:e2e": "vitest run src/timelineEdition/executionPlan.e2e.test.ts",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "react": "^19.0.0",
@@ -30,6 +32,17 @@
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.59.1",
     "vite": "^6.0.3",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "storybook": "^10.3.6",
+    "@storybook/react-vite": "^10.3.6",
+    "@chromatic-com/storybook": "^5.1.2",
+    "@storybook/addon-vitest": "^10.3.6",
+    "@storybook/addon-a11y": "^10.3.6",
+    "@storybook/addon-docs": "^10.3.6",
+    "@storybook/addon-onboarding": "^10.3.6",
+    "eslint-plugin-storybook": "^10.3.6",
+    "playwright": "^1.60.0",
+    "@vitest/browser": "^3.2.4",
+    "@vitest/coverage-v8": "^3.2.4"
   }
 }
