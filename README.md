@@ -32,29 +32,34 @@ Use another backend with:
 VITE_TIMELINES_API_BASE_URL=http://127.0.0.1:8000 npm run dev
 ```
 
-<<<<<<< Updated upstream
-Para forzar el repositorio local anterior, usar `VITE_TIMELINES_API_BASE_URL=local`.
-=======
 Use the legacy local repository with:
 
 ```bash
 VITE_TIMELINES_API_BASE_URL=local npm run dev
 ```
->>>>>>> Stashed changes
+
+## Storybook
+
+The repo includes [Storybook](https://storybook.js.org/) for reviewing isolated UI components
+without starting the full viewer.
+
+```bash
+npm run storybook
+```
+
+Storybook serves the UI at `http://localhost:6006` by default. Static Storybook output is generated
+with:
+
+```bash
+npm run build-storybook
+```
+
+Stories follow the `src/**/*.stories.@(ts|tsx)` pattern. Files named `*.story.*` are not loaded.
 
 ## Scripts
 
 | Command | Description |
 | --- | --- |
-<<<<<<< Updated upstream
-| `npm run dev` | Levanta el servidor de desarrollo con hot reload. |
-| `npm run build` | Ejecuta `tsc`, genera el build en `dist/` y copia `index.html` como `404.html` para GitHub Pages. |
-| `npm run preview` | Sirve localmente el build de producción. |
-| `npm run lint` | Ejecuta ESLint sobre el proyecto. |
-| `npm run test` | Ejecuta Vitest en modo interactivo/watch. |
-| `npm run test:ci` | Ejecuta la suite de tests una vez, pensado para CI. |
-| `npm run test:e2e` | Ejecuta el smoke E2E de Execution Plans si `TIMELINES_E2E_API_BASE_URL` apunta a un backend real. |
-=======
 | `npm run dev` | Start the Vite development server. |
 | `npm run build` | Run TypeScript, build `dist/`, and copy `index.html` to `404.html`. |
 | `npm run preview` | Serve the production build locally. |
@@ -64,7 +69,6 @@ VITE_TIMELINES_API_BASE_URL=local npm run dev
 | `npm run test:e2e` | Run the execution-plan E2E smoke test against a real backend. |
 | `npm run storybook` | Start Storybook at `http://localhost:6006`. |
 | `npm run build-storybook` | Build the static Storybook site. |
->>>>>>> Stashed changes
 
 ## Routes
 
@@ -77,39 +81,19 @@ VITE_TIMELINES_API_BASE_URL=local npm run dev
 The router basename comes from `import.meta.env.BASE_URL`, so GitHub Pages can serve the app under
 `/<repo>/` while local development uses `/`.
 
-## Architecture
+## Stack
 
-<<<<<<< Updated upstream
 - React 19
 - TypeScript 5.7
 - React Router DOM 7
 - Vite 6
+- Storybook 10
 - Vitest
 - ESLint
-- CSS plano con variables
+- Plain CSS with custom properties
 
-## Estructura principal
+## Architecture
 
-```text
-.
-├── src/
-│   ├── App.tsx                         # Visor principal
-│   ├── App.css                         # Layout y estilos del visor/timeline
-│   ├── main.tsx                        # Entrada React
-│   ├── shell/                          # Router, bienvenida y modal de ayuda
-│   ├── timeline/                       # Layout puro de etiquetas/eje y UI del timeline
-│   ├── timelineEdition/                # Servicios/repositorios para edición de eventos
-│   └── viewer/                         # Panel inferior del visor
-├── timelineHistoriaArgentina.ts        # Dataset de períodos y eventos
-├── eventLanes.ts                       # Carriles semánticos
-├── causality.ts                        # Relaciones causales entre eventos
-├── types.ts                            # Tipos de dominio
-├── docs/                               # Specs de producto/layout
-└── vite.config.ts
-```
-
-## Modelo de datos
-=======
 Source architecture is English. Spanish remains only for intentional user-facing copy, historical
 content, and product labels shown in the UI.
 
@@ -141,7 +125,6 @@ Root-level domain/data files include `types.ts`, `eventLanes.ts`, `causality.ts`
 `timelineHistoriaArgentina.ts`.
 
 ## Naming Rules
->>>>>>> Stashed changes
 
 ESLint enforces source naming conventions:
 
@@ -166,6 +149,18 @@ The main domain types live in [`types.ts`](./types.ts):
 The current dataset lives in [`timelineHistoriaArgentina.ts`](./timelineHistoriaArgentina.ts).
 Dates are modeled as UTC noon values to avoid browser time-zone shifts.
 
+## Semantic Lanes
+
+Events can belong to one or more semantic lanes:
+
+- `politico`
+- `militar`
+- `economico`
+- `social`
+- `diplomatico`
+
+Visual configuration and lane order live in [`eventLanes.ts`](./eventLanes.ts).
+
 ## Specs
 
 Specs live in `docs/<NAME>.SPEC.md`. Read these before changing viewer or timeline layout:
@@ -179,6 +174,24 @@ Specs live in `docs/<NAME>.SPEC.md`. Read these before changing viewer or timeli
 Practical rule: the viewer must occupy the viewport without document-level vertical scroll. Vertical
 scroll belongs inside panels; horizontal scroll belongs to the timeline.
 
+## Tests
+
+The current suite covers pure timeline layout functions and timeline edition services:
+
+```bash
+npm run test:ci
+```
+
+Vitest finds tests with the `src/**/*.test.ts` pattern configured in [`vite.config.ts`](./vite.config.ts).
+
+The execution-plan E2E smoke test lives in
+[`src/timelineEdition/executionPlan.e2e.test.ts`](./src/timelineEdition/executionPlan.e2e.test.ts).
+It is skipped by default because it uses a real backend and may trigger Bedrock calls. To run it:
+
+```bash
+TIMELINES_E2E_API_BASE_URL=http://127.0.0.1:8000 npm run test:e2e
+```
+
 ## Quality
 
 Before opening a PR or changing layout behavior:
@@ -191,6 +204,16 @@ npm run build
 
 If CSS touches the viewer, manually verify wide and narrow viewports, with and without an active
 selection, and confirm there is no global vertical scroll or phantom scrollbar in the chart.
+
+## Deployment
+
+GitHub Actions workflows handle CI and deploy:
+
+- [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)
+- [`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml)
+
+The build uses `GITHUB_REPOSITORY` to configure `base` as `/<repo>/` during GitHub Pages deploys.
+Local builds use `/`.
 
 ## Agent Guide
 
