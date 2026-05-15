@@ -38,12 +38,6 @@ npm run lint
 
 Specs use `docs/<NAME>.SPEC.md`; start from [`docs/TEMPLATE.SPEC.md`](./docs/TEMPLATE.SPEC.md).
 
-<<<<<<< Updated upstream
-- **Nuevo spec de producto / feature:** copiá [`docs/TEMPLATE.SPEC.md`](./docs/TEMPLATE.SPEC.md) a `docs/<NOMBRE>.SPEC.md` y rellená.
-- **Timeline (producto + invariantes + tests, greenfield):** [`docs/TIMELINE_LAYOUT.SPEC.md`](./docs/TIMELINE_LAYOUT.SPEC.md).
-- [`CLAUDE.md`](./CLAUDE.md) remite aquí.
-- [`README.md`](./README.md) enlaza a los specs y a la plantilla.
-=======
 Read these before touching viewer or timeline layout:
 
 - [`docs/VIEWER_LAYOUT.SPEC.md`](./docs/VIEWER_LAYOUT.SPEC.md): viewer viewport, grid, overflow,
@@ -88,7 +82,7 @@ This is intentional and matches the event-label placement model. CSS for `.axis`
 
 - New product or feature spec: copy [`docs/TEMPLATE.SPEC.md`](./docs/TEMPLATE.SPEC.md) to
   `docs/<NAME>.SPEC.md`.
+- Timeline product invariants and tests: [`docs/TIMELINE_LAYOUT.SPEC.md`](./docs/TIMELINE_LAYOUT.SPEC.md).
 - Isolated UI components: Storybook (`npm run storybook`, stories in `src/**/*.stories.tsx`).
 - [`CLAUDE.md`](./CLAUDE.md) points back here.
 - [`README.md`](./README.md) links to the specs and template.
->>>>>>> Stashed changes
