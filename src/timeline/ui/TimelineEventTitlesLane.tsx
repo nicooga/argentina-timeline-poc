@@ -2,11 +2,13 @@ import type { CSSProperties, RefObject } from "react";
 import type { StudyMode } from "../../../causality";
 import { semanticConnectorLaneSpanCount } from "../../../eventLanes";
 import type { Selection, TimelineEvent } from "../../../types";
-import { EventTitleMarkerVertical } from "./EventTitleMarkerVertical";
 import type { EventLabelPlacement } from "../eventLabelLayout";
 import { verticalColumnWidthPx, verticalEventTitlesRowLayoutPx } from "../eventLabelLayout";
 import type { DisplacedEventPlacement } from "../eventClusterLayout";
 import type { PreviewChangeSet } from "../../timelineEdition/applyChangesLocally";
+import TimelineEventDiagonalConnector from "../TimelineEventDiagonalConnector";
+import TimelineEventLabel from "../TimelineEventLabel";
+import TimelineEventVerticalConnector from "../TimelineEventVerticalConnector";
 
 export type TimelineCausalitySvgEdge = {
   from: TimelineEvent;
@@ -34,7 +36,7 @@ export type TimelineEventTitlesLaneProps = {
 };
 
 /**
- * Títulos de eventos por fecha. Único modo visual: etiquetas verticales.
+ * Event titles by date. Single visual mode: vertical labels.
  * @see docs/VIEWER_LAYOUT.SPEC.md
  */
 export function TimelineEventTitlesLane({
@@ -67,8 +69,8 @@ export function TimelineEventTitlesLane({
     );
   });
   /**
-   * Conector eje↔bola: `left%` de `.event-marker` = fecha en pista; Y del disco =
-   * `--events-dot-half` (+ carril); `--ev-titles-v-connector-btm` cierra el punteado en el disco.
+   * Axis-to-dot connector: `.event-marker` `left%` = track date; disk Y =
+   * `--events-dot-half` (+ lane); `--ev-titles-v-connector-btm` ends the dotted line at the disk.
    */
   const verticalLayout =
     eventLabelPlacements.length > 0
@@ -138,18 +140,14 @@ export function TimelineEventTitlesLane({
               ? "color-mix(in srgb, var(--accent) 82%, var(--text))"
               : "var(--muted)";
             return (
-              <div
+              <TimelineEventVerticalConnector
                 key={`conn-title-${e.title}-${e.date.toISOString()}`}
-                className={`event-connector${isConnActive ? " event-connector--selected" : ""}${lanesMuted ? " event-connector--lanes-muted" : ""}`.trim()}
-                style={
-                  {
-                    left: `${displaced?.datePct ?? trackPct(e.date.getTime())}%`,
-                    "--event-conn-lane": 0,
-                    "--event-connector-lane-span-count":
-                      semanticConnectorLaneSpanCount(e.lanes),
-                    "--event-connector-stroke": connectorStroke,
-                  } as CSSProperties
-                }
+                leftPct={displaced?.datePct ?? trackPct(e.date.getTime())}
+                lane={0}
+                laneSpanCount={semanticConnectorLaneSpanCount(e.lanes)}
+                stroke={connectorStroke}
+                selected={isConnActive}
+                lanesMuted={lanesMuted}
               />
             );
           })}
@@ -174,15 +172,11 @@ export function TimelineEventTitlesLane({
                 ? "color-mix(in srgb, var(--accent) 82%, var(--text))"
                 : "var(--muted)";
               return (
-                <path
+                <TimelineEventDiagonalConnector
                   key={`displaced-route-${placement.event.id}`}
-                  className={`event-displacement-route${isActive ? " event-displacement-route--selected" : ""}`}
-                  d={d}
-                  style={
-                    {
-                      "--event-connector-stroke": connectorStroke,
-                    } as CSSProperties
-                  }
+                  path={d}
+                  stroke={connectorStroke}
+                  selected={isActive}
                 />
               );
             })}
@@ -204,7 +198,7 @@ export function TimelineEventTitlesLane({
               ? ("updated" as const)
               : undefined;
           return (
-            <EventTitleMarkerVertical
+            <TimelineEventLabel
               key={`title-${e.title}-${e.date.toISOString()}`}
               event={e}
               leftPct={displacedEventPlacements[idx]?.displayPct ?? p}

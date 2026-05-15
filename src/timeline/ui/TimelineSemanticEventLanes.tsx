@@ -1,21 +1,19 @@
-import type { CSSProperties } from "react";
-
 /**
- * Carril semántico del timeline (POLÍTICO, MILITAR, …): puntos por fecha alineados al eje.
+ * Semantic timeline lane (political, military, etc.): date-aligned points on the axis.
  *
- * ## Spec (comportamiento / contrato para agentes)
+ * ## Spec (behavior / agent contract)
  *
- * - **Etiquetas de carril (`events-lane__caption`)**: `position: sticky; left: 0` respecto del
- *   scroll horizontal de `.timeline-scroll`. Al desplazar el eje, el rótulo queda pegado al
- *   borde izquierdo del viewport del scroll, sin encoger la pista de fechas.
- * - **Alineación %**: la fila de puntos (`.row-bar`) sigue ocupando el **100% del ancho** del
- *   contenido scrollable (igual que eje y períodos). El rótulo no participa del flujo de ancho:
- *   vive en la misma celda de rejilla que la pista (`events-lane__semantic-body` en `App.css`).
- * - **Visor / overflow**: no añadir `overflow-y: visible` en el mismo nodo que `overflow-x: auto`
- *   (regla del proyecto: ver `docs/VIEWER_LAYOUT.SPEC.md`). El sticky es solo horizontal.
+ * - **Lane labels (`events-lane__caption`)**: `position: sticky; left: 0` relative to
+ *   `.timeline-scroll` horizontal scrolling. When the axis moves, the label stays attached to
+ *   the scroll viewport's left edge without shrinking the date track.
+ * - **Percent alignment**: the dot row (`.row-bar`) still occupies **100% of the scrollable
+ *   content width** (same as the axis and periods). The label does not participate in width flow:
+ *   it lives in the same grid cell as the track (`events-lane__semantic-body` in `App.css`).
+ * - **Viewer / overflow**: do not add `overflow-y: visible` on the same node as `overflow-x: auto`
+ *   (project rule: see `docs/VIEWER_LAYOUT.SPEC.md`). The sticky behavior is horizontal only.
  *
- * Si tocás el layout de este bloque, revisá que los `left: ${pct}%` de los eventos sigan
- * referidos al mismo ancho que `.timeline-stack` / eje.
+ * If this layout changes, verify that event `left: ${pct}%` positions still reference the same
+ * width as `.timeline-stack` / axis.
  */
 
 import type { StudyMode } from "../../../causality";
@@ -26,6 +24,7 @@ import {
 } from "../../../eventLanes";
 import type { Selection, TimelineEvent } from "../../../types";
 import type { PreviewChangeSet } from "../../timelineEdition/applyChangesLocally";
+import TimelineEventMarker from "../TimelineEvent";
 
 function eventPointerTitle(e: TimelineEvent, mode: StudyMode): string {
   if (mode === "exam") return e.title;
@@ -36,7 +35,7 @@ function eventPointerTitle(e: TimelineEvent, mode: StudyMode): string {
 export type TimelineSemanticEventLanesProps = {
   laneVisibility: Record<EventLaneId, boolean>;
   eventsSorted: TimelineEvent[];
-  /** 0–100 en la pista (mismos márgenes que el eje). */
+  /** 0-100 on the track, with the same insets as the axis. */
   trackPct: (timeMs: number) => number;
   selection: Selection;
   studyMode: StudyMode;
@@ -90,37 +89,18 @@ export function TimelineSemanticEventLanes({
                   const isPreviewUpdated = previewHighlight?.updated.has(ev.id) ?? false;
                   const p = trackPct(ev.date.getTime());
                   return (
-                    <div
+                    <TimelineEventMarker
                       key={`${laneId}-${ev.title}-${ev.date.toISOString()}`}
-                      className={[
-                        "event-marker",
-                        "event-marker--lane-dot",
-                        isEventActive ? "event-marker--selected" : "",
-                        isRelated ? "event-marker--related" : "",
-                        isPreviewAdded ? "event-marker--preview-added" : "",
-                        isPreviewUpdated ? "event-marker--preview-updated" : "",
-                      ].filter(Boolean).join(" ")}
-                      style={
-                        {
-                          left: `${p}%`,
-                          "--event-dot-fill": LANE_UI[laneId].color,
-                        } as CSSProperties
-                      }
-                    >
-                      <button
-                        type="button"
-                        className="event-hit event-hit--lane-dot"
-                        tabIndex={-1}
-                        aria-hidden={true}
-                        onClick={() => onSelectEvent(ev)}
-                        title={eventPointerTitle(ev, studyMode)}
-                      >
-                        <span
-                          className={`event-lane-tick${isEventActive ? " event-lane-tick--active" : ""}`}
-                          aria-hidden="true"
-                        />
-                      </button>
-                    </div>
+                      event={ev}
+                      laneColor={LANE_UI[laneId].color}
+                      leftPct={p}
+                      title={eventPointerTitle(ev, studyMode)}
+                      selected={isEventActive}
+                      related={isRelated}
+                      previewAdded={isPreviewAdded}
+                      previewUpdated={isPreviewUpdated}
+                      onSelect={onSelectEvent}
+                    />
                   );
                 })}
               </div>
