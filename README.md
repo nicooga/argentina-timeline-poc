@@ -1,40 +1,52 @@
-# Historia Argentina en el tiempo
+# Argentine History Timeline
 
-Visor web interactivo para explorar la historia argentina entre 1810 y 1916. El proyecto muestra períodos históricos como franjas sobre un eje temporal y eventos puntuales organizados por carriles semánticos, con zoom, navegación, selección de detalles y relaciones causales.
+Interactive web viewer for exploring Argentine history. The app displays historical periods as
+bands on a temporal axis and point events organized by semantic lanes, with zoom, navigation,
+selection details, and causal relationships.
 
-Es una prueba de concepto frontend construida con React, TypeScript y Vite.
+This is a frontend proof of concept built with React, TypeScript, and Vite.
 
-## Requisitos
+## Requirements
 
-- Node.js 20 o superior
+- Node.js 20 or newer
 - npm
 
-## Instalación
+## Development
 
 ```bash
 npm install
-```
-
-## Desarrollo
-
-```bash
 npm run dev
 ```
 
-Vite sirve la aplicación en `http://localhost:5173` por defecto.
+Vite serves the app at `http://localhost:5173` by default.
 
-El visor consume por defecto la API deployada en `https://ukpswhaxmg.us-east-1.awsapprunner.com`. Para apuntar a otro backend:
+The viewer uses the deployed API by default:
+
+```bash
+https://ukpswhaxmg.us-east-1.awsapprunner.com
+```
+
+Use another backend with:
 
 ```bash
 VITE_TIMELINES_API_BASE_URL=http://127.0.0.1:8000 npm run dev
 ```
 
+<<<<<<< Updated upstream
 Para forzar el repositorio local anterior, usar `VITE_TIMELINES_API_BASE_URL=local`.
+=======
+Use the legacy local repository with:
+
+```bash
+VITE_TIMELINES_API_BASE_URL=local npm run dev
+```
+>>>>>>> Stashed changes
 
 ## Scripts
 
-| Comando | Descripción |
+| Command | Description |
 | --- | --- |
+<<<<<<< Updated upstream
 | `npm run dev` | Levanta el servidor de desarrollo con hot reload. |
 | `npm run build` | Ejecuta `tsc`, genera el build en `dist/` y copia `index.html` como `404.html` para GitHub Pages. |
 | `npm run preview` | Sirve localmente el build de producción. |
@@ -42,19 +54,32 @@ Para forzar el repositorio local anterior, usar `VITE_TIMELINES_API_BASE_URL=loc
 | `npm run test` | Ejecuta Vitest en modo interactivo/watch. |
 | `npm run test:ci` | Ejecuta la suite de tests una vez, pensado para CI. |
 | `npm run test:e2e` | Ejecuta el smoke E2E de Execution Plans si `TIMELINES_E2E_API_BASE_URL` apunta a un backend real. |
+=======
+| `npm run dev` | Start the Vite development server. |
+| `npm run build` | Run TypeScript, build `dist/`, and copy `index.html` to `404.html`. |
+| `npm run preview` | Serve the production build locally. |
+| `npm run lint` | Run ESLint, including local architecture naming rules. |
+| `npm run test` | Run Vitest in watch mode. |
+| `npm run test:ci` | Run the test suite once. |
+| `npm run test:e2e` | Run the execution-plan E2E smoke test against a real backend. |
+| `npm run storybook` | Start Storybook at `http://localhost:6006`. |
+| `npm run build-storybook` | Build the static Storybook site. |
+>>>>>>> Stashed changes
 
-## Rutas
+## Routes
 
-| Ruta | Pantalla |
+| Route | Screen |
 | --- | --- |
-| `/` | Pantalla de bienvenida. |
-| `/visor` | Visor full-screen de la línea de tiempo. |
-| `*` | Redirección a `/`. |
+| `/` | Welcome screen. |
+| `/:timelineSlug` | Full-screen timeline viewer. |
+| `*` | Redirects to `/`. |
 
-El `basename` se toma de `import.meta.env.BASE_URL`, por lo que en GitHub Pages la app puede vivir bajo `/<repo>/` y en local bajo `/`.
+The router basename comes from `import.meta.env.BASE_URL`, so GitHub Pages can serve the app under
+`/<repo>/` while local development uses `/`.
 
-## Stack
+## Architecture
 
+<<<<<<< Updated upstream
 - React 19
 - TypeScript 5.7
 - React Router DOM 7
@@ -84,58 +109,79 @@ El `basename` se toma de `import.meta.env.BASE_URL`, por lo que en GitHub Pages 
 ```
 
 ## Modelo de datos
+=======
+Source architecture is English. Spanish remains only for intentional user-facing copy, historical
+content, and product labels shown in the UI.
 
-Los tipos principales viven en [`types.ts`](./types.ts):
+```text
+src/
+├── App.tsx                         # Thin route component that renders ViewerPage
+├── App.css                         # Viewer and timeline layout styles
+├── main.tsx                        # React entry point
+├── shell/                          # Router, welcome screen, theme, global help chrome
+├── viewer/                         # Viewer route composition and viewer-side UI
+│   ├── ViewerPage/                 # Route orchestration, loading, preview, AI/editor wiring
+│   ├── Toolbar/                    # Top viewer controls
+│   ├── ViewerIndex/                # Period/event index navigation
+│   ├── SelectionDetail/            # Selected period/event details
+│   └── EventEditor/                # Event create/edit modal
+├── timeline/                       # Timeline rendering and pure layout helpers
+│   ├── Timeline/                   # Scrollable timeline surface
+│   ├── TimelineAxis/               # Axis bands, ticks, and marks
+│   ├── TimelineTrack/              # Period rows, event lanes, event labels, cursor
+│   ├── TimelineEvent/              # Semantic lane event dot
+│   ├── TimelineEventLabel/         # Event label marker
+│   ├── TimelineEventVerticalConnector/
+│   ├── TimelineEventDiagonalConnector/
+│   └── ZoomControls/
+└── timelineEdition/                # Editing, AI plans, repositories, serialization
+```
 
-- `Timeline`: colección de `periods` y `events`.
-- `Period`: franja histórica con `start`, `end`, `color`, descripción y links opcionales.
-- `TimelineEvent`: evento puntual con `date`, `lanes`, importancia, causas, consecuencias y links opcionales.
+Root-level domain/data files include `types.ts`, `eventLanes.ts`, `causality.ts`, and
+`timelineHistoriaArgentina.ts`.
 
-Los datos actuales están en [`timelineHistoriaArgentina.ts`](./timelineHistoriaArgentina.ts). Las fechas se modelan como UTC al mediodía para evitar desplazamientos por zona horaria del navegador.
+## Naming Rules
+>>>>>>> Stashed changes
 
-## Carriles semánticos
+ESLint enforces source naming conventions:
 
-Los eventos pueden pertenecer a uno o más carriles:
+- A normal file with a default export must match that default export:
+  `SomeComponent.tsx` default-exports `SomeComponent`.
+- A directory component uses `SomeComponent/index.tsx` and default-exports `SomeComponent`.
+- `index.ts` barrel files may use named exports and are exempt unless they contain a default export.
+- Storybook default metadata is exempt.
 
-- `politico`
-- `militar`
-- `economico`
-- `social`
-- `diplomatico`
+Prefer bounded-context and ubiquitous-language names such as `ViewerPage`, `Toolbar`,
+`ViewerIndex`, `SelectionDetail`, `TimelineTrack`, and `TimelineEventLabel`.
 
-La configuración visual y el orden de los carriles están en [`eventLanes.ts`](./eventLanes.ts).
+## Domain Model
+
+The main domain types live in [`types.ts`](./types.ts):
+
+- `Timeline`: a collection of `periods` and `events`.
+- `Period`: a historical span with start/end dates, color, notes, and optional links.
+- `TimelineEvent`: a dated event with semantic lanes, importance, causes, consequences, notes,
+  and optional links.
+
+The current dataset lives in [`timelineHistoriaArgentina.ts`](./timelineHistoriaArgentina.ts).
+Dates are modeled as UTC noon values to avoid browser time-zone shifts.
 
 ## Specs
 
-Este repo usa specs en `docs/<NOMBRE>.SPEC.md`. Antes de tocar layout del visor o del timeline, leer:
+Specs live in `docs/<NAME>.SPEC.md`. Read these before changing viewer or timeline layout:
 
-- [`docs/VIEWER_LAYOUT.SPEC.md`](./docs/VIEWER_LAYOUT.SPEC.md): viewport, grid, overflow y scroll.
-- [`docs/TIMELINE_LAYOUT.SPEC.md`](./docs/TIMELINE_LAYOUT.SPEC.md): eje, etiquetas, carriles, conectores y pruebas.
-- [`docs/AI_EXECUTION_PLAN_UI.SPEC.md`](./docs/AI_EXECUTION_PLAN_UI.SPEC.md): contraparte UI de Execution Plans; referencia el spec/plan backend.
-- [`docs/TEMPLATE.SPEC.md`](./docs/TEMPLATE.SPEC.md): plantilla para specs nuevas.
-- [`docs/MASTER.md`](./docs/MASTER.md): documentación de contexto para mantenedores y agentes.
+- [`docs/VIEWER_LAYOUT.SPEC.md`](./docs/VIEWER_LAYOUT.SPEC.md): viewport, grid, overflow, scroll ownership.
+- [`docs/TIMELINE_LAYOUT.SPEC.md`](./docs/TIMELINE_LAYOUT.SPEC.md): axis, labels, lanes, connectors, layout tests.
+- [`docs/AI_EXECUTION_PLAN_UI.SPEC.md`](./docs/AI_EXECUTION_PLAN_UI.SPEC.md): execution-plan UI behavior.
+- [`docs/TEMPLATE.SPEC.md`](./docs/TEMPLATE.SPEC.md): template for new specs.
+- [`docs/MASTER.md`](./docs/MASTER.md): maintainer context.
 
-Resumen práctico: el visor debe ocupar el viewport sin scroll vertical del documento; el scroll vertical pertenece a los paneles internos y el scroll horizontal al timeline. Evitar combinaciones de `overflow-x` no visible con `overflow-y: visible`, porque Chromium puede generar una barra vertical fantasma.
+Practical rule: the viewer must occupy the viewport without document-level vertical scroll. Vertical
+scroll belongs inside panels; horizontal scroll belongs to the timeline.
 
-## Tests
+## Quality
 
-La suite actual cubre funciones puras de layout del timeline y servicios de edición:
-
-```bash
-npm run test:ci
-```
-
-Vitest busca tests con el patrón `src/**/*.test.ts`, definido en [`vite.config.ts`](./vite.config.ts).
-
-El smoke E2E de Execution Plans vive en [`src/timelineEdition/executionPlan.e2e.test.ts`](./src/timelineEdition/executionPlan.e2e.test.ts). Está skippeado por defecto porque usa backend real y puede disparar llamadas Bedrock. Para correrlo:
-
-```bash
-TIMELINES_E2E_API_BASE_URL=http://127.0.0.1:8000 npm run test:e2e
-```
-
-## Calidad
-
-Antes de abrir un PR o cambiar comportamiento de layout:
+Before opening a PR or changing layout behavior:
 
 ```bash
 npm run lint
@@ -143,17 +189,10 @@ npm run test:ci
 npm run build
 ```
 
-Si el cambio toca CSS del visor, verificar manualmente `/visor` en viewport ancho y estrecho, con y sin selección activa, y revisar que no aparezca scroll vertical global ni barras fantasma en el chart.
+If CSS touches the viewer, manually verify wide and narrow viewports, with and without an active
+selection, and confirm there is no global vertical scroll or phantom scrollbar in the chart.
 
-## Despliegue
+## Agent Guide
 
-Hay workflows de GitHub Actions para CI y deploy:
-
-- [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)
-- [`.github/workflows/deploy.yml`](./.github/workflows/deploy.yml)
-
-El build usa `GITHUB_REPOSITORY` para configurar `base` como `/<repo>/` durante el despliegue en GitHub Pages. En local, `base` es `/`.
-
-## Guía para agentes
-
-Las instrucciones operativas para asistentes están en [`AGENTS.md`](./AGENTS.md). En Cursor, la regla permanente del layout del visor vive en [`.cursor/rules/viewer-layout.mdc`](./.cursor/rules/viewer-layout.mdc).
+Operational instructions for assistants live in [`AGENTS.md`](./AGENTS.md). Cursor keeps the
+permanent viewer-layout rule in [`.cursor/rules/viewer-layout.mdc`](./.cursor/rules/viewer-layout.mdc).

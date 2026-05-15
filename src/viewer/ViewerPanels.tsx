@@ -11,7 +11,7 @@ import { lanesInDisplayOrder, LANE_UI } from "../../eventLanes";
 import type { Period, Selection, TimelineEvent } from "../../types";
 import type { TimelineEventDraft } from "../timelineEdition";
 import { formatHistoricalDate, LaneGlyph } from "../timeline";
-import "./ViewerLower.css";
+import "./ViewerPanels.css";
 
 function formatDate(d: Date): string {
   return formatHistoricalDate(d);

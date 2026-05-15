@@ -1,43 +1,94 @@
-# Guía para agentes (Cursor, Claude Code, etc.)
+# Agent Guide
 
-## Layout del visor
+## Source Language And Architecture
 
-**Convención de nombres:** `docs/<NOMBRE>.SPEC.md` (p. ej. `VIEWER_LAYOUT.SPEC.md`).
+All source architecture must be written in English: file names, folder names, identifiers, comments,
+docs, tests, lint rule names, and commit/PR text. Spanish is allowed only for intentional runtime
+copy, historical content, dataset text, and product labels shown to users.
 
-**Plantilla:** [`docs/TEMPLATE.SPEC.md`](./docs/TEMPLATE.SPEC.md).
+Use bounded contexts named after product capabilities:
 
-**Specs (misma estructura):** [`docs/VIEWER_LAYOUT.SPEC.md`](./docs/VIEWER_LAYOUT.SPEC.md) (visor), [`docs/TIMELINE_LAYOUT.SPEC.md`](./docs/TIMELINE_LAYOUT.SPEC.md) (timeline). Trampas del visor bajo *Constraints* / *Pitfalls*.
+- `viewer`: route/page composition and viewer-side UI.
+- `timeline`: timeline rendering, measured layout, axis, track, events, connectors, zoom controls.
+- `timelineEdition`: editing, AI planning, repositories, and serialization.
+- `shell`: router, welcome screen, theme, and global help chrome.
 
-En Cursor: regla siempre activa [`.cursor/rules/viewer-layout.mdc`](./.cursor/rules/viewer-layout.mdc).
+Prefer ubiquitous business language over placement names. Use names such as `ViewerPage`,
+`Toolbar`, `ViewerIndex`, `SelectionDetail`, `Timeline`, `TimelineTrack`, `TimelineEventLabel`,
+and `ZoomControls`. Avoid vague names such as `Lower`, `Panel2`, `Thing`, or names based only on
+screen position.
 
-### No regresar (resumen ejecutivo)
+## Naming Rules Enforced By Lint
 
-| Tema | Qué evitar | Por qué |
-|------|------------|---------|
-| **Overflow en un solo nodo** | `overflow-x: hidden` o `auto` **junto** con `overflow-y: visible` | Chromium fuerza `overflow-y: auto` → barra vertical “fantasma” (thumb enorme). Afectó `section.chart.chart-bleed.chart--viewer`, `.viewer-chart-wrap`, `.timeline-scroll`. |
-| **`body` en modo visor** | Solo `height: 100dvh` sin tocar `min-height` | El `min-height: 100vh` global del `body` puede ser **>** `100dvh` → scroll global de pocos px. Hace falta **`min-height: 100dvh`** en `html.viewer-phase` y `body`. |
-| **Ancho del chart** | Dejar el bleed `100vw` de `.chart-bleed` en el visor | Desborda el ancho útil; puede sumar al scroll. En **`.chart.chart-bleed.chart--viewer`** va `width: 100%` + `margin: 0`. |
-| **Scroll del shell** | `overflow-y: auto` en `.viewer-shell` “para que quepa” | Convierte el visor en página scrolleable; no es el modelo deseado. |
-| **Alto del timeline** | `max-height` + `overflow-y: auto` en `.viewer-chart-wrap` | Recorta el timeline; la fila del grid debe ser **`auto`** a altura de contenido. |
+Current lint rules are binding architecture rules, not optional style.
 
-### Archivos a revisar al tocar el visor
+- A normal file with a default export must match that default export:
+  `SomeComponent.tsx` default-exports `SomeComponent`.
+- A directory component uses `SomeComponent/index.tsx` and default-exports `SomeComponent`.
+- `index.ts` barrel files may use named exports and are exempt unless they contain a default export.
+- Storybook default metadata is exempt from default-export naming.
 
-- `src/App.tsx` — estructura DOM del visor y timeline
-- `src/App.css` — `.viewer-main`, `.viewer-shell`, `.viewer-chart-wrap`, `section.chart.chart-bleed.chart--viewer`, `.timeline-scroll`
-- `src/viewer/ViewerLower.tsx` / `src/viewer/ViewerLower.css` — panel inferior (grid `1fr`, scroll interno)
-- `src/index.css` — `html.viewer-phase`, `#root`
+Run lint after structural changes:
 
-### Eje temporal: fechas “encimadas” y zoom (intencional)
+```bash
+npm run lint
+```
 
-- **Modelo de capas (sandwich del timeline):** [`docs/TIMELINE_LAYOUT.SPEC.md`](./docs/TIMELINE_LAYOUT.SPEC.md) — sección **Behavior** (stack y conectores).
-- Las marcas del eje (inicios/fines de período + fechas de eventos) vienen de `mergeAxisMarks` y se colocan con **`assignAxisMarkLanes`** en `src/App.tsx`.
-- El algoritmo mide el **ancho en píxeles** de cada etiqueta y la **anchura útil de la pista** (`stackWidthPx`, vía `ResizeObserver` sobre `.timeline-stack`). Con menos zoom la pista es más ancha en px → las mismas fechas quedan **más separadas en %** del eje → **menos solapes** y menos carriles verticales. Con más zoom la pista se estrecha en pantalla → las etiquetas compiten antes por el mismo hueco → **suben de carril** antes (más filas de fechas apiladas).
-- Eso **no es un bug**: es el mismo criterio que `assignEventLabelLanes` para títulos de eventos (densidad según ancho real vs. zoom).
-- El CSS del eje (`.axis`, `.tick--axis-mark` en `src/App.css`) debe reservar alto coherente con **`--axis-max-lane`** y el paso `--axis-lane-step` (incl. variante `.timeline-stack--compact .axis`), para que la fila superior de fechas no quede recortada por `overflow-y: clip`.
+## Viewer Layout
 
-### Otros puntos de entrada
+Specs use `docs/<NAME>.SPEC.md`; start from [`docs/TEMPLATE.SPEC.md`](./docs/TEMPLATE.SPEC.md).
 
+<<<<<<< Updated upstream
 - **Nuevo spec de producto / feature:** copiá [`docs/TEMPLATE.SPEC.md`](./docs/TEMPLATE.SPEC.md) a `docs/<NOMBRE>.SPEC.md` y rellená.
 - **Timeline (producto + invariantes + tests, greenfield):** [`docs/TIMELINE_LAYOUT.SPEC.md`](./docs/TIMELINE_LAYOUT.SPEC.md).
 - [`CLAUDE.md`](./CLAUDE.md) remite aquí.
 - [`README.md`](./README.md) enlaza a los specs y a la plantilla.
+=======
+Read these before touching viewer or timeline layout:
+
+- [`docs/VIEWER_LAYOUT.SPEC.md`](./docs/VIEWER_LAYOUT.SPEC.md): viewer viewport, grid, overflow,
+  and scroll ownership.
+- [`docs/TIMELINE_LAYOUT.SPEC.md`](./docs/TIMELINE_LAYOUT.SPEC.md): timeline stack, axis, labels,
+  lanes, connectors, and layout tests.
+
+Cursor keeps the viewer-layout rule active in [`.cursor/rules/viewer-layout.mdc`](./.cursor/rules/viewer-layout.mdc).
+
+### Do Not Regress
+
+| Topic | Avoid | Reason |
+| --- | --- | --- |
+| Overflow on one node | `overflow-x: hidden` or `auto` together with `overflow-y: visible` | Chromium coerces `overflow-y` to `auto`, causing a phantom vertical scrollbar. |
+| Viewer `body` sizing | Only `height: 100dvh` without `min-height` | Global `body { min-height: 100vh; }` can exceed `100dvh` and create document scroll. |
+| Chart width | Leaving generic `.chart-bleed { width: 100vw; }` in viewer mode | It overflows the usable width and can add scroll. |
+| Shell scroll | `overflow-y: auto` on `.viewer-shell` | It turns the viewer into a scrollable page, which is not the model. |
+| Timeline height | `max-height` plus `overflow-y: auto` on `.viewer-chart-wrap` | It clips the timeline; the grid row must size to content. |
+
+## Files To Review When Touching The Viewer
+
+- `src/viewer/ViewerPage/index.tsx`: viewer route orchestration.
+- `src/viewer/Toolbar/index.tsx`: top viewer controls.
+- `src/timeline/Timeline/index.tsx`: scrollable timeline surface.
+- `src/timeline/TimelineAxis/index.tsx`: axis bands, ticks, and marks.
+- `src/timeline/TimelineTrack/index.tsx`: periods, semantic event lanes, event labels, cursor.
+- `src/App.css`: viewer and timeline layout styles.
+- `src/index.css`: `html.viewer-phase`, `body`, and `#root` sizing.
+
+## Timeline Axis Labels And Zoom
+
+Axis marks come from `mergeAxisMarks` and are placed by `assignAxisMarkLanes`. The algorithm uses
+the measured label width and usable `.timeline-stack` width. Less zoom means a wider track in
+pixels, so the same dates are farther apart and need fewer vertical lanes. More zoom narrows the
+visible track, so labels compete for space sooner and may move to higher lanes.
+
+This is intentional and matches the event-label placement model. CSS for `.axis` and
+`.tick--axis-mark` must reserve height consistent with `--axis-max-lane` and
+`--axis-lane-step`, including the compact `.timeline-stack--compact .axis` variant.
+
+## Other Entry Points
+
+- New product or feature spec: copy [`docs/TEMPLATE.SPEC.md`](./docs/TEMPLATE.SPEC.md) to
+  `docs/<NAME>.SPEC.md`.
+- Isolated UI components: Storybook (`npm run storybook`, stories in `src/**/*.stories.tsx`).
+- [`CLAUDE.md`](./CLAUDE.md) points back here.
+- [`README.md`](./README.md) links to the specs and template.
+>>>>>>> Stashed changes
