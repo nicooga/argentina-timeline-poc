@@ -31,6 +31,9 @@ export const Closed: Story = {
 };
 
 export const Interactive: Story = {
+  args: {
+    open: true,
+  },
   render: function InteractiveStory(args) {
     const [open, setOpen] = useState(true);
 

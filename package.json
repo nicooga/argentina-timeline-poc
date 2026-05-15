@@ -8,8 +8,9 @@
     "build": "tsc && vite build && cp dist/index.html dist/404.html",
     "preview": "vite preview",
     "lint": "eslint .",
-    "test": "vitest",
-    "test:ci": "vitest run",
+    "test": "vitest --project unit",
+    "test:ci": "vitest run --project unit",
+    "test:storybook": "vitest run --project storybook",
     "test:e2e": "vitest run src/timelineEdition/executionPlan.e2e.test.ts",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"

@@ -4,7 +4,6 @@ import { fileURLToPath, URL } from "node:url";
 
 // In GitHub Actions, GITHUB_REPOSITORY is "owner/repo"; the Pages base is /repo/.
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
 
 const dirname =
@@ -31,6 +30,7 @@ export default defineConfig({
       {
         extends: true,
         test: {
+          name: "unit",
           include: ["src/**/*.test.ts"],
         },
       },
