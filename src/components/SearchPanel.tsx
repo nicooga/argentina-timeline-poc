@@ -1,12 +1,23 @@
 import { useEffect, useState } from "react";
 import "./SearchPanel.css";
 import type { Period, Timeline as TimelineModel, TimelineEvent } from "../../types";
+
 const normalize = (str: string) =>
     str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-export default function SearchPanel({ Timeline }: { Timeline: TimelineModel }) {
+
+export default function SearchPanel({
+  Timeline,
+  onSelectPeriod,
+  onSelectEvent,
+}: {
+  Timeline: TimelineModel;
+  onSelectPeriod: (period: Period) => void;
+  onSelectEvent: (event: TimelineEvent) => void;
+}) {
     const [visible, setVisible] = useState(false);
     const [query, setQuery] = useState("");
     const [filtered, setFiltered] = useState<Array<TimelineEvent | Period>>([]);
+
     useEffect(() => {
         const normalizedQuery = normalize(query.trim());
 
@@ -50,15 +61,22 @@ export default function SearchPanel({ Timeline }: { Timeline: TimelineModel }) {
     if (!visible) {
         return null;
     }
+
     const handleOnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setQuery(e.target.value);
     };
 
-
-
-
     const isPeriod = (item: TimelineEvent | Period): item is Period =>
         !("id" in item);
+
+    const handleSelect = (item: TimelineEvent | Period) => {
+        if (isPeriod(item)) {
+            onSelectPeriod(item);
+        } else {
+            onSelectEvent(item);
+        }
+        setVisible(false); // cierra el panel después de seleccionar
+    };
 
     return (
         <div className="root">
@@ -81,6 +99,8 @@ export default function SearchPanel({ Timeline }: { Timeline: TimelineModel }) {
                             <div
                                 key={isPeriod(item) ? `period-${item.title}` : item.id}
                                 className="item"
+                                onClick={() => handleSelect(item)}
+                                style={{ cursor: "pointer" }}
                             >
                                 <div className="title">{item.title}</div>
                                 <div className="description">
@@ -95,4 +115,4 @@ export default function SearchPanel({ Timeline }: { Timeline: TimelineModel }) {
             )}
         </div>
     );
-};
+}

@@ -171,7 +171,7 @@ function operationAppliedToTimeline(
   if (change.type === "create_period") {
     const id = String(
       change.data?.id ??
-        slugifyTimelineId(String(change.data?.title ?? "periodo"))
+      slugifyTimelineId(String(change.data?.title ?? "periodo"))
     );
     const period = findPeriod(periods, id);
     return period != null && matchesData(period, change.data);
@@ -301,9 +301,9 @@ function foregroundForHex(hex: string): string {
   const full =
     raw.length === 3
       ? raw
-          .split("")
-          .map((c) => c + c)
-          .join("")
+        .split("")
+        .map((c) => c + c)
+        .join("")
       : raw;
   const n = Number.parseInt(full, 16);
   if (Number.isNaN(n)) return "var(--text)";
@@ -768,9 +768,9 @@ export default function ViewerPage() {
     () =>
       axisScaleDetail.bandYears < 100
         ? axisDecadeBands(min, max, 100).map((b) => ({
-            ...b,
-            centuryLabel: formatCenturyLabel(b.bandStartYear),
-          }))
+          ...b,
+          centuryLabel: formatCenturyLabel(b.bandStartYear),
+        }))
         : [],
     [min, max, axisScaleDetail]
   );
@@ -1038,19 +1038,19 @@ export default function ViewerPage() {
           [messageId]: current
             ? { ...current, loading: true, error: null }
             : {
-                sourceMessageId: messageId,
-                plan: {
-                  id: `pending-${messageId}`,
-                  timelineId: selectedTimelineId,
-                  status: "draft",
-                  steps: [],
-                  createdAt: new Date(),
-                },
-                operations: [],
-                operationsStatus: null,
-                loading: true,
-                error: null,
+              sourceMessageId: messageId,
+              plan: {
+                id: `pending-${messageId}`,
+                timelineId: selectedTimelineId,
+                status: "draft",
+                steps: [],
+                createdAt: new Date(),
               },
+              operations: [],
+              operationsStatus: null,
+              loading: true,
+              error: null,
+            },
         };
       });
       try {
@@ -1607,7 +1607,7 @@ export default function ViewerPage() {
     sliderTFromZoom(timelineZoom, timelineZoomMax) * 1000
   );
 
-  const onTimelineWheelRef = useRef<(e: WheelEvent) => void>(() => {});
+  const onTimelineWheelRef = useRef<(e: WheelEvent) => void>(() => { });
   onTimelineWheelRef.current = (e: WheelEvent) => {
     if (!(e.ctrlKey || e.metaKey)) return;
     e.preventDefault();
@@ -1942,127 +1942,127 @@ export default function ViewerPage() {
         />
 
         <div className="viewer-main">
-        <div
-          className={`viewer-chart-wrap ${sel != null ? "viewer-chart-wrap--pinned" : ""}`.trim()}
-        >
-          <Timeline
-            scrollRef={timelineScrollRef}
-            stackRef={timelineStackRef}
-            stackStyle={{
-              "--timeline-zoom": String(timelineZoom),
-              "--event-label-max-lane": 0,
-              "--period-compact-row-h": `${compactPeriodRowRem}rem`,
-              "--period-row-count": periodIndicesByLane.length,
-              "--events-semantic-lane-count": EVENT_LANE_ORDER.length,
-              ...laneColorCssVars,
-            } as CSSProperties}
-            onPointerDown={onTimelinePointerDown}
-            onMouseMove={(e) => {
-              const stack = timelineStackRef.current;
-              if (!stack) return;
-              const rect = stack.getBoundingClientRect();
-              const pct = ((e.clientX - rect.left) / stack.offsetWidth) * 100;
-              setCursorPct(Math.max(0, Math.min(100, pct)));
-            }}
-            onMouseLeave={() => setCursorPct(null)}
-            controls={
-              <ZoomControls
-              canGoToPreviousEvent={eventStepAvailability.canPrev}
-              canGoToNextEvent={eventStepAvailability.canNext}
-              zoomSliderValue={zoomSliderValue}
-              zoomReadout={formatZoomFactorUi(timelineZoom, timelineZoomMax)}
-              onGoToPreviousEvent={() => stepEvent(-1)}
-              onGoToNextEvent={() => stepEvent(1)}
-              onZoomOut={() => onZoomNudge(-1)}
-              onZoomIn={() => onZoomNudge(1)}
-              onZoomSliderChange={onZoomSliderChange}
-            />
-            }
+          <div
+            className={`viewer-chart-wrap ${sel != null ? "viewer-chart-wrap--pinned" : ""}`.trim()}
           >
-            <TimelineAxis
-              maxLaneOffsetPx={axisMarkMaxLaneOffsetPx}
-              centuryBands={axisCenturyBandRects}
-              decadeBands={axisDecadeBandRects}
-              microTicks={axisYearMicroTicks}
-              marks={axisMarksPlaced}
-              selection={sel}
-              eventsSorted={eventsSorted}
-              showYearByTime={axisShowYearByT}
-              trackPct={(timeMs) => pctOnTrack(timeMs, min, max)}
-              onSelectEvent={(event) => setSel({ kind: "event", item: event })}
-            />
+            <Timeline
+              scrollRef={timelineScrollRef}
+              stackRef={timelineStackRef}
+              stackStyle={{
+                "--timeline-zoom": String(timelineZoom),
+                "--event-label-max-lane": 0,
+                "--period-compact-row-h": `${compactPeriodRowRem}rem`,
+                "--period-row-count": periodIndicesByLane.length,
+                "--events-semantic-lane-count": EVENT_LANE_ORDER.length,
+                ...laneColorCssVars,
+              } as CSSProperties}
+              onPointerDown={onTimelinePointerDown}
+              onMouseMove={(e) => {
+                const stack = timelineStackRef.current;
+                if (!stack) return;
+                const rect = stack.getBoundingClientRect();
+                const pct = ((e.clientX - rect.left) / stack.offsetWidth) * 100;
+                setCursorPct(Math.max(0, Math.min(100, pct)));
+              }}
+              onMouseLeave={() => setCursorPct(null)}
+              controls={
+                <ZoomControls
+                  canGoToPreviousEvent={eventStepAvailability.canPrev}
+                  canGoToNextEvent={eventStepAvailability.canNext}
+                  zoomSliderValue={zoomSliderValue}
+                  zoomReadout={formatZoomFactorUi(timelineZoom, timelineZoomMax)}
+                  onGoToPreviousEvent={() => stepEvent(-1)}
+                  onGoToNextEvent={() => stepEvent(1)}
+                  onZoomOut={() => onZoomNudge(-1)}
+                  onZoomIn={() => onZoomNudge(1)}
+                  onZoomSliderChange={onZoomSliderChange}
+                />
+              }
+            >
+              <TimelineAxis
+                maxLaneOffsetPx={axisMarkMaxLaneOffsetPx}
+                centuryBands={axisCenturyBandRects}
+                decadeBands={axisDecadeBandRects}
+                microTicks={axisYearMicroTicks}
+                marks={axisMarksPlaced}
+                selection={sel}
+                eventsSorted={eventsSorted}
+                showYearByTime={axisShowYearByT}
+                trackPct={(timeMs) => pctOnTrack(timeMs, min, max)}
+                onSelectEvent={(event) => setSel({ kind: "event", item: event })}
+              />
 
-            <TimelineTrack
-              periods={periods}
-              eventsSorted={eventsSorted}
-              selection={sel}
-              minMs={min}
-              maxMs={max}
-              cursorPct={cursorPct}
-              laneByIndex={laneByIndex}
-              periodIndicesByLane={periodIndicesByLane}
-              compactPeriodRowRem={compactPeriodRowRem}
-              activePeriod={activePeriodForTimeline}
-              studyMode={studyMode}
-              laneVisibility={laneVisibility}
-              causalHighlight={causalHighlight}
-              causalitySvgEdges={causalitySvgEdges}
-              eventLabelPlacements={eventLabelPlacements}
-              displacedEventPlacements={displacedEventPlacements}
-              pointerCoarse={pointerCoarse}
-              viewportInnerHeightPx={layoutProbe.vhPx}
-              previewChangeSet={previewChangeSet ?? undefined}
-              selectedPeriodBarRef={timelineSelectedPeriodBarRef}
-              selectedEventDotRef={timelineSelectedEventDotRef}
-              trackPct={(timeMs) => pctOnTrack(timeMs, min, max)}
-              periodRowCenterFromTopRem={periodRowCenterFromTopRem}
-              foregroundForHex={foregroundForHex}
-              formatDate={formatDate}
-              eventPassesLaneFilter={eventPassesLaneFilter}
-              eventPointerTitle={(event) => eventPointerTitle(event, studyMode)}
-              onSelectPeriod={(period) => setSel({ kind: "period", item: period })}
-              onSelectEvent={(event) => setSel({ kind: "event", item: event })}
-            />
-          </Timeline>
-        </div>
+              <TimelineTrack
+                periods={periods}
+                eventsSorted={eventsSorted}
+                selection={sel}
+                minMs={min}
+                maxMs={max}
+                cursorPct={cursorPct}
+                laneByIndex={laneByIndex}
+                periodIndicesByLane={periodIndicesByLane}
+                compactPeriodRowRem={compactPeriodRowRem}
+                activePeriod={activePeriodForTimeline}
+                studyMode={studyMode}
+                laneVisibility={laneVisibility}
+                causalHighlight={causalHighlight}
+                causalitySvgEdges={causalitySvgEdges}
+                eventLabelPlacements={eventLabelPlacements}
+                displacedEventPlacements={displacedEventPlacements}
+                pointerCoarse={pointerCoarse}
+                viewportInnerHeightPx={layoutProbe.vhPx}
+                previewChangeSet={previewChangeSet ?? undefined}
+                selectedPeriodBarRef={timelineSelectedPeriodBarRef}
+                selectedEventDotRef={timelineSelectedEventDotRef}
+                trackPct={(timeMs) => pctOnTrack(timeMs, min, max)}
+                periodRowCenterFromTopRem={periodRowCenterFromTopRem}
+                foregroundForHex={foregroundForHex}
+                formatDate={formatDate}
+                eventPassesLaneFilter={eventPassesLaneFilter}
+                eventPointerTitle={(event) => eventPointerTitle(event, studyMode)}
+                onSelectPeriod={(period) => setSel({ kind: "period", item: period })}
+                onSelectEvent={(event) => setSel({ kind: "event", item: event })}
+              />
+            </Timeline>
+          </div>
 
-        <div className="viewer-map-overlays" aria-label="Paneles del visor">
-          {indexOpen ? (
-            <ViewerIndex
-              periods={periods}
-              events={events}
+          <div className="viewer-map-overlays" aria-label="Paneles del visor">
+            {indexOpen ? (
+              <ViewerIndex
+                periods={periods}
+                events={events}
+                sel={sel}
+                activePeriodForTimeline={activePeriodForTimeline}
+                timelineTitle={timelineTitle}
+                timelineRange={timelineRange}
+                onSelectPeriod={(p) => {
+                  setSel({ kind: "period", item: p });
+                  if (viewerIsTabletViewport()) setIndexOpen(false);
+                }}
+                onSelectEvent={(e) => {
+                  setSel({ kind: "event", item: e });
+                  if (viewerIsTabletViewport()) setIndexOpen(false);
+                }}
+                onClose={() => setIndexOpen(false)}
+              />
+            ) : null}
+
+            <SelectionDetail
               sel={sel}
+              studyMode={studyMode}
+              eventsById={eventsById}
               activePeriodForTimeline={activePeriodForTimeline}
-              timelineTitle={timelineTitle}
-              timelineRange={timelineRange}
-              onSelectPeriod={(p) => {
-                setSel({ kind: "period", item: p });
-                if (viewerIsTabletViewport()) setIndexOpen(false);
-              }}
-              onSelectEvent={(e) => {
-                setSel({ kind: "event", item: e });
-                if (viewerIsTabletViewport()) setIndexOpen(false);
-              }}
-              onClose={() => setIndexOpen(false)}
+              periodsForEvent={periodsForEvent}
+              collapsed={detailCollapsed}
+              previewMode={previewMode}
+              onToggleCollapsed={() =>
+                setDetailCollapsed((collapsed) => !collapsed)
+              }
+              onSelectEvent={(e) => setSel({ kind: "event", item: e })}
+              onEditEvent={(e) => !previewMode && setEditorState({ kind: "edit", event: e })}
+              onDeleteEvent={deleteSelectedEvent}
             />
-          ) : null}
-
-          <SelectionDetail
-            sel={sel}
-            studyMode={studyMode}
-            eventsById={eventsById}
-            activePeriodForTimeline={activePeriodForTimeline}
-            periodsForEvent={periodsForEvent}
-            collapsed={detailCollapsed}
-            previewMode={previewMode}
-            onToggleCollapsed={() =>
-              setDetailCollapsed((collapsed) => !collapsed)
-            }
-            onSelectEvent={(e) => setSel({ kind: "event", item: e })}
-            onEditEvent={(e) => !previewMode && setEditorState({ kind: "edit", event: e })}
-            onDeleteEvent={deleteSelectedEvent}
-          />
-        </div>
+          </div>
         </div>
 
         {editorState ? (
@@ -2114,7 +2114,12 @@ export default function ViewerPage() {
             onRefinePlan={refineAiPlan}
           />
         ) : null}
-        <SearchPanel Timeline={{ periods, events }} />
+        <SearchPanel
+          key="search-panel"
+          Timeline={{ periods, events }}
+          onSelectPeriod={(period) => setSel({ kind: "period", item: period })}
+          onSelectEvent={(event) => setSel({ kind: "event", item: event })}
+        />
       </div>
     </div>
   );
