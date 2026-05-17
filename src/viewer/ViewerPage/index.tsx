@@ -70,6 +70,7 @@ import { SearchPanel } from "@/components";
 const timelineRepo = createTimelineRepo();
 const timelineEditionService = new TimelineEditionService(timelineRepo);
 const DEFAULT_API_BASE_URL = "https://ukpswhaxmg.us-east-1.awsapprunner.com";
+const EXECUTION_PLAN_POLLING_INTERVAL_MS = 5000;
 const apiBaseUrl = import.meta.env.VITE_TIMELINES_API_BASE_URL as string | undefined;
 const aiService =
   apiBaseUrl === "local" ? null : new HttpAiService(apiBaseUrl ?? DEFAULT_API_BASE_URL);
@@ -1192,29 +1193,76 @@ export default function ViewerPage() {
     [aiPlansByMessageId, refreshPlan, selectedTimelineId]
   );
 
+  const retryAiPlanStep = useCallback(
+    async (planId: string, stepId: string) => {
+      if (!selectedTimelineId || !aiService) return;
+      const entry = Object.values(aiPlansByMessageId).find(
+        (item) => item.plan.id === planId
+      );
+      if (!entry) return;
+      setAiPlansByMessageId((prev) => ({
+        ...prev,
+        [entry.sourceMessageId]: { ...entry, loading: true, error: null },
+      }));
+      try {
+        await aiService.retryStep(selectedTimelineId, planId, stepId);
+        await refreshPlan(planId);
+      } catch (error) {
+        console.error("Retry plan step failed", error);
+        setAiPlansByMessageId((prev) => ({
+          ...prev,
+          [entry.sourceMessageId]: {
+            ...prev[entry.sourceMessageId]!,
+            loading: false,
+            error: String(error),
+          },
+        }));
+      }
+    },
+    [aiPlansByMessageId, refreshPlan, selectedTimelineId]
+  );
+
+  const activePlanIdsKey = useMemo(
+    () =>
+      Object.values(aiPlansByMessageId)
+        .map((entry) => entry.plan)
+        .filter((plan) => plan.status === "executing" || plan.status === "refining")
+        .map((plan) => plan.id)
+        .sort()
+        .join("|"),
+    [aiPlansByMessageId]
+  );
+
   useEffect(() => {
     if (!selectedTimelineId || !aiService) return;
-    const activePlanIds = Object.values(aiPlansByMessageId)
-      .map((entry) => entry.plan)
-      .filter((plan) => plan.status === "executing" || plan.status === "refining")
-      .map((plan) => plan.id);
+    const activePlanIds = activePlanIdsKey === "" ? [] : activePlanIdsKey.split("|");
     if (activePlanIds.length === 0) return;
 
     let cancelled = false;
-    const poll = () => {
-      for (const planId of activePlanIds) {
-        void refreshPlan(planId).catch((error) => {
-          if (!cancelled) console.error("Plan polling failed", error);
-        });
+    let polling = false;
+    const poll = async () => {
+      if (polling) return;
+      polling = true;
+      try {
+        await Promise.all(
+          activePlanIds.map((planId) =>
+            refreshPlan(planId).catch((error) => {
+              if (!cancelled) console.error("Plan polling failed", error);
+            })
+          )
+        );
+      } finally {
+        polling = false;
       }
     };
-    const intervalId = window.setInterval(poll, 2000);
-    poll();
+    const intervalId = window.setInterval(() => {
+      void poll();
+    }, EXECUTION_PLAN_POLLING_INTERVAL_MS);
     return () => {
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [aiPlansByMessageId, refreshPlan, selectedTimelineId]);
+  }, [activePlanIdsKey, refreshPlan, selectedTimelineId]);
 
   const axisShowYearFlags = useMemo(
     () => computeAxisShowYearFlags(axisMarks),
@@ -2112,6 +2160,7 @@ export default function ViewerPage() {
             onPreviewPlan={previewAiPlan}
             onApplyPlan={applyAiPlan}
             onRefinePlan={refineAiPlan}
+            onRetryStep={retryAiPlanStep}
           />
         ) : null}
         <SearchPanel

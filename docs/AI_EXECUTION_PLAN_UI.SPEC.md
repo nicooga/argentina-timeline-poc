@@ -50,7 +50,7 @@ Para esos temas, leer los documentos backend enlazados arriba.
 ### Progreso y polling
 
 - Durante `executing` o `refining`, la UI hace polling de
-  `GET /execution-plans/{plan_id}` cada 2 segundos.
+  `GET /execution-plans/{plan_id}` cada 5 segundos.
 - Mostrar progreso como pasos completados / totales, pasos actualmente
   ejecutando y cantidad de intentos.
 - Los pasos `generate_events_by_category` deben agruparse visualmente para no
@@ -62,8 +62,10 @@ Para esos temas, leer los documentos backend enlazados arriba.
 
 - Al llegar a `completed`, la UI pide `GET /proposed-changes` y muestra un
   resumen por tipo de operación.
+- Siempre que el plan tenga operaciones propuestas sin aplicar, la UI ofrece
+  `Ver vista previa`.
 - Si el plan llega a `failed` pero existen operaciones parciales, puede ofrecer
-  `Ver preview parcial`, etiquetado como parcial.
+  `Ver vista previa parcial`, etiquetado como parcial.
 - El preview se calcula localmente aplicando las operaciones al timeline actual.
   No se reemplaza el snapshot completo salvo como resultado de la respuesta del
   backend al aplicar.

@@ -202,6 +202,13 @@ export class HttpAiService {
     );
   }
 
+  async retryStep(timelineId: string, planId: string, stepId: string): Promise<void> {
+    await this.request<unknown>(
+      `/timelines/${encodeURIComponent(timelineId)}/execution-plans/${encodeURIComponent(planId)}/steps/${encodeURIComponent(stepId)}/retry`,
+      { method: "POST" }
+    );
+  }
+
   private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const response = await this.fetcher(`${this.baseUrl}${path}`, {
       ...init,
