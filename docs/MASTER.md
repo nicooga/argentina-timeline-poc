@@ -71,6 +71,7 @@ Until the restructure happens, agents should treat the current root as `frontend
 | Language | TypeScript ~5.7 (strict) |
 | Router | React Router DOM v7 |
 | Build tool | Vite 6 |
+| Component catalog | Storybook 10 (`npm run storybook`, stories `src/**/*.stories.tsx`) |
 | Styling | Plain CSS with CSS variables — no CSS framework |
 | Fonts | IBM Plex Serif, Inter, JetBrains Mono (Google Fonts) |
 | State | React hooks only (`useState`, `useRef`, `useMemo`, etc.) — no Redux/Context |
@@ -262,7 +263,15 @@ npm run build
 
 # Preview production build locally
 npm run preview
+
+# Storybook (component catalog, localhost:6006)
+npm run storybook
+
+# Static Storybook build
+npm run build-storybook
 ```
+
+Stories live under `src/**/*.stories.@(ts|tsx)`; config in `.storybook/`. See [`README.md`](../README.md#storybook).
 
 Node 20+ required (matches CI).
 
