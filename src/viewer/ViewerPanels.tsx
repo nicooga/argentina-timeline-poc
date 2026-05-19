@@ -547,7 +547,7 @@ export function ViewerDetailPanel({
             </p>
           ) : sel.kind === "period" ? (
             <ul className="detail-items timeline-event-items">
-              {sel.item.items.map((text, i) => (
+              {sel.item.items?.map((text, i) => (
                 <li key={i}>{text}</li>
               ))}
             </ul>
@@ -620,7 +620,7 @@ export function ViewerDetailPanel({
               ) : null}
               {studyMode !== "exam" ? (
                 <ul className="detail-items timeline-event-items">
-                  {sel.item.items.map((text, i) => (
+                  {sel.item.items?.map((text, i) => (
                     <li key={i}>{text}</li>
                   ))}
                 </ul>
@@ -712,7 +712,7 @@ export function ViewerDetailPanel({
                         </span>
                       </summary>
                       <ul className="detail-items timeline-event-items">
-                        {p.items.map((text, i) => (
+                        {p.items?.map((text, i) => (
                           <li key={i}>{text}</li>
                         ))}
                       </ul>

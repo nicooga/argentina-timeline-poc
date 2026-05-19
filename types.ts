@@ -17,7 +17,7 @@ export interface TimelineEvent extends Linked {
     items: string[];
     date: Date;
     /** Carril(es) semántico(s); no vacío. */
-    lanes: EventLaneId[];
+    lanes?: EventLaneId[];
     /** IDs de otros eventos que ayudan a explicar por qué ocurre. */
     causes?: string[];
     /** IDs de otros eventos que este hecho condiciona o desencadena. */
@@ -31,7 +31,7 @@ export interface Period extends Linked {
     start: Date;
     end: Date;
     /** Puntos breves para mostrar como lista en el panel de detalle. */
-    items: string[];
+    items?: string[];
     color: string;
 }
 

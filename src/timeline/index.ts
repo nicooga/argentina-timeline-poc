@@ -7,6 +7,7 @@ export * from "./eventClusterLayout";
 export * from "./axisMarkLayout";
 export * from "./axisScaleDetail";
 export * from "./historicalDateFormat";
+export * from "./timelineViewport";
 export {
   LaneGlyph,
   TimelineEventTitlesLane,

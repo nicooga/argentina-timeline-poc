@@ -60,6 +60,7 @@ type ExecutionPlanWire = {
   id: string;
   timeline_id: string;
   status: ExecutionPlan["status"];
+  proposed_changes?: TimelineChangeWire[];
   steps: ExecutionPlanStepWire[];
   created_at: string;
 };
@@ -274,6 +275,7 @@ function planFromWire(wire: ExecutionPlanWire): ExecutionPlan {
     id: wire.id,
     timelineId: wire.timeline_id,
     status: wire.status,
+    proposedChanges: (wire.proposed_changes ?? []).map(changeFromWire),
     steps: wire.steps.map(stepFromWire),
     createdAt: new Date(wire.created_at),
   };

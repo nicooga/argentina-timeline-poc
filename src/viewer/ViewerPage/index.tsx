@@ -44,7 +44,9 @@ import {
   formatHistoricalYear,
   formatHistoricalYearDate,
   mergeAxisMarks,
+  timelineVisibleRangeFromScroll,
   utcYearStartMs,
+  type TimelineVisibleRange,
 } from "../../timeline";
 import Timeline from "../../timeline/Timeline";
 import TimelineAxis from "../../timeline/TimelineAxis";
@@ -556,6 +558,7 @@ function axisBandLabel(startYear: number, bandYears: number): string {
 const TIMELINE_ZOOM_MIN = 0.35;
 const TIMELINE_ZOOM_DEFAULT_MAX = 14;
 const TIMELINE_ZOOM_STEP = 1.085;
+const TIMELINE_VIRTUAL_OVERSCAN_VIEWPORTS = 1;
 
 
 /** Viewer tablet viewport: panels start collapsed. */
@@ -718,6 +721,8 @@ export default function ViewerPage() {
   const [scrollViewportWidthPx, setScrollViewportWidthPx] = useState<number | null>(
     null
   );
+  const [timelineVisibleRange, setTimelineVisibleRange] =
+    useState<TimelineVisibleRange>({ startPct: 0, endPct: 100 });
   const timelineZoomMax = useMemo(
     () => {
       const baseStackWidthPx =
@@ -825,23 +830,17 @@ export default function ViewerPage() {
         const planEntries = await Promise.all(
           planSummaries.map(async (summary) => {
             const plan = await aiService!.getPlan(selectedTimelineId!, summary.id);
-            let operations: TimelineChange[] = [];
-            let operationsStatus: ExecutionPlanStatus | null = null;
-            if (plan.status === "completed" || plan.status === "failed") {
-              const proposed = await aiService!.getProposedChanges(
-                selectedTimelineId!,
-                plan.id
-              );
-              operations = proposed.operations;
-              operationsStatus = proposed.status;
-            }
+            const proposed = await aiService!.getProposedChanges(
+              selectedTimelineId!,
+              plan.id
+            );
             return {
               sourceMessageId: summary.sourceMessageId,
               state: {
                 sourceMessageId: summary.sourceMessageId,
                 plan,
-                operations,
-                operationsStatus,
+                operations: proposed.operations,
+                operationsStatus: proposed.status,
                 loading: false,
                 error: null,
               } satisfies PlanUiState,
@@ -996,15 +995,10 @@ export default function ViewerPage() {
     async (planId: string) => {
       if (!selectedTimelineId || !aiService) return null;
       const plan = await aiService.getPlan(selectedTimelineId, planId);
-      let operations: TimelineChange[] | null = null;
-      let operationsStatus: ExecutionPlanStatus | null = null;
-      if (plan.status === "completed" || plan.status === "failed") {
-        const proposed = await aiService.getProposedChanges(selectedTimelineId, plan.id);
-        operations = proposed.operations;
-        operationsStatus = proposed.status;
-      }
+      const proposed = await aiService.getProposedChanges(selectedTimelineId, plan.id);
+      const operations = proposed.operations;
       if (
-        operations != null &&
+        operations.length > 0 &&
         operationsAppliedToTimeline(timelineRef.current, operations)
       ) {
         setAiAppliedIds((prev) => new Set([...prev, planPreviewId(plan.id)]));
@@ -1017,8 +1011,8 @@ export default function ViewerPage() {
           [entry.sourceMessageId]: {
             ...entry,
             plan,
-            operations: operations ?? entry.operations,
-            operationsStatus: operationsStatus ?? entry.operationsStatus,
+            operations,
+            operationsStatus: proposed.status,
             loading: false,
             error: null,
           },
@@ -1044,6 +1038,7 @@ export default function ViewerPage() {
                 id: `pending-${messageId}`,
                 timelineId: selectedTimelineId,
                 status: "draft",
+                proposedChanges: [],
                 steps: [],
                 createdAt: new Date(),
               },
@@ -1056,13 +1051,14 @@ export default function ViewerPage() {
       });
       try {
         const plan = await aiService.startPlan(selectedTimelineId, messageId);
+        const proposed = await aiService.getProposedChanges(selectedTimelineId, plan.id);
         setAiPlansByMessageId((prev) => ({
           ...prev,
           [messageId]: {
             sourceMessageId: messageId,
             plan,
-            operations: [],
-            operationsStatus: null,
+            operations: proposed.operations,
+            operationsStatus: proposed.status,
             loading: false,
             error: null,
           },
@@ -1557,7 +1553,24 @@ export default function ViewerPage() {
       sel.kind === "period"
         ? timelineSelectedPeriodBarRef.current
         : timelineSelectedEventDotRef.current;
-    if (!el) return;
+    if (!el) {
+      const scrollEl = timelineScrollRef.current;
+      if (!scrollEl) return;
+      const pct =
+        sel.kind === "period"
+          ? (pctOnTrack(sel.item.start.getTime(), min, max) +
+              pctOnTrack(sel.item.end.getTime(), min, max)) /
+            2
+          : pctOnTrack(sel.item.date.getTime(), min, max);
+      const targetLeft =
+        (pct / 100) * scrollEl.scrollWidth - scrollEl.clientWidth / 2;
+      scrollEl.scrollLeft = clamp(
+        targetLeft,
+        0,
+        Math.max(0, scrollEl.scrollWidth - scrollEl.clientWidth)
+      );
+      return;
+    }
     const smoothScroll =
       typeof window !== "undefined" &&
       !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1566,7 +1579,7 @@ export default function ViewerPage() {
       block: "nearest",
       inline: "center",
     });
-  }, [sel, timelineZoom]);
+  }, [max, min, sel, timelineZoom]);
 
   const viewerShellClass = [
     sel === null ? "" : "viewer-shell--sel-compact",
@@ -1582,12 +1595,49 @@ export default function ViewerPage() {
     const updateMetrics = () => {
       setStackWidthPx(el.offsetWidth);
       setScrollViewportWidthPx(scrollEl?.clientWidth ?? null);
+      if (scrollEl) {
+        setTimelineVisibleRange(
+          timelineVisibleRangeFromScroll(
+            scrollEl.scrollLeft,
+            scrollEl.clientWidth,
+            scrollEl.scrollWidth,
+            TIMELINE_VIRTUAL_OVERSCAN_VIEWPORTS
+          )
+        );
+      }
     };
     const ro = new ResizeObserver(updateMetrics);
     ro.observe(el);
     if (scrollEl) ro.observe(scrollEl);
     updateMetrics();
     return () => ro.disconnect();
+  }, [timelineZoom]);
+
+  useEffect(() => {
+    const scrollEl = timelineScrollRef.current;
+    if (!scrollEl) return;
+    let frameId = 0;
+    const updateVisibleRange = () => {
+      frameId = 0;
+      setTimelineVisibleRange(
+        timelineVisibleRangeFromScroll(
+          scrollEl.scrollLeft,
+          scrollEl.clientWidth,
+          scrollEl.scrollWidth,
+          TIMELINE_VIRTUAL_OVERSCAN_VIEWPORTS
+        )
+      );
+    };
+    const onScroll = () => {
+      if (frameId !== 0) return;
+      frameId = window.requestAnimationFrame(updateVisibleRange);
+    };
+    scrollEl.addEventListener("scroll", onScroll, { passive: true });
+    updateVisibleRange();
+    return () => {
+      scrollEl.removeEventListener("scroll", onScroll);
+      if (frameId !== 0) window.cancelAnimationFrame(frameId);
+    };
   }, [timelineZoom]);
 
   useEffect(() => {
@@ -2060,6 +2110,7 @@ export default function ViewerPage() {
                 pointerCoarse={pointerCoarse}
                 viewportInnerHeightPx={layoutProbe.vhPx}
                 previewChangeSet={previewChangeSet ?? undefined}
+                visibleRange={timelineVisibleRange}
                 selectedPeriodBarRef={timelineSelectedPeriodBarRef}
                 selectedEventDotRef={timelineSelectedEventDotRef}
                 trackPct={(timeMs) => pctOnTrack(timeMs, min, max)}

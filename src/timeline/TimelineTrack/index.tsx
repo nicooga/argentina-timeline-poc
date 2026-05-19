@@ -7,6 +7,11 @@ import type { DisplacedEventPlacement } from "../eventClusterLayout";
 import type { EventLabelPlacement } from "../eventLabelLayout";
 import { formatHistoricalYear } from "../historicalDateFormat";
 import {
+  timelinePointInVisibleRange,
+  timelineSpanIntersectsVisibleRange,
+  type TimelineVisibleRange,
+} from "../timelineViewport";
+import {
   TimelineSemanticEventLanes,
   TimelineEventTitlesLane,
   type TimelineCausalitySvgEdge,
@@ -32,6 +37,7 @@ type TimelineTrackProps = {
   pointerCoarse: boolean;
   viewportInnerHeightPx: number;
   previewChangeSet?: PreviewChangeSet;
+  visibleRange: TimelineVisibleRange;
   selectedPeriodBarRef: RefObject<HTMLButtonElement | null>;
   selectedEventDotRef: RefObject<HTMLButtonElement | null>;
   trackPct: (timeMs: number) => number;
@@ -68,6 +74,7 @@ export default function TimelineTrack({
   pointerCoarse,
   viewportInnerHeightPx,
   previewChangeSet,
+  visibleRange,
   selectedPeriodBarRef,
   selectedEventDotRef,
   trackPct,
@@ -79,12 +86,49 @@ export default function TimelineTrack({
   onSelectPeriod,
   onSelectEvent,
 }: TimelineTrackProps) {
+  const visiblePeriodIndexSet = new Set<number>();
+  periods.forEach((period, index) => {
+    const startPct = trackPct(period.start.getTime());
+    const endPct = trackPct(period.end.getTime());
+    const selected = activePeriod === period;
+    if (
+      selected ||
+      timelineSpanIntersectsVisibleRange(startPct, endPct, visibleRange)
+    ) {
+      visiblePeriodIndexSet.add(index);
+    }
+  });
+  const visibleEventIndexSet = new Set<number>();
+  eventsSorted.forEach((event, index) => {
+    const selected = selection?.kind === "event" && selection.item === event;
+    if (
+      selected ||
+      timelinePointInVisibleRange(trackPct(event.date.getTime()), visibleRange)
+    ) {
+      visibleEventIndexSet.add(index);
+    }
+  });
+  const visibleEventSet = new Set<TimelineEvent>(
+    [...visibleEventIndexSet].map((index) => eventsSorted[index]!)
+  );
+  const visibleCausalitySvgEdges = causalitySvgEdges.filter(
+    ({ from, to }) =>
+      visibleEventSet.has(from) ||
+      visibleEventSet.has(to) ||
+      timelineSpanIntersectsVisibleRange(
+        trackPct(from.date.getTime()),
+        trackPct(to.date.getTime()),
+        visibleRange
+      )
+  );
+
   return (
     <>
       <div className="track-wrap">
         <div className="track-bg" />
         <div className="period-connectors" aria-hidden>
           {periods.flatMap((period, index) => {
+            if (!visiblePeriodIndexSet.has(index)) return [];
             const centerRem = periodRowCenterFromTopRem(
               laneByIndex[index],
               true,
@@ -120,6 +164,7 @@ export default function TimelineTrack({
           <div key={`lane-${lane}`} className="period-row">
             <div className="row-bar">
               {indices.map((index) => {
+                if (!visiblePeriodIndexSet.has(index)) return null;
                 const period = periods[index];
                 const left = trackPct(period.start.getTime());
                 const width = Math.max(trackPct(period.end.getTime()) - left, 0.8);
@@ -169,6 +214,7 @@ export default function TimelineTrack({
           <TimelineSemanticEventLanes
             laneVisibility={laneVisibility}
             eventsSorted={eventsSorted}
+            visibleEventIndexSet={visibleEventIndexSet}
             trackPct={trackPct}
             selection={selection}
             studyMode={studyMode}
@@ -183,7 +229,7 @@ export default function TimelineTrack({
             sel={selection}
             studyMode={studyMode}
             causalHighlight={causalHighlight}
-            causalitySvgEdges={causalitySvgEdges}
+            causalitySvgEdges={visibleCausalitySvgEdges}
             eventPassesLaneFilter={eventPassesLaneFilter}
             pointerCoarse={pointerCoarse}
             viewportInnerHeightPx={viewportInnerHeightPx}
@@ -191,6 +237,7 @@ export default function TimelineTrack({
             onSelectEvent={onSelectEvent}
             timelineSelectedEventDotRef={selectedEventDotRef}
             displacedEventPlacements={displacedEventPlacements}
+            visibleEventIndexSet={visibleEventIndexSet}
             previewHighlight={previewChangeSet}
           />
         </div>

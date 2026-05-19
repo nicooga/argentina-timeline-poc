@@ -29,6 +29,14 @@ const planWire = {
   id: "plan-1",
   timeline_id: "argentina-history",
   status: "draft",
+  proposed_changes: [
+    {
+      type: "create_period",
+      target_id: null,
+      data: { id: "p1", title: "P1", start: "1900-01-01", end: "1901-01-01" },
+      rationale: "Add period",
+    },
+  ],
   created_at: "2026-05-10T12:01:00Z",
   steps: [
     {
@@ -38,7 +46,14 @@ const planWire = {
       description: "Generate periods",
       status: "pending",
       attempt_count: 0,
-      proposed_changes: [],
+      proposed_changes: [
+        {
+          type: "create_event",
+          target_id: null,
+          data: { id: "e1", title: "E1", date: "1900-01-01", lanes: ["politico"], items: [] },
+          rationale: "Add event",
+        },
+      ],
     },
   ],
 };
@@ -85,11 +100,13 @@ describe("HttpAiService", () => {
     await expect(service.listPlans("argentina-history")).resolves.toEqual([]);
     await expect(service.startPlan("argentina-history", "m1")).resolves.toMatchObject({
       id: "plan-1",
+      proposedChanges: [{ type: "create_period" }],
       steps: [{ stepType: "generate_periods" }],
     });
     await service.executePlan("argentina-history", "plan-1");
     await expect(service.getPlan("argentina-history", "plan-1")).resolves.toMatchObject({
       status: "completed",
+      steps: [{ proposedChanges: [{ type: "create_event" }] }],
     });
     await expect(
       service.getProposedChanges("argentina-history", "plan-1")

@@ -110,6 +110,17 @@
   white-space: pre-wrap;
 }
 
+.ai-chat-debug-id {
+  display: block;
+  margin-bottom: 0.22rem;
+  color: var(--muted);
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.58rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  opacity: 0.82;
+}
+
 /* Typing dots */
 .ai-chat-typing-dots {
   display: inline-flex;

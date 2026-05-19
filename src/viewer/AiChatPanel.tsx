@@ -358,6 +358,7 @@ function PlanCard({
         <strong>Plan de ejecución</strong>
         <span>{PLAN_STATUS_LABELS[plan.status] ?? plan.status}</span>
       </div>
+      <code className="ai-chat-debug-id">plan {plan.id}</code>
       <p className="ai-plan-card__meta">
         {completed}/{plan.steps.length} pasos completados
         {loading || active ? " · actualizando" : ""}
@@ -476,6 +477,7 @@ function MessageBubble({
     message.role === "assistant" && message.messageType === "plan_proposal";
   return (
     <div className={`ai-chat-bubble ai-chat-bubble--${message.role}`}>
+      <code className="ai-chat-debug-id">message {message.id}</code>
       <p className="ai-chat-bubble__content">{message.content}</p>
       {message.role === "assistant" && message.messageType === "response" && (
         <ProposedChanges

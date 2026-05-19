@@ -60,10 +60,9 @@ Para esos temas, leer los documentos backend enlazados arriba.
 
 ### Propuestas, preview y aplicación
 
-- Al llegar a `completed`, la UI pide `GET /proposed-changes` y muestra un
-  resumen por tipo de operación.
-- Siempre que el plan tenga operaciones propuestas sin aplicar, la UI ofrece
-  `Ver vista previa`.
+- La UI pide `GET /proposed-changes` para el plan sin condicionar por estado.
+- Siempre que `GET /proposed-changes` devuelva operaciones propuestas sin
+  aplicar, la UI ofrece `Ver vista previa`.
 - Si el plan llega a `failed` pero existen operaciones parciales, puede ofrecer
   `Ver vista previa parcial`, etiquetado como parcial.
 - El preview se calcula localmente aplicando las operaciones al timeline actual.
