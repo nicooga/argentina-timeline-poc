@@ -17,7 +17,7 @@ export interface TimelineEvent extends Linked {
     items: string[];
     date: Date;
     /** Carril(es) semántico(s); no vacío. */
-    lanes?: EventLaneId[];
+    lanes: EventLaneId[];
     /** IDs de otros eventos que ayudan a explicar por qué ocurre. */
     causes?: string[];
     /** IDs de otros eventos que este hecho condiciona o desencadena. */

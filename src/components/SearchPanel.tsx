@@ -35,7 +35,7 @@ export default function SearchPanel({
 
         const periodMatches = Timeline.periods.filter((period) => {
             const titleMatch = normalize(period.title).includes(normalizedQuery);
-            const itemsMatch = period.items.some((item) => normalize(item).includes(normalizedQuery));
+            const itemsMatch = period.items?.some((item) => normalize(item).includes(normalizedQuery)) ?? false;
             return titleMatch || itemsMatch;
         });
 
@@ -105,7 +105,7 @@ export default function SearchPanel({
                                 <div className="title">{item.title}</div>
                                 <div className="description">
                                     {isPeriod(item)
-                                        ? item.items.join(" · ") || "Sin detalles"
+                                        ? item.items?.join(" · ") || "Sin detalles"
                                         : item.summary || item.items.join(" · ") || "Sin detalles"}
                                 </div>
                             </div>
