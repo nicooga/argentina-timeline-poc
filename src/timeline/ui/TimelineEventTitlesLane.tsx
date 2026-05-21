@@ -32,6 +32,7 @@ export type TimelineEventTitlesLaneProps = {
   /** Para alinear alto del visor de título vertical con TS (`verticalEventTitlesRowLayoutPx`). */
   viewportInnerHeightPx: number;
   displacedEventPlacements: DisplacedEventPlacement[];
+  visibleEventIndexSet: ReadonlySet<number>;
   previewHighlight?: PreviewChangeSet;
 };
 
@@ -54,6 +55,7 @@ export function TimelineEventTitlesLane({
   pointerCoarse,
   viewportInnerHeightPx,
   displacedEventPlacements,
+  visibleEventIndexSet,
   previewHighlight,
 }: TimelineEventTitlesLaneProps) {
   const routePlacements = eventsSorted.map((event, idx) => {
@@ -133,6 +135,7 @@ export function TimelineEventTitlesLane({
         ) : null}
         <div className="events-titles-lane__connectors" aria-hidden>
           {eventsSorted.map((e, idx) => {
+            if (!visibleEventIndexSet.has(idx)) return null;
             const displaced = displacedEventPlacements[idx];
             const isConnActive = sel?.kind === "event" && sel.item === e;
             const lanesMuted = !eventPassesLaneFilter(e);
@@ -144,7 +147,7 @@ export function TimelineEventTitlesLane({
                 key={`conn-title-${e.title}-${e.date.toISOString()}`}
                 leftPct={displaced?.datePct ?? trackPct(e.date.getTime())}
                 lane={0}
-                laneSpanCount={semanticConnectorLaneSpanCount(e.lanes)}
+                laneSpanCount={semanticConnectorLaneSpanCount(e.lanes ?? [])}
                 stroke={connectorStroke}
                 selected={isConnActive}
                 lanesMuted={lanesMuted}
@@ -159,7 +162,8 @@ export function TimelineEventTitlesLane({
             preserveAspectRatio="none"
             aria-hidden
           >
-            {routePlacements.map((placement) => {
+            {routePlacements.map((placement, eventIndex) => {
+              if (!visibleEventIndexSet.has(eventIndex)) return null;
               const x1 = placement.datePct * 10;
               const x2 = placement.displayPct * 10;
               const bendY = 54;
@@ -183,6 +187,7 @@ export function TimelineEventTitlesLane({
           </svg>
         ) : null}
         {eventsSorted.map((e, idx) => {
+          if (!visibleEventIndexSet.has(idx)) return null;
           const pl = eventLabelPlacements[idx];
           const isEventActive = sel?.kind === "event" && sel.item === e;
           const isRelated =

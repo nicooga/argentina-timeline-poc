@@ -35,6 +35,7 @@ function eventPointerTitle(e: TimelineEvent, mode: StudyMode): string {
 export type TimelineSemanticEventLanesProps = {
   laneVisibility: Record<EventLaneId, boolean>;
   eventsSorted: TimelineEvent[];
+  visibleEventIndexSet: ReadonlySet<number>;
   /** 0-100 on the track, with the same insets as the axis. */
   trackPct: (timeMs: number) => number;
   selection: Selection;
@@ -47,6 +48,7 @@ export type TimelineSemanticEventLanesProps = {
 export function TimelineSemanticEventLanes({
   laneVisibility,
   eventsSorted,
+  visibleEventIndexSet,
   trackPct,
   selection,
   studyMode,
@@ -58,8 +60,10 @@ export function TimelineSemanticEventLanes({
     <>
       {EVENT_LANE_ORDER.map((laneId) => {
         const laneOn = laneVisibility[laneId];
-        const eventsHere = eventsSorted.filter((e) =>
-          e.lanes.includes(laneId)
+        const eventsHere = eventsSorted.filter(
+          (event, index) =>
+            visibleEventIndexSet.has(index) &&
+            (event.lanes?.includes(laneId) ?? false)
         );
         return (
           <div

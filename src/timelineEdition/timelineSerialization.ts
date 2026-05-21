@@ -1,13 +1,14 @@
-import type { Period, Timeline, TimelineEvent } from "../../types";
+import type { EventLaneId, Period, Timeline, TimelineEvent } from "../../types";
 
 type JsonPeriod = Omit<Period, "start" | "end"> & {
   start: string;
   end: string;
 };
 
-type JsonTimelineEvent = Omit<TimelineEvent, "date" | "id"> & {
+type JsonTimelineEvent = Omit<TimelineEvent, "date" | "id" | "lanes"> & {
   id?: string;
   date: string;
+  lanes?: EventLaneId[];
 };
 
 type JsonTimeline = {
@@ -21,13 +22,13 @@ export function cloneTimeline(timeline: Timeline): Timeline {
       ...p,
       start: new Date(p.start.getTime()),
       end: new Date(p.end.getTime()),
-      items: [...p.items],
+      items: p.items ? [...p.items] : undefined,
       links: p.links ? [...p.links] : undefined,
     })),
     events: timeline.events.map((e) => ({
       ...e,
       date: new Date(e.date.getTime()),
-      lanes: [...e.lanes],
+      lanes: [...(e.lanes ?? [])],
       items: [...e.items],
       links: e.links ? [...e.links] : undefined,
       causes: e.causes ? [...e.causes] : undefined,
@@ -79,6 +80,7 @@ export function timelineFromJson(json: unknown): Timeline {
         ...e,
         id,
         date: parseTimelineDate(e.date),
+        lanes: e.lanes ?? [],
         causes: e.causes?.map((ref) => titleToId.get(ref) ?? ref),
         consequences: e.consequences?.map((ref) => titleToId.get(ref) ?? ref),
       };

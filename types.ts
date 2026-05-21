@@ -31,7 +31,7 @@ export interface Period extends Linked {
     start: Date;
     end: Date;
     /** Puntos breves para mostrar como lista en el panel de detalle. */
-    items: string[];
+    items?: string[];
     color: string;
 }
 

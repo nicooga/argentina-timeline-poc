@@ -44,7 +44,9 @@ import {
   formatHistoricalYear,
   formatHistoricalYearDate,
   mergeAxisMarks,
+  timelineVisibleRangeFromScroll,
   utcYearStartMs,
+  type TimelineVisibleRange,
 } from "../../timeline";
 import Timeline from "../../timeline/Timeline";
 import TimelineAxis from "../../timeline/TimelineAxis";
@@ -70,6 +72,7 @@ import { SearchPanel } from "@/components";
 const timelineRepo = createTimelineRepo();
 const timelineEditionService = new TimelineEditionService(timelineRepo);
 const DEFAULT_API_BASE_URL = "https://ukpswhaxmg.us-east-1.awsapprunner.com";
+const EXECUTION_PLAN_POLLING_INTERVAL_MS = 5000;
 const apiBaseUrl = import.meta.env.VITE_TIMELINES_API_BASE_URL as string | undefined;
 const aiService =
   apiBaseUrl === "local" ? null : new HttpAiService(apiBaseUrl ?? DEFAULT_API_BASE_URL);
@@ -555,6 +558,7 @@ function axisBandLabel(startYear: number, bandYears: number): string {
 const TIMELINE_ZOOM_MIN = 0.35;
 const TIMELINE_ZOOM_DEFAULT_MAX = 14;
 const TIMELINE_ZOOM_STEP = 1.085;
+const TIMELINE_VIRTUAL_OVERSCAN_VIEWPORTS = 1;
 
 
 /** Viewer tablet viewport: panels start collapsed. */
@@ -717,6 +721,8 @@ export default function ViewerPage() {
   const [scrollViewportWidthPx, setScrollViewportWidthPx] = useState<number | null>(
     null
   );
+  const [timelineVisibleRange, setTimelineVisibleRange] =
+    useState<TimelineVisibleRange>({ startPct: 0, endPct: 100 });
   const timelineZoomMax = useMemo(
     () => {
       const baseStackWidthPx =
@@ -824,23 +830,17 @@ export default function ViewerPage() {
         const planEntries = await Promise.all(
           planSummaries.map(async (summary) => {
             const plan = await aiService!.getPlan(selectedTimelineId!, summary.id);
-            let operations: TimelineChange[] = [];
-            let operationsStatus: ExecutionPlanStatus | null = null;
-            if (plan.status === "completed" || plan.status === "failed") {
-              const proposed = await aiService!.getProposedChanges(
-                selectedTimelineId!,
-                plan.id
-              );
-              operations = proposed.operations;
-              operationsStatus = proposed.status;
-            }
+            const proposed = await aiService!.getProposedChanges(
+              selectedTimelineId!,
+              plan.id
+            );
             return {
               sourceMessageId: summary.sourceMessageId,
               state: {
                 sourceMessageId: summary.sourceMessageId,
                 plan,
-                operations,
-                operationsStatus,
+                operations: proposed.operations,
+                operationsStatus: proposed.status,
                 loading: false,
                 error: null,
               } satisfies PlanUiState,
@@ -995,15 +995,10 @@ export default function ViewerPage() {
     async (planId: string) => {
       if (!selectedTimelineId || !aiService) return null;
       const plan = await aiService.getPlan(selectedTimelineId, planId);
-      let operations: TimelineChange[] | null = null;
-      let operationsStatus: ExecutionPlanStatus | null = null;
-      if (plan.status === "completed" || plan.status === "failed") {
-        const proposed = await aiService.getProposedChanges(selectedTimelineId, plan.id);
-        operations = proposed.operations;
-        operationsStatus = proposed.status;
-      }
+      const proposed = await aiService.getProposedChanges(selectedTimelineId, plan.id);
+      const operations = proposed.operations;
       if (
-        operations != null &&
+        operations.length > 0 &&
         operationsAppliedToTimeline(timelineRef.current, operations)
       ) {
         setAiAppliedIds((prev) => new Set([...prev, planPreviewId(plan.id)]));
@@ -1016,8 +1011,8 @@ export default function ViewerPage() {
           [entry.sourceMessageId]: {
             ...entry,
             plan,
-            operations: operations ?? entry.operations,
-            operationsStatus: operationsStatus ?? entry.operationsStatus,
+            operations,
+            operationsStatus: proposed.status,
             loading: false,
             error: null,
           },
@@ -1043,6 +1038,7 @@ export default function ViewerPage() {
                 id: `pending-${messageId}`,
                 timelineId: selectedTimelineId,
                 status: "draft",
+                proposedChanges: [],
                 steps: [],
                 createdAt: new Date(),
               },
@@ -1055,13 +1051,14 @@ export default function ViewerPage() {
       });
       try {
         const plan = await aiService.startPlan(selectedTimelineId, messageId);
+        const proposed = await aiService.getProposedChanges(selectedTimelineId, plan.id);
         setAiPlansByMessageId((prev) => ({
           ...prev,
           [messageId]: {
             sourceMessageId: messageId,
             plan,
-            operations: [],
-            operationsStatus: null,
+            operations: proposed.operations,
+            operationsStatus: proposed.status,
             loading: false,
             error: null,
           },
@@ -1192,29 +1189,76 @@ export default function ViewerPage() {
     [aiPlansByMessageId, refreshPlan, selectedTimelineId]
   );
 
+  const retryAiPlanStep = useCallback(
+    async (planId: string, stepId: string) => {
+      if (!selectedTimelineId || !aiService) return;
+      const entry = Object.values(aiPlansByMessageId).find(
+        (item) => item.plan.id === planId
+      );
+      if (!entry) return;
+      setAiPlansByMessageId((prev) => ({
+        ...prev,
+        [entry.sourceMessageId]: { ...entry, loading: true, error: null },
+      }));
+      try {
+        await aiService.retryStep(selectedTimelineId, planId, stepId);
+        await refreshPlan(planId);
+      } catch (error) {
+        console.error("Retry plan step failed", error);
+        setAiPlansByMessageId((prev) => ({
+          ...prev,
+          [entry.sourceMessageId]: {
+            ...prev[entry.sourceMessageId]!,
+            loading: false,
+            error: String(error),
+          },
+        }));
+      }
+    },
+    [aiPlansByMessageId, refreshPlan, selectedTimelineId]
+  );
+
+  const activePlanIdsKey = useMemo(
+    () =>
+      Object.values(aiPlansByMessageId)
+        .map((entry) => entry.plan)
+        .filter((plan) => plan.status === "executing" || plan.status === "refining")
+        .map((plan) => plan.id)
+        .sort()
+        .join("|"),
+    [aiPlansByMessageId]
+  );
+
   useEffect(() => {
     if (!selectedTimelineId || !aiService) return;
-    const activePlanIds = Object.values(aiPlansByMessageId)
-      .map((entry) => entry.plan)
-      .filter((plan) => plan.status === "executing" || plan.status === "refining")
-      .map((plan) => plan.id);
+    const activePlanIds = activePlanIdsKey === "" ? [] : activePlanIdsKey.split("|");
     if (activePlanIds.length === 0) return;
 
     let cancelled = false;
-    const poll = () => {
-      for (const planId of activePlanIds) {
-        void refreshPlan(planId).catch((error) => {
-          if (!cancelled) console.error("Plan polling failed", error);
-        });
+    let polling = false;
+    const poll = async () => {
+      if (polling) return;
+      polling = true;
+      try {
+        await Promise.all(
+          activePlanIds.map((planId) =>
+            refreshPlan(planId).catch((error) => {
+              if (!cancelled) console.error("Plan polling failed", error);
+            })
+          )
+        );
+      } finally {
+        polling = false;
       }
     };
-    const intervalId = window.setInterval(poll, 2000);
-    poll();
+    const intervalId = window.setInterval(() => {
+      void poll();
+    }, EXECUTION_PLAN_POLLING_INTERVAL_MS);
     return () => {
       cancelled = true;
       window.clearInterval(intervalId);
     };
-  }, [aiPlansByMessageId, refreshPlan, selectedTimelineId]);
+  }, [activePlanIdsKey, refreshPlan, selectedTimelineId]);
 
   const axisShowYearFlags = useMemo(
     () => computeAxisShowYearFlags(axisMarks),
@@ -1509,7 +1553,24 @@ export default function ViewerPage() {
       sel.kind === "period"
         ? timelineSelectedPeriodBarRef.current
         : timelineSelectedEventDotRef.current;
-    if (!el) return;
+    if (!el) {
+      const scrollEl = timelineScrollRef.current;
+      if (!scrollEl) return;
+      const pct =
+        sel.kind === "period"
+          ? (pctOnTrack(sel.item.start.getTime(), min, max) +
+              pctOnTrack(sel.item.end.getTime(), min, max)) /
+            2
+          : pctOnTrack(sel.item.date.getTime(), min, max);
+      const targetLeft =
+        (pct / 100) * scrollEl.scrollWidth - scrollEl.clientWidth / 2;
+      scrollEl.scrollLeft = clamp(
+        targetLeft,
+        0,
+        Math.max(0, scrollEl.scrollWidth - scrollEl.clientWidth)
+      );
+      return;
+    }
     const smoothScroll =
       typeof window !== "undefined" &&
       !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1518,7 +1579,7 @@ export default function ViewerPage() {
       block: "nearest",
       inline: "center",
     });
-  }, [sel, timelineZoom]);
+  }, [max, min, sel, timelineZoom]);
 
   const viewerShellClass = [
     sel === null ? "" : "viewer-shell--sel-compact",
@@ -1534,12 +1595,49 @@ export default function ViewerPage() {
     const updateMetrics = () => {
       setStackWidthPx(el.offsetWidth);
       setScrollViewportWidthPx(scrollEl?.clientWidth ?? null);
+      if (scrollEl) {
+        setTimelineVisibleRange(
+          timelineVisibleRangeFromScroll(
+            scrollEl.scrollLeft,
+            scrollEl.clientWidth,
+            scrollEl.scrollWidth,
+            TIMELINE_VIRTUAL_OVERSCAN_VIEWPORTS
+          )
+        );
+      }
     };
     const ro = new ResizeObserver(updateMetrics);
     ro.observe(el);
     if (scrollEl) ro.observe(scrollEl);
     updateMetrics();
     return () => ro.disconnect();
+  }, [timelineZoom]);
+
+  useEffect(() => {
+    const scrollEl = timelineScrollRef.current;
+    if (!scrollEl) return;
+    let frameId = 0;
+    const updateVisibleRange = () => {
+      frameId = 0;
+      setTimelineVisibleRange(
+        timelineVisibleRangeFromScroll(
+          scrollEl.scrollLeft,
+          scrollEl.clientWidth,
+          scrollEl.scrollWidth,
+          TIMELINE_VIRTUAL_OVERSCAN_VIEWPORTS
+        )
+      );
+    };
+    const onScroll = () => {
+      if (frameId !== 0) return;
+      frameId = window.requestAnimationFrame(updateVisibleRange);
+    };
+    scrollEl.addEventListener("scroll", onScroll, { passive: true });
+    updateVisibleRange();
+    return () => {
+      scrollEl.removeEventListener("scroll", onScroll);
+      if (frameId !== 0) window.cancelAnimationFrame(frameId);
+    };
   }, [timelineZoom]);
 
   useEffect(() => {
@@ -2012,6 +2110,7 @@ export default function ViewerPage() {
                 pointerCoarse={pointerCoarse}
                 viewportInnerHeightPx={layoutProbe.vhPx}
                 previewChangeSet={previewChangeSet ?? undefined}
+                visibleRange={timelineVisibleRange}
                 selectedPeriodBarRef={timelineSelectedPeriodBarRef}
                 selectedEventDotRef={timelineSelectedEventDotRef}
                 trackPct={(timeMs) => pctOnTrack(timeMs, min, max)}
@@ -2112,6 +2211,7 @@ export default function ViewerPage() {
             onPreviewPlan={previewAiPlan}
             onApplyPlan={applyAiPlan}
             onRefinePlan={refineAiPlan}
+            onRetryStep={retryAiPlanStep}
           />
         ) : null}
         <SearchPanel

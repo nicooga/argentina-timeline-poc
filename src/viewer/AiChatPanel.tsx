@@ -46,6 +46,7 @@ type Props = {
   onPreviewPlan: (planId: string) => void;
   onApplyPlan: (planId: string) => void;
   onRefinePlan: (planId: string, prompt: string) => void;
+  onRetryStep: (planId: string, stepId: string) => void;
 };
 
 const CHANGE_TYPE_LABELS: Record<string, string> = {
@@ -254,12 +255,22 @@ function compactCount(
   return `${count} ${count === 1 ? singular : plural}`;
 }
 
-function PlanStepSummary({ steps }: { steps: ExecutionPlanStep[] }) {
+function PlanStepSummary({
+  steps,
+  planFailed,
+  onRetryStep,
+}: {
+  steps: ExecutionPlanStep[];
+  planFailed: boolean;
+  onRetryStep?: (stepId: string) => void;
+}) {
   const eventSteps = steps.filter((step) => step.stepType === "generate_events_by_category");
   const otherSteps = steps.filter((step) => step.stepType !== "generate_events_by_category");
   const eventCompleted = eventSteps.filter((step) => step.status === "completed").length;
   const eventExecuting = eventSteps.filter((step) => step.status === "executing").length;
-  const eventFailed = eventSteps.filter((step) => step.status === "failed").length;
+  const failedEventSteps = eventSteps.filter((step) => step.status === "failed");
+  const eventFailed = failedEventSteps.length;
+  const canRetry = planFailed && onRetryStep != null;
 
   return (
     <ul className="ai-plan-steps">
@@ -270,17 +281,41 @@ function PlanStepSummary({ steps }: { steps: ExecutionPlanStep[] }) {
             {step.status}
             {step.attemptCount > 0 ? ` · ${step.attemptCount}` : ""}
           </span>
+          {canRetry && step.status === "failed" && (
+            <button
+              type="button"
+              className="ai-plan-step__retry"
+              onClick={() => onRetryStep!(step.id)}
+            >
+              Reintentar
+            </button>
+          )}
         </li>
       ))}
       {eventSteps.length > 0 ? (
-        <li className={`ai-plan-step${eventFailed > 0 ? " ai-plan-step--failed" : ""}`}>
-          <span>Eventos por categoría</span>
-          <span>
-            {eventCompleted}/{eventSteps.length}
-            {eventExecuting > 0 ? ` · ${eventExecuting} activo` : ""}
-            {eventFailed > 0 ? ` · ${eventFailed} falló` : ""}
-          </span>
-        </li>
+        <>
+          <li className={`ai-plan-step${eventFailed > 0 ? " ai-plan-step--failed" : ""}`}>
+            <span>Eventos por categoría</span>
+            <span>
+              {eventCompleted}/{eventSteps.length}
+              {eventExecuting > 0 ? ` · ${eventExecuting} activo` : ""}
+              {eventFailed > 0 ? ` · ${eventFailed} falló` : ""}
+            </span>
+          </li>
+          {canRetry &&
+            failedEventSteps.map((step) => (
+              <li key={step.id} className="ai-plan-step ai-plan-step--failed ai-plan-step--event-retry">
+                <span>{step.description}</span>
+                <button
+                  type="button"
+                  className="ai-plan-step__retry"
+                  onClick={() => onRetryStep!(step.id)}
+                >
+                  Reintentar
+                </button>
+              </li>
+            ))}
+        </>
       ) : null}
     </ul>
   );
@@ -295,6 +330,7 @@ function PlanCard({
   onPreviewPlan,
   onApplyPlan,
   onRefinePlan,
+  onRetryStep,
 }: {
   state: AiPlanPanelState;
   previewing: boolean;
@@ -304,6 +340,7 @@ function PlanCard({
   onPreviewPlan: (planId: string) => void;
   onApplyPlan: (planId: string) => void;
   onRefinePlan: (planId: string, prompt: string) => void;
+  onRetryStep: (planId: string, stepId: string) => void;
 }) {
   const [refinePrompt, setRefinePrompt] = useState("");
   const { plan, operations, loading, error } = state;
@@ -311,6 +348,9 @@ function PlanCard({
   const hasOperations = operations.length > 0;
   const active = plan.status === "executing" || plan.status === "refining";
   const partial = plan.status === "failed" && hasOperations;
+  const canPreviewOperations = hasOperations && !applied;
+  const canApplyOperations =
+    (plan.status === "completed" || partial) && hasOperations && !applied;
 
   return (
     <div className={`ai-plan-card ai-plan-card--${plan.status}`}>
@@ -318,11 +358,18 @@ function PlanCard({
         <strong>Plan de ejecución</strong>
         <span>{PLAN_STATUS_LABELS[plan.status] ?? plan.status}</span>
       </div>
+      <code className="ai-chat-debug-id">plan {plan.id}</code>
       <p className="ai-plan-card__meta">
         {completed}/{plan.steps.length} pasos completados
         {loading || active ? " · actualizando" : ""}
       </p>
-      {plan.steps.length > 0 ? <PlanStepSummary steps={plan.steps} /> : null}
+      {plan.steps.length > 0 ? (
+        <PlanStepSummary
+          steps={plan.steps}
+          planFailed={plan.status === "failed"}
+          onRetryStep={(stepId) => onRetryStep(plan.id, stepId)}
+        />
+      ) : null}
       {hasOperations ? (
         <p className="ai-plan-card__ops">
           {applied ? "Aplicado: " : partial ? "Preview parcial: " : ""}
@@ -341,24 +388,28 @@ function PlanCard({
             {loading ? "Preparando…" : "Ejecutar plan"}
           </button>
         ) : null}
-        {(plan.status === "completed" || partial) && hasOperations && !applied ? (
-          <>
-            <button
-              type="button"
-              className={`viewer-editor-btn ai-chat-changes__preview-btn${previewing ? " ai-chat-changes__preview-btn--active" : ""}`}
-              onClick={() => onPreviewPlan(plan.id)}
-            >
-              {previewing ? "Preview activo" : partial ? "Ver preview parcial" : "Ver preview"}
-            </button>
-            <button
-              type="button"
-              className="viewer-editor-btn"
-              disabled={applying}
-              onClick={() => onApplyPlan(plan.id)}
-            >
-              {applying ? "Aplicando…" : "Aplicar cambios"}
-            </button>
-          </>
+        {canPreviewOperations ? (
+          <button
+            type="button"
+            className={`viewer-editor-btn ai-chat-changes__preview-btn${previewing ? " ai-chat-changes__preview-btn--active" : ""}`}
+            onClick={() => onPreviewPlan(plan.id)}
+          >
+            {previewing
+              ? "Vista previa activa"
+              : partial
+                ? "Ver vista previa parcial"
+                : "Ver vista previa"}
+          </button>
+        ) : null}
+        {canApplyOperations ? (
+          <button
+            type="button"
+            className="viewer-editor-btn"
+            disabled={applying}
+            onClick={() => onApplyPlan(plan.id)}
+          >
+            {applying ? "Aplicando…" : "Aplicar cambios"}
+          </button>
         ) : null}
       </div>
       {plan.status === "completed" ? (
@@ -404,6 +455,7 @@ function MessageBubble({
   onPreviewPlan,
   onApplyPlan,
   onRefinePlan,
+  onRetryStep,
 }: {
   message: AiMessage;
   applyingMessageId: string | null;
@@ -419,11 +471,13 @@ function MessageBubble({
   onPreviewPlan: (planId: string) => void;
   onApplyPlan: (planId: string) => void;
   onRefinePlan: (planId: string, prompt: string) => void;
+  onRetryStep: (planId: string, stepId: string) => void;
 }) {
   const isPlanProposal =
     message.role === "assistant" && message.messageType === "plan_proposal";
   return (
     <div className={`ai-chat-bubble ai-chat-bubble--${message.role}`}>
+      <code className="ai-chat-debug-id">message {message.id}</code>
       <p className="ai-chat-bubble__content">{message.content}</p>
       {message.role === "assistant" && message.messageType === "response" && (
         <ProposedChanges
@@ -458,6 +512,7 @@ function MessageBubble({
           onPreviewPlan={onPreviewPlan}
           onApplyPlan={onApplyPlan}
           onRefinePlan={onRefinePlan}
+          onRetryStep={onRetryStep}
         />
       ) : null}
     </div>
@@ -485,6 +540,7 @@ export function AiChatPanel({
   onPreviewPlan,
   onApplyPlan,
   onRefinePlan,
+  onRetryStep,
 }: Props) {
   const [draft, setDraft] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -601,6 +657,7 @@ export function AiChatPanel({
                   onPreviewPlan={onPreviewPlan}
                   onApplyPlan={onApplyPlan}
                   onRefinePlan={onRefinePlan}
+                  onRetryStep={onRetryStep}
                 />
               ))
             )}

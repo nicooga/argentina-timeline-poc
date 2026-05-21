@@ -62,6 +62,7 @@ export type ExecutionPlan = {
   id: string;
   timelineId: string;
   status: ExecutionPlanStatus;
+  proposedChanges: TimelineChange[];
   steps: ExecutionPlanStep[];
   createdAt: Date;
 };

@@ -110,6 +110,17 @@
   white-space: pre-wrap;
 }
 
+.ai-chat-debug-id {
+  display: block;
+  margin-bottom: 0.22rem;
+  color: var(--muted);
+  font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.58rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  opacity: 0.82;
+}
+
 /* Typing dots */
 .ai-chat-typing-dots {
   display: inline-flex;
@@ -407,6 +418,30 @@
 .ai-plan-step--failed {
   color: #e5a39b;
   border-color: color-mix(in srgb, #d98b82 40%, var(--border));
+}
+
+.ai-plan-step__retry {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 0.1rem 0.38rem;
+  border: 1px solid color-mix(in srgb, #d98b82 60%, var(--border));
+  border-radius: 3px;
+  background: color-mix(in srgb, #d98b82 12%, var(--surface));
+  color: #e5a39b;
+  font-size: 0.58rem;
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.ai-plan-step__retry:hover {
+  background: color-mix(in srgb, #d98b82 22%, var(--surface));
+}
+
+.ai-plan-step--event-retry span:first-child {
+  color: #e5a39b;
+  font-weight: 400;
 }
 
 .ai-plan-card__actions {
