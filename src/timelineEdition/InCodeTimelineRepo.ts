@@ -51,6 +51,7 @@ const IN_CODE_RECORDS: Record<string, TimelineRecord> = {
 };
 
 const IN_CODE_SUMMARIES: TimelineSummary[] = Object.values(IN_CODE_RECORDS).map(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   ({ timeline: _t, ...summary }) => summary
 );
 
