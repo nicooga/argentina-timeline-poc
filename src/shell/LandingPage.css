@@ -1,0 +1,494 @@
+/* ── Layout ─────────────────────────────────────────────────────────────────── */
+
+.lp {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: Inter, system-ui, sans-serif;
+}
+
+/* ── Navbar ──────────────────────────────────────────────────────────────────── */
+
+.lp-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 2rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 10px color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+.lp-logo {
+  font-family: "IBM Plex Serif", Georgia, serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: -0.01em;
+}
+
+.lp-nav-cta {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 1rem;
+  background: var(--accent);
+  color: var(--surface);
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.lp-nav-cta:hover {
+  opacity: 0.82;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────────── */
+
+.lp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1.5rem;
+  border-radius: 7px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.12s;
+  white-space: nowrap;
+  min-height: var(--touch-target-min);
+}
+
+.lp-btn:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+.lp-btn--primary {
+  background: var(--accent);
+  color: var(--surface);
+}
+
+.lp-btn--ghost {
+  background: transparent;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+}
+
+.lp-btn--inverse {
+  background: var(--surface);
+  color: var(--accent);
+}
+
+.lp-btn--lg {
+  padding: 0.85rem 2.2rem;
+  font-size: 1rem;
+}
+
+/* ── Hero ────────────────────────────────────────────────────────────────────── */
+
+.lp-hero {
+  display: flex;
+  align-items: center;
+  gap: 3.5rem;
+  padding: 4.5rem 2rem 4rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.lp-hero-content {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.lp-hero-title {
+  font-family: "IBM Plex Serif", Georgia, serif;
+  font-size: clamp(2.2rem, 3.5vw + 1rem, 3.8rem);
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--accent);
+  margin: 0 0 1.2rem;
+  letter-spacing: -0.02em;
+}
+
+.lp-hero-sub {
+  font-size: clamp(1rem, 1.2vw + 0.5rem, 1.15rem);
+  color: var(--muted);
+  line-height: 1.65;
+  margin: 0 0 2rem;
+  max-width: 44ch;
+}
+
+.lp-hero-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.lp-hero-illustration {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 500px;
+}
+
+.lp-hero-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 4px 24px color-mix(in srgb, var(--accent) 12%, transparent));
+}
+
+/* ── Section shared ──────────────────────────────────────────────────────────── */
+
+.lp-section-title {
+  text-align: center;
+  font-family: "IBM Plex Serif", Georgia, serif;
+  font-size: clamp(1.35rem, 1.8vw + 0.7rem, 1.9rem);
+  color: var(--text);
+  margin: 0 0 2.5rem;
+  font-weight: 600;
+}
+
+/* ── How it works (steps) ─────────────────────────────────────────────────────── */
+
+.lp-steps {
+  background: var(--surface);
+  padding: 4.5rem 2rem;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.lp-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.lp-step-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 1.6rem 1.5rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: box-shadow 0.18s;
+}
+
+.lp-step-card:hover {
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.lp-step-icon {
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-radius: 10px;
+  color: var(--accent);
+}
+
+.lp-step-number {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.lp-step-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.lp-step-desc {
+  font-size: 0.875rem;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Features ────────────────────────────────────────────────────────────────── */
+
+.lp-features {
+  padding: 4.5rem 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.lp-features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1.5rem;
+}
+
+.lp-feature-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: box-shadow 0.18s;
+}
+
+.lp-feature-card:hover {
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.lp-feature-icon {
+  color: var(--event);
+  width: 26px;
+  height: 26px;
+}
+
+.lp-feature-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.lp-feature-desc {
+  font-size: 0.875rem;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── CTA Banner ──────────────────────────────────────────────────────────────── */
+
+.lp-cta-banner {
+  background: var(--accent);
+  color: var(--surface);
+  text-align: center;
+  padding: 4.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.lp-cta-banner-title {
+  font-family: "IBM Plex Serif", Georgia, serif;
+  font-size: clamp(1.5rem, 2vw + 0.8rem, 2.2rem);
+  font-weight: 700;
+  margin: 0;
+}
+
+.lp-cta-banner-sub {
+  font-size: 1rem;
+  opacity: 0.82;
+  margin: 0;
+}
+
+.lp-cta-banner .lp-btn--inverse:hover {
+  opacity: 0.9;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────────────── */
+
+.lp-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+  padding: 1.5rem 2rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.lp-footer a {
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.lp-footer a:hover {
+  color: var(--text);
+}
+
+/* ── SVG Illustration ────────────────────────────────────────────────────────── */
+
+.lp-svg-period-1 {
+  fill: #6f826d;
+  fill-opacity: 0.18;
+}
+
+.lp-svg-period-2 {
+  fill: #9d8258;
+  fill-opacity: 0.18;
+}
+
+.lp-svg-period-label {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 8px;
+  font-weight: 600;
+}
+
+.lp-svg-period-1-text {
+  fill: #6f826d;
+}
+
+.lp-svg-period-2-text {
+  fill: #9d8258;
+}
+
+.lp-svg-year-label {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 8px;
+  fill: #627083;
+}
+
+.lp-svg-axis {
+  stroke: #163457;
+  stroke-opacity: 0.25;
+  stroke-width: 2;
+}
+
+.lp-svg-tick {
+  stroke: #163457;
+  stroke-opacity: 0.3;
+  stroke-width: 1.5;
+}
+
+.lp-svg-causal-arc {
+  stroke: #a7792d;
+  stroke-opacity: 0.5;
+  stroke-width: 1.5;
+  stroke-dasharray: 5 3;
+}
+
+.lp-svg-causal-arrow {
+  fill: #a7792d;
+  fill-opacity: 0.5;
+}
+
+.lp-svg-event {
+  fill: #a7792d;
+}
+
+.lp-svg-event-secondary {
+  fill: #163457;
+  fill-opacity: 0.55;
+}
+
+.lp-svg-tooltip {
+  fill: #fff8ec;
+  stroke: #d4c6ad;
+  stroke-width: 1;
+}
+
+.lp-svg-tooltip-line {
+  stroke: #d4c6ad;
+  stroke-width: 1;
+}
+
+.lp-svg-tooltip-title {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  fill: #163457;
+}
+
+.lp-svg-tooltip-sub {
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 8px;
+  fill: #627083;
+}
+
+@media (prefers-color-scheme: dark) {
+  .lp-svg-axis { stroke: #e3bd73; }
+  .lp-svg-tick { stroke: #e3bd73; }
+  .lp-svg-event { fill: #d5a74c; }
+  .lp-svg-event-secondary { fill: #e3bd73; fill-opacity: 0.5; }
+  .lp-svg-period-1 { fill: #5f735f; }
+  .lp-svg-period-2 { fill: #9b7544; }
+  .lp-svg-period-1-text { fill: #7a9478; }
+  .lp-svg-period-2-text { fill: #b08a5a; }
+  .lp-svg-year-label { fill: #b9ad97; }
+  .lp-svg-causal-arc { stroke: #d5a74c; }
+  .lp-svg-causal-arrow { fill: #d5a74c; }
+  .lp-svg-tooltip { fill: #111d2c; stroke: #304054; }
+  .lp-svg-tooltip-line { stroke: #304054; }
+  .lp-svg-tooltip-title { fill: #f4ead7; }
+  .lp-svg-tooltip-sub { fill: #b9ad97; }
+}
+
+html[data-theme="dark"] {
+  .lp-svg-axis { stroke: #e3bd73; }
+  .lp-svg-tick { stroke: #e3bd73; }
+  .lp-svg-event { fill: #d5a74c; }
+  .lp-svg-event-secondary { fill: #e3bd73; fill-opacity: 0.5; }
+  .lp-svg-period-1 { fill: #5f735f; }
+  .lp-svg-period-2 { fill: #9b7544; }
+  .lp-svg-period-1-text { fill: #7a9478; }
+  .lp-svg-period-2-text { fill: #b08a5a; }
+  .lp-svg-year-label { fill: #b9ad97; }
+  .lp-svg-causal-arc { stroke: #d5a74c; }
+  .lp-svg-causal-arrow { fill: #d5a74c; }
+  .lp-svg-tooltip { fill: #111d2c; stroke: #304054; }
+  .lp-svg-tooltip-line { stroke: #304054; }
+  .lp-svg-tooltip-title { fill: #f4ead7; }
+  .lp-svg-tooltip-sub { fill: #b9ad97; }
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .lp-nav {
+    padding: 0.75rem 1.25rem;
+  }
+
+  .lp-hero {
+    flex-direction: column;
+    text-align: center;
+    padding: 3rem 1.25rem 2.5rem;
+    gap: 2rem;
+  }
+
+  .lp-hero-sub {
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .lp-hero-actions {
+    justify-content: center;
+  }
+
+  .lp-hero-illustration {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .lp-steps,
+  .lp-cta-banner {
+    padding: 3rem 1.25rem;
+  }
+
+  .lp-features {
+    padding: 3rem 1.25rem;
+  }
+
+  .lp-footer {
+    gap: 1.25rem;
+    flex-direction: column;
+    text-align: center;
+  }
+}

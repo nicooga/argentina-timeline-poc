@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import App from "../App";
 import { createTimelineRepo, type TimelineSummary } from "../timelineEdition";
+import { LandingPage } from "./LandingPage";
 import { WelcomeScreen } from "./WelcomeScreen";
 
 // TODO: agregar campo `slug` en el backend. Si un nodo no tiene slug,
@@ -42,7 +43,8 @@ export function AppRouter() {
   return (
     <BrowserRouter basename={routerBasename}>
       <Routes>
-        <Route path="/" element={<WelcomeRoute />} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/app" element={<WelcomeRoute />} />
         <Route path="/:timelineSlug" element={<App />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
