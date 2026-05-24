@@ -29,6 +29,7 @@ function LandingNavbar() {
 
 function LandingHero() {
   return (
+    <div className="lp-hero-bg">
     <section className="lp-hero">
       <div className="lp-hero-content">
         <h1 className="lp-hero-title">
@@ -52,6 +53,7 @@ function LandingHero() {
         <TimelineIllustration />
       </div>
     </section>
+    </div>
   );
 }
 

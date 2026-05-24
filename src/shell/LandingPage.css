@@ -92,6 +92,42 @@
 
 /* ── Hero ────────────────────────────────────────────────────────────────────── */
 
+.lp-hero-bg {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Imagen de fondo: zoom parcial + sepia para unificar paleta */
+.lp-hero-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('/picturefondo.png');
+  background-size: 145%;
+  background-position: center 38%;
+  filter: sepia(0.55) brightness(0.55) saturate(0.65);
+  z-index: 0;
+}
+
+/* Overlay para que el texto del hero sea legible directamente */
+.lp-hero-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(247, 240, 227, 0.84);
+  z-index: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+  .lp-hero-bg::after {
+    background: rgba(7, 17, 31, 0.86);
+  }
+}
+
+html[data-theme="dark"] .lp-hero-bg::after {
+  background: rgba(7, 17, 31, 0.86);
+}
+
 .lp-hero {
   display: flex;
   align-items: center;
@@ -99,6 +135,8 @@
   padding: 4.5rem 2rem 4rem;
   max-width: 1100px;
   margin: 0 auto;
+  position: relative;
+  z-index: 2;
 }
 
 .lp-hero-content {
@@ -134,6 +172,21 @@
   flex: 1 1 0;
   min-width: 0;
   max-width: 500px;
+  border-radius: 20px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  /* Fondo mínimo para suavizar el borde redondeado sin que se vea como panel */
+  background: rgba(247, 240, 227, 0.10);
+}
+
+@media (prefers-color-scheme: dark) {
+  .lp-hero-illustration {
+    background: rgba(7, 17, 31, 0.10);
+  }
+}
+
+html[data-theme="dark"] .lp-hero-illustration {
+  background: rgba(7, 17, 31, 0.10);
 }
 
 .lp-hero-svg {
