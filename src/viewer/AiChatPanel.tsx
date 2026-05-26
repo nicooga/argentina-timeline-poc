@@ -53,6 +53,7 @@ const CHANGE_TYPE_LABELS: Record<string, string> = {
   create_event: "Crear evento",
   update_event: "Actualizar evento",
   delete_event: "Eliminar evento",
+  upsert_event: "Crear/actualizar evento",
   create_period: "Crear período",
   update_period: "Actualizar período",
   delete_period: "Eliminar período",
@@ -240,6 +241,7 @@ function countOperations(changes: readonly TimelineChange[]): string {
     compactCount(changes, "update_event", "evento actualizado", "eventos actualizados"),
     compactCount(changes, "delete_period", "período removido", "períodos removidos"),
     compactCount(changes, "delete_event", "evento removido", "eventos removidos"),
+    compactCount(changes, "upsert_event", "evento upsertado", "eventos upsertados"),
   ].filter(Boolean);
   return parts.length > 0 ? parts.join(" · ") : "Sin operaciones listas";
 }

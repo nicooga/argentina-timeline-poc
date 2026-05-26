@@ -14,7 +14,7 @@ export interface TimelineEvent extends Linked {
     /** Resumen corto (hover / disclosure progresiva). */
     summary?: string;
     /** Puntos breves para mostrar como lista en el panel de detalle. */
-    items: string[];
+    items?: string[];
     date: Date;
     /** Carril(es) semántico(s); no vacío. */
     lanes: EventLaneId[];

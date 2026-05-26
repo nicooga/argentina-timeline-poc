@@ -171,6 +171,15 @@ function operationAppliedToTimeline(
   if (change.type === "delete_event") {
     return !events.some((item) => item["id"] === change.target_id);
   }
+  if (change.type === "upsert_event") {
+    const id = String(
+      change.target_id ??
+      change.data?.id ??
+      slugifyTimelineId(String(change.data?.title ?? "evento"))
+    );
+    const event = events.find((item) => item["id"] === id);
+    return event != null && matchesData(event, change.data);
+  }
   if (change.type === "create_period") {
     const id = String(
       change.data?.id ??
@@ -227,7 +236,7 @@ function pctOnTrack(time: number, min: number, max: number): number {
 
 function eventPointerTitle(e: TimelineEvent, mode: StudyMode): string {
   if (mode === "exam") return e.title;
-  const tail = e.summary ?? e.items[0];
+  const tail = e.summary ?? e.items?.[0];
   return tail && tail !== e.title ? `${e.title} — ${tail}` : e.title;
 }
 

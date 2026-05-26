@@ -2,6 +2,7 @@ export type TimelineChangeType =
   | "create_event"
   | "update_event"
   | "delete_event"
+  | "upsert_event"
   | "create_period"
   | "update_period"
   | "delete_period";
