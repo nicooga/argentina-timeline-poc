@@ -110,7 +110,7 @@ export class TimelineEditionService {
     const draft: TimelineEventDraft = {
       title: input.title ?? current.title,
       summary: input.summary ?? current.summary,
-      items: input.items ?? current.items,
+      items: input.items ?? current.items ?? [],
       date: input.date ?? current.date,
       lanes: input.lanes ?? current.lanes,
       links: input.links ?? current.links,

@@ -29,7 +29,7 @@ export function cloneTimeline(timeline: Timeline): Timeline {
       ...e,
       date: new Date(e.date.getTime()),
       lanes: [...(e.lanes ?? [])],
-      items: [...e.items],
+      items: [...(e.items ?? [])],
       links: e.links ? [...e.links] : undefined,
       causes: e.causes ? [...e.causes] : undefined,
       consequences: e.consequences ? [...e.consequences] : undefined,

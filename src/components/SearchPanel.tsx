@@ -29,7 +29,7 @@ export default function SearchPanel({
         const eventMatches = Timeline.events.filter((event) => {
             const titleMatch = normalize(event.title).includes(normalizedQuery);
             const summaryMatch = event.summary ? normalize(event.summary).includes(normalizedQuery) : false;
-            const itemsMatch = event.items.some((item) => normalize(item).includes(normalizedQuery));
+            const itemsMatch = event.items?.some((item) => normalize(item).includes(normalizedQuery)) ?? false;
             return titleMatch || summaryMatch || itemsMatch;
         });
 
@@ -106,7 +106,7 @@ export default function SearchPanel({
                                 <div className="description">
                                     {isPeriod(item)
                                         ? item.items?.join(" · ") || "Sin detalles"
-                                        : item.summary || item.items.join(" · ") || "Sin detalles"}
+                                        : item.summary || item.items?.join(" · ") || "Sin detalles"}
                                 </div>
                             </div>
                         ))

@@ -93,6 +93,26 @@ export function applyChangesLocally(
         if (!found) throw new TimelineChangeApplyError(`event ${targetId} not found`);
         break;
       }
+      case "upsert_event": {
+        const lookupId = change.target_id ?? (change.data?.id as string | undefined);
+        if (lookupId && events.some((ev) => ev["id"] === lookupId)) {
+          events = events.map((ev) => {
+            if (ev["id"] === lookupId) {
+              const next = mergeInto(ev, change.data);
+              updated.add(String(next["id"] ?? lookupId));
+              return next;
+            }
+            return ev;
+          });
+          break;
+        }
+        const ev: JsonItem = mergeInto({}, change.data);
+        if (lookupId) ev["id"] = lookupId;
+        if (!ev["id"]) ev["id"] = slugify(String(ev["title"] ?? "evento"));
+        events = [...events, ev];
+        added.add(String(ev["id"]));
+        break;
+      }
       case "delete_event": {
         const targetId = requireTargetId(change);
         const before = events.length;

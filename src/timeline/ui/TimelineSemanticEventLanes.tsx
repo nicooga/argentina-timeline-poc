@@ -28,7 +28,7 @@ import TimelineEventMarker from "../TimelineEvent";
 
 function eventPointerTitle(e: TimelineEvent, mode: StudyMode): string {
   if (mode === "exam") return e.title;
-  const tail = e.summary ?? e.items[0];
+  const tail = e.summary ?? e.items?.[0];
   return tail && tail !== e.title ? `${e.title} — ${tail}` : e.title;
 }
 

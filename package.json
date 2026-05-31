@@ -14,7 +14,8 @@
     "test:storybook": "vitest run --project storybook",
     "test:e2e": "vitest run src/timelineEdition/executionPlan.e2e.test.ts",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "prepare": "husky"
   },
   "dependencies": {
     "react": "^19.0.0",
@@ -41,6 +42,7 @@
     "eslint-plugin-react-refresh": "^0.5.2",
     "eslint-plugin-storybook": "^10.3.6",
     "globals": "^17.5.0",
+    "husky": "^9.1.7",
     "playwright": "^1.60.0",
     "storybook": "^10.3.6",
     "typescript": "~5.7.2",
