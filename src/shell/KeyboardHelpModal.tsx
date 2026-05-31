@@ -131,6 +131,20 @@ export function KeyboardHelpModal({ open, onClose }: KeyboardHelpModalProps) {
           </li>
           <li className="keyboard-cheatsheet-row">
             <span className="keyboard-cheatsheet-label">
+              Buscar evento o período
+            </span>
+            <span className="keyboard-cheatsheet-keys">
+              <kbd className="kbd">Ctrl</kbd>
+              <span className="keyboard-cheatsheet-slash">+</span>
+              <kbd className="kbd">F</kbd>
+              <span className="keyboard-cheatsheet-or">o</span>
+              <kbd className="kbd">⌘</kbd>
+              <span className="keyboard-cheatsheet-slash">+</span>
+              <kbd className="kbd">F</kbd>
+            </span>
+          </li>
+          <li className="keyboard-cheatsheet-row">
+            <span className="keyboard-cheatsheet-label">
               Abrir o cerrar esta ayuda
             </span>
             <span className="keyboard-cheatsheet-keys">
