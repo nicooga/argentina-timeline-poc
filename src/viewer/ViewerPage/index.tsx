@@ -692,6 +692,7 @@ export default function ViewerPage() {
     | null
   >(null);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const [aiConversation, setAiConversation] = useState<AiConversation | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -1863,6 +1864,14 @@ export default function ViewerPage() {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
+
+      /* Ctrl/Cmd+F: open search (intercept before isTypingTarget so it works from any field) */
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key === "f") {
+        e.preventDefault();
+        setSearchOpen((v) => !v);
+        return;
+      }
+
       if (isTypingTarget(e.target)) return;
 
       if (e.key === "Escape" && previewedMessageId != null) {
@@ -1980,6 +1989,7 @@ export default function ViewerPage() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [
     helpOpen,
+    searchOpen,
     sel,
     periods,
     eventsSorted,
@@ -2022,6 +2032,7 @@ export default function ViewerPage() {
             navigate("/");
           }}
           onOpenHelp={() => setHelpOpen(true)}
+          onOpenSearch={() => setSearchOpen(true)}
           onCreateCopy={createTimelineCopy}
           onCreateEvent={() => !previewMode && setEditorState({ kind: "create" })}
           onToggleStudyMenu={() => setStudyMenuOpen((open) => !open)}
@@ -2226,6 +2237,8 @@ export default function ViewerPage() {
         <SearchPanel
           key="search-panel"
           Timeline={{ periods, events }}
+          isOpen={searchOpen}
+          onClose={() => setSearchOpen(false)}
           onSelectPeriod={(period) => setSel({ kind: "period", item: period })}
           onSelectEvent={(event) => setSel({ kind: "event", item: event })}
         />
