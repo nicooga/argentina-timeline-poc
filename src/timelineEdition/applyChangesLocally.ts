@@ -117,10 +117,7 @@ export function applyChangesLocally(
         const targetId = requireTargetId(change);
         const before = events.length;
         events = events.filter((ev) => ev["id"] !== targetId);
-        if (events.length === before) {
-          throw new TimelineChangeApplyError(`event ${targetId} not found`);
-        }
-        removed.add(targetId);
+        if (events.length < before) removed.add(targetId);
         break;
       }
       case "create_period": {
@@ -149,10 +146,7 @@ export function applyChangesLocally(
         const targetId = requireTargetId(change);
         const before = periods.length;
         periods = periods.filter((p) => p["id"] !== targetId);
-        if (periods.length === before) {
-          throw new TimelineChangeApplyError(`period ${targetId} not found`);
-        }
-        removed.add(targetId);
+        if (periods.length < before) removed.add(targetId);
         break;
       }
     }
